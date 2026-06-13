@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>김빌 (Bill Kim) — 오픈소스 컨트리뷰터 · Apache Kafka, Spring · 기술 블로그 devbilllab</title>
+  <meta name="description" content="김빌(Bill Kim)의 오픈소스 활동 허브. Apache Kafka, Spring Kafka, Spring Modulith, Spring AI, Infinispan 업스트림 PR과 Kotlin/Spring Boot 오픈소스 라이브러리(bk-spring-idempotent, bk-spring-saga, spring-outbox-kt) 리딩. 기술 블로그 devbilllab.tistory.com 운영." />
+  <meta name="keywords" content="김빌, 빌김, Bill Kim, billkim, BK202503, devbilllab, 김빌 블로그, 김빌 기술 블로그, 김빌 개발자, 김빌 깃허브, 김빌 오픈소스, Bill Kim OSS, Bill Kim tech blog, 오픈소스, OSS, open source, 오픈소스 컨트리뷰터, 오픈소스 개발자, 기술 블로그, tech blog, 티스토리, tistory, devbilllab tistory, Apache Kafka, Kafka Connect, Spring Kafka, Spring Modulith, Spring AI, Infinispan, Kotlin, Spring Boot, Saga, Idempotent, Outbox" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+  <meta name="bingbot" content="index, follow" />
+  <meta name="naver-site-verification" content="" />
+  <meta name="google-site-verification" content="" />
+  <meta name="google" content="notranslate" />
+
+  <link rel="canonical" href="https://bk202503.github.io/" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/" />
+  <link rel="me" href="https://github.com/BK202503" />
+  <link rel="me" href="https://devbilllab.tistory.com/" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — OSS" />
+  <meta property="og:title" content="김빌 (Bill Kim) — 오픈소스 컨트리뷰터" />
+  <meta property="og:description" content="김빌(Bill Kim)의 오픈소스 활동. Apache Kafka, Spring 생태계 업스트림 PR과 Kotlin/Spring Boot 라이브러리. 기술 블로그 devbilllab.tistory.com." />
+  <meta property="og:type" content="profile" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/" />
+  <meta property="profile:first_name" content="빌" />
+  <meta property="profile:last_name" content="김" />
+  <meta property="profile:username" content="BK202503" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="김빌 (Bill Kim) — 오픈소스 컨트리뷰터" />
+  <meta name="twitter:description" content="Apache Kafka, Spring 생태계 업스트림 PR과 Kotlin/Spring Boot OSS 라이브러리를 직접 리딩하는 김빌(Bill Kim)의 OSS 활동 페이지. 기술 블로그 devbilllab." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "url": "https://bk202503.github.io/",
+    "name": "김빌 (Bill Kim) — 오픈소스 컨트리뷰터",
+    "inLanguage": ["ko", "en"],
+    "about": "김빌(Bill Kim)의 오픈소스(OSS) 활동과 기술 블로그 devbilllab",
+    "mainEntity": {
+      "@type": "Person",
+      "@id": "https://bk202503.github.io/#person",
+      "name": "김빌",
+      "alternateName": ["Bill Kim", "빌김", "billkim", "BK202503", "devbilllab"],
+      "givenName": "빌",
+      "familyName": "김",
+      "url": "https://bk202503.github.io/",
+      "mainEntityOfPage": "https://bk202503.github.io/",
+      "jobTitle": "Open Source Software Engineer",
+      "description": "김빌(Bill Kim)은 Apache Kafka와 Spring 생태계에 업스트림 패치를 보내고, Kotlin/Spring Boot 오픈소스 라이브러리를 직접 리딩하는 오픈소스 엔지니어입니다. 기술 블로그 devbilllab.tistory.com을 운영합니다.",
+      "knowsAbout": [
+        "Open Source Software",
+        "Apache Kafka",
+        "Kafka Connect",
+        "Spring Framework",
+        "Spring Boot",
+        "Spring Kafka",
+        "Spring Modulith",
+        "Spring AI",
+        "Infinispan",
+        "Kotlin",
+        "Distributed Transactions",
+        "Idempotency",
+        "Saga Pattern",
+        "Transactional Outbox"
+      ],
+      "sameAs": [
+        "https://github.com/BK202503",
+        "https://github.com/billkim",
+        "https://devbilllab.tistory.com/"
+      ]
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "김빌 (Bill Kim) — OSS",
+    "alternateName": ["Bill Kim OSS", "김빌 오픈소스"],
+    "url": "https://bk202503.github.io/",
+    "inLanguage": ["ko", "en"],
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": "김빌(Bill Kim)의 오픈소스(OSS) 기여와 직접 리딩하는 오픈소스 라이브러리"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": "https://devbilllab.tistory.com/#blog",
+    "url": "https://devbilllab.tistory.com/",
+    "name": "devbilllab — 김빌(Bill Kim) 기술 블로그",
+    "alternateName": ["김빌 기술 블로그", "Bill Kim Tech Blog", "devbilllab"],
+    "inLanguage": "ko",
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "publisher": { "@id": "https://bk202503.github.io/#person" }
+  }
+  </script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="#top">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <a href="#contributions">Contributions</a>
+        <a href="#libraries">Libraries</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+        <button id="lang-toggle" class="lang-toggle" aria-label="Toggle language">EN</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <section class="hero">
+      <div class="container">
+        <p class="eyebrow" data-ko="오픈소스 엔지니어 · OSS Contributor" data-en="Open source engineer">오픈소스 엔지니어 · OSS Contributor</p>
+        <h1 class="title">
+          <span class="title-ko">김빌</span>
+          <span class="title-en">Bill Kim</span>
+        </h1>
+        <div class="lede">
+          <p data-ko="안녕하세요. 김빌(Bill Kim)입니다."
+             data-en="Hi, I'm Bill Kim (김빌).">
+            안녕하세요. 김빌(Bill Kim)입니다.
+          </p>
+          <p data-ko="이 페이지는 제가 진행하고 있는 오픈소스(OSS) 활동과 프로젝트를 한곳에 정리하기 위해 만들었습니다."
+             data-en="This page is where I gather the open source (OSS) work and projects I'm currently running.">
+            이 페이지는 제가 진행하고 있는 오픈소스(OSS) 활동과 프로젝트를 한곳에 정리하기 위해 만들었습니다.
+          </p>
+          <p data-ko="주로 Apache Kafka와 Spring 생태계(Spring Kafka, Spring Modulith, Spring AI), Infinispan 등에 업스트림 기여를 하고 있으며, Kotlin과 Spring Boot 기반의 오픈소스 라이브러리를 직접 설계하고 운영하고 있습니다."
+             data-en="Most of my upstream contributions land in Apache Kafka and the Spring ecosystem (Spring Kafka, Spring Modulith, Spring AI), as well as Infinispan. Alongside that, I design and maintain my own open source libraries built on Kotlin and Spring Boot.">
+            주로 Apache Kafka와 Spring 생태계(Spring Kafka, Spring Modulith, Spring AI), Infinispan 등에 업스트림 기여를 하고 있으며, Kotlin과 Spring Boot 기반의 오픈소스 라이브러리를 직접 설계하고 운영하고 있습니다.
+          </p>
+          <p data-ko="관심 분야는 분산 시스템(Distributed Systems), 분산 트랜잭션, 멱등성(Idempotency), 이벤트 기반 아키텍처(Event-Driven Architecture), 그리고 옵저버빌리티(Observability)입니다."
+             data-en="My interests are distributed systems, distributed transactions, idempotency, event-driven architecture, and observability.">
+            관심 분야는 분산 시스템(Distributed Systems), 분산 트랜잭션, 멱등성(Idempotency), 이벤트 기반 아키텍처(Event-Driven Architecture), 그리고 옵저버빌리티(Observability)입니다.
+          </p>
+          <p data-ko="오픈소스 활동과 개발 과정에서 얻은 경험, 설계 고민, 기술적인 인사이트는 기술 블로그 DevBillLab에 기록하고 있습니다."
+             data-en="Experience, design thinking, and technical insights from this work go into my tech blog, DevBillLab.">
+            오픈소스 활동과 개발 과정에서 얻은 경험, 설계 고민, 기술적인 인사이트는 기술 블로그 DevBillLab에 기록하고 있습니다.
+          </p>
+        </div>
+
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/BK202503" target="_blank" rel="noopener">
+            <span>GitHub</span><span class="pill-sub">@BK202503</span>
+          </a>
+          <a class="pill" href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">
+            <span data-ko="기술 블로그" data-en="Tech blog">기술 블로그</span><span class="pill-sub">DevBillLab</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="contributions" class="section">
+      <div class="container">
+        <header class="section-header">
+          <h2 data-ko="오픈소스 기여" data-en="Open source contributions">오픈소스 기여</h2>
+          <p class="muted"
+             data-ko="실제로 패치를 보낸 업스트림 PR입니다. 모두 GitHub @BK202503 계정에서 확인할 수 있습니다."
+             data-en="Upstream PRs I authored. All are visible under @BK202503 on GitHub.">
+            실제로 패치를 보낸 업스트림 PR입니다. 모두 GitHub @BK202503 계정에서 확인할 수 있습니다.
+          </p>
+        </header>
+
+        <div class="groups">
+
+          <article class="group">
+            <header class="group-head">
+              <h3>Apache Kafka</h3>
+              <span class="badge">4 PRs · ByteBuffer remaining-bytes 시리즈</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다."
+               data-en="Tracked a class of ByteBuffer.array() misuses across Kafka Connect and submitted a consistent fix. Four separate PRs land the same family of patch into four components so direct/sliced buffers behave correctly.">
+              Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다.
+            </p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22536" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22536</span>
+                  <span class="pr-title">KAFKA-20656 — Struct honors ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22535" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22535</span>
+                  <span class="pr-title">KAFKA-20666 — Offset backing stores honor ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22534</span>
+                  <span class="pr-title">KAFKA-20658 — Cast SMT honors ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22533</span>
+                  <span class="pr-title">KAFKA-20657 — JsonConverter BYTES uses ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3>Spring Kafka</h3>
+              <span class="badge badge-merged">merged</span>
+            </header>
+            <p class="group-desc"
+               data-ko="suspend @KafkaListener + DefaultErrorHandler 조합에서 비동기 retry가 무한 재전송되는 회귀(#4254)의 원인을 추적해 큐 중복을 제거했습니다. 버그를 재현하는 회귀 테스트를 함께 보냈습니다."
+               data-en="Diagnosed a regression where suspend @KafkaListener with DefaultErrorHandler caused unbounded async retry re-delivery (introduced by #4254). Removed the queue duplication and shipped a regression test that fails on the bug and passes with the fix.">
+              suspend @KafkaListener + DefaultErrorHandler 조합에서 비동기 retry가 무한 재전송되는 회귀(#4254)의 원인을 추적해 큐 중복을 제거했습니다. 버그를 재현하는 회귀 테스트를 함께 보냈습니다.
+            </p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/spring-projects/spring-kafka/pull/4469" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #4469</span>
+                  <span class="pr-title">GH-4465: Fix unbounded async retry re-delivery</span>
+                </a>
+                <span class="pr-state state-merged">merged</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3>Spring Modulith</h3>
+              <span class="badge">JPA event publication</span>
+            </header>
+            <p class="group-desc"
+               data-ko="JpaEventPublicationAdapter#getStatus()가 영속 상태 대신 메모리 값을 돌려주던 버그를 수정했습니다. JdbcEventPublicationRepositoryV2가 이미 적용 중인 패턴과 동일하게 맞추고 markFailed 라운드트립 회귀 테스트를 추가했습니다."
+               data-en="Fixed JpaEventPublicationAdapter#getStatus() to return the persisted status, mirroring the pattern already used by JdbcEventPublicationRepositoryV2. Added a markFailed round-trip regression test.">
+              JpaEventPublicationAdapter#getStatus()가 영속 상태 대신 메모리 값을 돌려주던 버그를 수정했습니다. JdbcEventPublicationRepositoryV2가 이미 적용 중인 패턴과 동일하게 맞추고 markFailed 라운드트립 회귀 테스트를 추가했습니다.
+            </p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/spring-projects/spring-modulith/pull/1714" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #1714</span>
+                  <span class="pr-title">GH-1683 — Return persisted status from JpaEventPublicationAdapter#getStatus</span>
+                </a>
+                <span class="pr-state state-closed">closed</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3>Spring AI</h3>
+              <span class="badge">streaming observation</span>
+            </header>
+            <p class="group-desc"
+               data-ko="스트리밍 응답에서 observation의 stop order가 잘못된 순서로 호출되는 이슈(#5971)에 대해 실패하는 회귀 테스트를 먼저 PR로 보냈습니다."
+               data-en="Submitted a failing regression test for #5971 — observation stop order on streaming responses being called out of sequence.">
+              스트리밍 응답에서 observation의 stop order가 잘못된 순서로 호출되는 이슈(#5971)에 대해 실패하는 회귀 테스트를 먼저 PR로 보냈습니다.
+            </p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/spring-projects/spring-ai/pull/6317" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #6317</span>
+                  <span class="pr-title">GH-5971: Add failing regression test for streaming observation stop order</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3>Infinispan</h3>
+              <span class="badge">CI workflow</span>
+            </header>
+            <p class="group-desc"
+               data-ko="PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로를 추가했습니다. 기존 spotbugs.yml과 트리거/구조를 맞추고 CPD 결과를 아티팩트로 업로드합니다."
+               data-en="Added a GitHub Actions workflow that runs PMD's Copy/Paste Detector on PRs. Mirrors the existing spotbugs.yml triggers and uploads CPD reports as artifacts.">
+              PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로를 추가했습니다. 기존 spotbugs.yml과 트리거/구조를 맞추고 CPD 결과를 아티팩트로 업로드합니다.
+            </p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/infinispan/infinispan/pull/17624" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #17624</span>
+                  <span class="pr-title">[#14185] Add GitHub workflow for PMD Copy/Paste Detector</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <section id="libraries" class="section section-alt">
+      <div class="container">
+        <header class="section-header">
+          <h2 data-ko="직접 리딩하는 라이브러리" data-en="Libraries I lead">직접 리딩하는 라이브러리</h2>
+          <p class="muted"
+             data-ko="Kotlin/Spring Boot 생태계에서 직접 설계하고 메인테이닝하는 오픈소스 라이브러리입니다."
+             data-en="Kotlin / Spring Boot libraries I designed and maintain.">
+            Kotlin/Spring Boot 생태계에서 직접 설계하고 메인테이닝하는 오픈소스 라이브러리입니다.
+          </p>
+        </header>
+
+        <div class="cards">
+          <article class="card">
+            <h3><a href="https://github.com/BK202503/bk-spring-idempotent" target="_blank" rel="noopener">bk-spring-idempotent</a></h3>
+            <p data-ko="Spring Boot용 Stripe 스타일 @Idempotent 어노테이션. coroutine-native idempotency-key 처리, JDBC/Redis 플러그러블 스토리지."
+               data-en="Stripe-style @Idempotent annotation for Spring Boot. Coroutine-native idempotency-key handling with JDBC / Redis pluggable storage.">
+              Spring Boot용 Stripe 스타일 @Idempotent 어노테이션. coroutine-native idempotency-key 처리, JDBC/Redis 플러그러블 스토리지.
+            </p>
+            <div class="tags">
+              <span class="tag">Kotlin</span>
+              <span class="tag">Spring Boot</span>
+              <span class="tag">Idempotency</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <h3><a href="https://github.com/BK202503/bk-spring-saga" target="_blank" rel="noopener">bk-spring-saga</a></h3>
+            <p data-ko="Spring Boot용 coroutine-native Saga 오케스트레이터. Kafka 이벤트 발행, JDBC 영속, 보상 트랜잭션, JVM 크래시 후 재개."
+               data-en="Coroutine-native Saga orchestrator for Spring Boot. Kafka event publisher, JDBC persistence, compensating transactions, resumable on JVM crash.">
+              Spring Boot용 coroutine-native Saga 오케스트레이터. Kafka 이벤트 발행, JDBC 영속, 보상 트랜잭션, JVM 크래시 후 재개.
+            </p>
+            <div class="tags">
+              <span class="tag">Kotlin</span>
+              <span class="tag">Spring Boot</span>
+              <span class="tag">Kafka</span>
+              <span class="tag">Saga</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <h3><a href="https://github.com/BK202503/bk-spring-outbox" target="_blank" rel="noopener">bk-spring-outbox</a></h3>
+            <p data-ko="Spring Boot용 Transactional Outbox. Kotlin-first, coroutine-native, autoconfigured. bk-spring-saga와 짝으로 동작."
+               data-en="Transactional Outbox for Spring Boot. Kotlin-first, coroutine-native, autoconfigured. Pairs with bk-spring-saga.">
+              Spring Boot용 Transactional Outbox. Kotlin-first, coroutine-native, autoconfigured. bk-spring-saga와 짝으로 동작.
+            </p>
+            <div class="tags">
+              <span class="tag">Kotlin</span>
+              <span class="tag">Outbox</span>
+              <span class="tag">Kafka</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="projects" class="section">
+      <div class="container">
+        <header class="section-header">
+          <h2 data-ko="공개 프로젝트" data-en="Open projects">공개 프로젝트</h2>
+          <p class="muted"
+             data-ko="GitHub에 공개해 둔 프로젝트입니다."
+             data-en="Projects I keep public on GitHub.">
+            GitHub에 공개해 둔 프로젝트입니다.
+          </p>
+        </header>
+
+        <div class="cards">
+          <article class="card">
+            <h3><a href="https://github.com/BK202503/korea-cafe" target="_blank" rel="noopener">korea-cafe</a></h3>
+            <p data-ko="Naver Local Search API 기반 카페 메타데이터 import 파이프라인."
+               data-en="Cafe metadata import pipeline backed by Naver Local Search API.">
+              Naver Local Search API 기반 카페 메타데이터 import 파이프라인.
+            </p>
+            <div class="tags">
+              <span class="tag">Kotlin</span>
+              <span class="tag">Spring Boot</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="section section-alt">
+      <div class="container narrow">
+        <h2 data-ko="연락처" data-en="Contact">연락처</h2>
+        <p class="muted"
+           data-ko="오픈소스 협업, 코드 리뷰, 라이브러리 도입 문의 환영합니다."
+           data-en="Open to OSS collaboration, code review, and library adoption questions.">
+          오픈소스 협업, 코드 리뷰, 라이브러리 도입 문의 환영합니다.
+        </p>
+        <ul class="contact-list">
+          <li><span class="k">GitHub</span><a href="https://github.com/BK202503" target="_blank" rel="noopener">github.com/BK202503</a></li>
+          <li><span class="k" data-ko="기술 블로그" data-en="Tech blog">기술 블로그</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const toggle = document.getElementById('lang-toggle');
+    const root = document.body;
+    function applyLang(lang) {
+      root.dataset.lang = lang;
+      document.documentElement.lang = lang;
+      toggle.textContent = lang === 'ko' ? 'EN' : 'KO';
+      document.querySelectorAll('[data-ko][data-en]').forEach(el => {
+        el.textContent = el.dataset[lang];
+      });
+    }
+    toggle.addEventListener('click', () => {
+      const next = root.dataset.lang === 'ko' ? 'en' : 'ko';
+      applyLang(next);
+      try { localStorage.setItem('lang', next); } catch (e) {}
+    });
+    try {
+      const saved = localStorage.getItem('lang');
+      if (saved === 'ko' || saved === 'en') applyLang(saved);
+    } catch (e) {}
+  </script>
+
+</body>
+</html>
