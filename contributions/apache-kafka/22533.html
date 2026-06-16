@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Apache Kafka PR #22533 — KAFKA-20657 JsonConverter BYTES uses ByteBuffer remaining bytes | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 PR #22533 (KAFKA-20657). Kafka Connect JsonConverter의 BYTES 직렬화가 ByteBuffer position/remaining을 존중하도록 수정." />
+  <meta name="keywords" content="Apache Kafka PR 22533, KAFKA-20657, Kafka Connect JsonConverter BYTES, ByteBuffer.array() bug, sliced buffer JSON, Kafka Connect converter, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/apache-kafka/22533.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22533.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22533.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22533.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Apache Kafka PR #22533 — KAFKA-20657 JsonConverter BYTES uses ByteBuffer remaining bytes" />
+  <meta property="og:description" content="Kafka Connect JsonConverter의 BYTES 직렬화에서 ByteBuffer position/remaining을 존중하도록 수정." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/apache-kafka/22533.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Apache Kafka PR #22533 — KAFKA-20657 JsonConverter BYTES uses ByteBuffer remaining bytes" />
+  <meta name="twitter:description" content="Kafka Connect JsonConverter BYTES 직렬화 수정." />
+
+  <script type="application/ld+json">
+  { "@context": "https://schema.org", "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Apache Kafka", "item": "https://bk202503.github.io/contributions/apache-kafka.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #22533 · KAFKA-20657" }
+    ]}
+  </script>
+  <script type="application/ld+json">
+  { "@context": "https://schema.org", "@type": "TechArticle",
+    "headline": "Apache Kafka PR #22533 — KAFKA-20657: JsonConverter BYTES uses ByteBuffer remaining bytes",
+    "url": "https://bk202503.github.io/contributions/apache-kafka/22533.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Apache Kafka", "Kafka Connect", "JsonConverter", "ByteBuffer"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/"><span class="brand-name">Bill Kim</span><span class="brand-alt">김빌</span></a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown"><a href="/projects/korea-cafe.html">korea-cafe</a></div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/apache-kafka.html">Apache Kafka</a></li>
+          <li aria-current="page">PR #22533 · KAFKA-20657</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Apache Kafka · Kafka Connect · open</p>
+        <h1 class="title">PR #22533 — KAFKA-20657: JsonConverter BYTES uses ByteBuffer remaining bytes</h1>
+        <p class="lede">
+          Kafka Connect의 <code>JsonConverter</code>가 BYTES 값을 직렬화할 때 <code>ByteBuffer.array()</code>를 그대로 base64에 넣어 슬라이스 버퍼의 전체 backing array가 페이로드에 새어나가던 패턴을 <code>position()</code>/<code>remaining()</code> 기반으로 정리.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">
+            <span>GitHub PR</span><span class="pill-sub">apache/kafka#22533</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>증상</h2>
+        <p>
+          <code>JsonConverter</code>가 BYTES 필드를 base64로 직렬화할 때 슬라이스/duplicate된 버퍼가 들어오면 자기 영역 밖 데이터까지 base64에 포함돼 JSON 페이로드에 잘못된 길이의 바이트가 들어갔습니다. 컨슈머가 다시 base64를 풀면 잘못된 BYTES.
+        </p>
+        <h2>수정</h2>
+        <p>
+          BYTES 직렬화 경로를 <code>position()</code>/<code>remaining()</code> 기반으로 통일. KAFKA-20656/20658/20666과 같은 계열.
+        </p>
+        <h2>관련 PR (시리즈)</h2>
+        <ul class="contact-list">
+          <li><span class="k">This</span><a href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">PR #22533 · KAFKA-20657 (JsonConverter)</a></li>
+          <li><span class="k">Sibling</span><a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656 (Struct)</a></li>
+          <li><span class="k">Sibling</span><a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666 (Offset backing stores)</a></li>
+          <li><span class="k">Sibling</span><a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658 (Cast SMT)</a></li>
+          <li><span class="k">Project</span><a href="/contributions/apache-kafka.html">Apache Kafka 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+</body>
+</html>

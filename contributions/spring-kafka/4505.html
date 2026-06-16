@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Spring Kafka PR #4505 — GH-4504 Fix silent record loss (open) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 PR #4505 (GH-4504). 같은 파티션의 두 비동기 실패 레코드가 per-record seek 클로버링으로 r1이 silent 유실되는 회귀를 offset-order grouping으로 수정." />
+  <meta name="keywords" content="Spring Kafka PR 4505, GH-4504, Spring Kafka silent record loss, two failing records same partition, async retry seek clobbering, suspend KafkaListener data loss, FailedRecordTracker, handleAsyncFailure grouping, Kotlin coroutine Spring Kafka, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/spring-kafka/4505.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka/4505.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka/4505.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka/4505.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Spring Kafka PR #4505 — GH-4504 Fix silent record loss" />
+  <meta property="og:description" content="같은 파티션의 두 비동기 실패 레코드가 per-record seek 클로버링으로 r1이 silent 유실되는 회귀를 offset-order grouping으로 수정." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/spring-kafka/4505.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Spring Kafka PR #4505 — GH-4504 Fix silent record loss" />
+  <meta name="twitter:description" content="같은 파티션의 두 비동기 실패 레코드가 per-record seek 클로버링으로 r1이 silent 유실되는 회귀를 수정." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Kafka", "item": "https://bk202503.github.io/contributions/spring-kafka.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #4505 · GH-4504" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Kafka PR #4505 — GH-4504: Fix silent record loss with two failing async records on one partition",
+    "url": "https://bk202503.github.io/contributions/spring-kafka/4505.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Kafka", "Kotlin Coroutines", "Suspend KafkaListener", "DefaultErrorHandler", "Silent Record Loss"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/spring-kafka.html">Spring Kafka</a></li>
+          <li aria-current="page">PR #4505 · GH-4504</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Spring Kafka · open</p>
+        <h1 class="title">PR #4505 — GH-4504: Fix silent record loss with two failing async records on one partition</h1>
+        <p class="lede">
+          <code>suspend @KafkaListener</code> + <code>DefaultErrorHandler</code>에서 같은 파티션의 두 레코드가 같이 비동기 실패하면 earlier-offset 레코드(r1)가 한 번만 invoke되고 recoverer에 도달하지 못해 silent 유실되는 회귀(#4504). offset 오름차순 정렬 후 partition-in-retry set으로 head 외 레코드를 큐에서 drop하는 fix를 PR로 제출. PR #4469의 후속.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/spring-projects/spring-kafka/pull/4505" target="_blank" rel="noopener">
+            <span>GitHub PR</span><span class="pill-sub">spring-projects/spring-kafka#4505</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>증상</h2>
+        <p>
+          같은 파티션에 항상 실패하는 두 레코드 <code>r1</code>(offset 0), <code>r2</code>(offset 1)를 보낸 경우:
+        </p>
+        <ul>
+          <li><code>r1</code>은 1회만 delivered, retried 0회, recoverer 호출 안 됨 — <code>DeadLetterPublishingRecoverer</code>가 있어도 DLT 도달 못 함.</li>
+          <li><code>r2</code> recover 후 committed offset이 2로 advance — <code>r1</code> 영구 유실.</li>
+        </ul>
+
+        <h2>원인</h2>
+        <p>
+          <code>ListenerConsumer#handleAsyncFailure</code>가 <code>failedRecords</code>를 도착 순서로 하나씩 꺼내 <code>handleRemaining(rte, List.of(cRecord), ...)</code>를 호출. <code>SeekUtils.doSeeks</code>는 호출마다 자기 record의 partition·offset을 seek 맵에 등록 → 두 번째 호출의 <code>r2</code> seek이 첫 번째 호출의 <code>r1</code> seek을 덮어씀 → 다음 poll에서 컨슈머가 <code>r2.offset</code>으로 점프 → <code>r1</code> 건너뜀.
+        </p>
+
+        <h2>수정</h2>
+        <p>
+          <code>handleAsyncFailure</code>의 snapshot을 <code>(topic, partition, offset)</code>으로 정렬. 같은 파티션에서 <code>RecordInRetryException</code>이 throw된 직후, 같은 파티션의 더 높은 offset 레코드들은 이번 iter에서 큐 claim만 하고 처리는 skip — 등록된 seek이 다음 poll에서 자연 재배달하도록 맡김. <code>partitionsInRetry</code> set으로 iter 내 상태 추적. 재배달 시 fresh <code>FailedRecordTuple</code>이 콜백으로 다시 큐에 들어오기 때문에 re-queue 없이도 attempt 카운터가 정상 누적 — GH-4465의 no-re-queue 불변량 유지.
+        </p>
+
+        <h2>회귀 테스트</h2>
+        <p>
+          <code>EnableKafkaKotlinCoroutinesTests</code>에 2-record 시나리오 추가. <code>r1</code>·<code>r2</code> 둘 다 recoverer 도달 + committed offset이 두 레코드 너머 advance 검증. 픽스 없이는 recoverer latch가 timeout으로 fail, 픽스 후엔 통과.
+        </p>
+
+        <h2>스코프 및 트레이드오프</h2>
+        <p>
+          데이터 유실은 잡혔으나 head-of-line amplification (later-offset 레코드의 invocation 수가 <code>(N+2)/(n+1)</code> 배로 증가)은 본 PR 스코프에서 제외. 엄격한 per-record N+1을 원하면 <code>@RetryableTopic</code> 권장 — non-blocking retry 모델로 분리.
+        </p>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">PR</span><a href="https://github.com/spring-projects/spring-kafka/pull/4505" target="_blank" rel="noopener">spring-projects/spring-kafka#4505</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/spring-projects/spring-kafka/issues/4504" target="_blank" rel="noopener">spring-projects/spring-kafka#4504</a></li>
+          <li><span class="k">Prev</span><a href="/contributions/spring-kafka/4469.html">PR #4469 — GH-4465 (선행)</a></li>
+          <li><span class="k">Project</span><a href="/contributions/spring-kafka.html">Spring Kafka 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>

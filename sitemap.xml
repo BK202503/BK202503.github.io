@@ -48,12 +48,66 @@
   </url>
 
   <url>
+    <loc>https://bk202503.github.io/contributions/apache-kafka/22536.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22536.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22536.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22536.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/apache-kafka/22535.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22535.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22535.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22535.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/apache-kafka/22534.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22534.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22534.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22534.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/apache-kafka/22533.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22533.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22533.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22533.html"/>
+  </url>
+
+  <url>
     <loc>https://bk202503.github.io/contributions/spring-kafka.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka.html"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/spring-kafka/4469.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka/4469.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka/4469.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka/4469.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/spring-kafka/4505.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka/4505.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka/4505.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka/4505.html"/>
   </url>
 
   <url>
@@ -66,6 +120,15 @@
   </url>
 
   <url>
+    <loc>https://bk202503.github.io/contributions/spring-modulith/1714.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-modulith/1714.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-modulith/1714.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-modulith/1714.html"/>
+  </url>
+
+  <url>
     <loc>https://bk202503.github.io/contributions/spring-ai.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -75,12 +138,30 @@
   </url>
 
   <url>
+    <loc>https://bk202503.github.io/contributions/spring-ai/6317.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-ai/6317.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-ai/6317.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-ai/6317.html"/>
+  </url>
+
+  <url>
     <loc>https://bk202503.github.io/contributions/infinispan.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/infinispan.html"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/infinispan.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/infinispan.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/infinispan/17624.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/infinispan/17624.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/infinispan/17624.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/infinispan/17624.html"/>
   </url>
 
   <url>
