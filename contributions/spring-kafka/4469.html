@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Spring Kafka PR #4469 — GH-4465 Fix unbounded async retry re-delivery (merged) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 PR #4469 (GH-4465 머지). suspend @KafkaListener + DefaultErrorHandler에서 비동기 retry가 무한 재전송되던 회귀의 원인을 추적해 큐 중복을 제거." />
+  <meta name="keywords" content="Spring Kafka PR 4469, GH-4465, Spring Kafka unbounded async retry, suspend KafkaListener bug, DefaultErrorHandler RecordInRetryException, handleAsyncFailure failedRecords, Spring Kafka 4.1, Kotlin coroutine Kafka listener, 김빌, Bill Kim, BK202503, Spring Kafka contributor" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/spring-kafka/4469.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka/4469.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka/4469.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka/4469.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Spring Kafka PR #4469 — GH-4465 Fix unbounded async retry re-delivery" />
+  <meta property="og:description" content="suspend @KafkaListener + DefaultErrorHandler에서 비동기 retry가 무한 재전송되던 회귀의 원인을 추적해 큐 중복을 제거. 머지됨." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/spring-kafka/4469.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Spring Kafka PR #4469 — GH-4465 Fix unbounded async retry re-delivery" />
+  <meta name="twitter:description" content="suspend @KafkaListener + DefaultErrorHandler 비동기 retry 무한 재전송 회귀 수정. 머지됨." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Kafka", "item": "https://bk202503.github.io/contributions/spring-kafka.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #4469 · GH-4465" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Kafka PR #4469 — GH-4465: Fix unbounded async retry re-delivery (merged)",
+    "url": "https://bk202503.github.io/contributions/spring-kafka/4469.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Kafka", "Kotlin Coroutines", "Suspend KafkaListener", "DefaultErrorHandler", "RecordInRetryException"],
+    "keywords": "Spring Kafka, suspend @KafkaListener, DefaultErrorHandler, async retry, GH-4465, PR #4469"
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/spring-kafka.html">Spring Kafka</a></li>
+          <li aria-current="page">PR #4469 · GH-4465</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Spring Kafka · merged · 2026-06-08</p>
+        <h1 class="title">PR #4469 — GH-4465: Fix unbounded async retry re-delivery</h1>
+        <p class="lede">
+          Spring Kafka 4.1 시리즈에서 <code>suspend @KafkaListener</code> + <code>DefaultErrorHandler</code> 조합으로 항상 실패하는 레코드가 무한히 재전송되는 회귀를 추적해 원인이 되는 큐 중복을 제거했습니다. 회귀 테스트와 함께 머지.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/spring-projects/spring-kafka/pull/4469" target="_blank" rel="noopener">
+            <span>GitHub PR</span><span class="pill-sub">spring-projects/spring-kafka#4469</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>증상</h2>
+        <p>
+          <code>suspend</code> 함수 형태의 <code>@KafkaListener</code>가 항상 예외를 던지고, 컨테이너에 <code>DefaultErrorHandler(FixedBackOff(N, n))</code>가 설정된 상태에서 같은 레코드가 정해진 attempt 횟수를 넘어 무한히 재배달됐습니다. <code>RecordInRetryException</code>이 던져진 시점에 <code>ListenerConsumer#handleAsyncFailure</code>가 <code>failedRecords</code> 큐에 같은 튜플을 다시 넣고 있었던 것이 원인.
+        </p>
+
+        <h2>원인 흐름</h2>
+        <p>
+          비동기 리스너의 실패가 <code>seekAfterHandling=true</code>인 <code>CommonErrorHandler</code>로 전달되도록 바뀐 변경(#4254) 이후, seek-and-retry 흐름은 정상이지만 <code>handleAsyncFailure</code>가 catch한 <code>RecordInRetryException</code>에 대해 동일한 <code>FailedRecordTuple</code>을 큐의 끝으로 다시 push 하는 경로가 남아 있었습니다. 결과:
+        </p>
+        <ul>
+          <li>같은 레코드가 매 루프마다 두 번 처리 — 큐에서 한 번, seek-induced re-delivery로 한 번.</li>
+          <li><code>FailedRecordTracker</code> attempt 카운터가 인플레이션돼 백오프 소진 시점이 어긋남.</li>
+          <li>recovery가 tracker entry를 비워도 큐에 남은 중복이 새 retry 사이클을 시작 → 무한 재배달.</li>
+        </ul>
+
+        <h2>수정</h2>
+        <p>
+          <code>RecordInRetryException</code> catch 블록에서 <code>this.failedRecords.addLast(failedRecord)</code> 한 줄을 제거. 에러 핸들러가 이미 컨슈머를 실패 offset으로 seek 했고, <code>FailedRecordTracker</code> 엔트리는 <code>(topic, partition, offset)</code>으로 키잉돼 루프 반복에 걸쳐 살아남기 때문에 attempt 카운터는 자연스러운 재배달 위에서 그대로 누적됩니다.
+        </p>
+
+        <h2>회귀 테스트</h2>
+        <p>
+          <code>EnableKafkaKotlinCoroutinesTests</code>에 always-failing suspend 리스너 + <code>DefaultErrorHandler(FixedBackOff(100L, 2L))</code> 시나리오 추가. 리스너 호출이 정확히 <code>3</code>회 (<code>initial + 2 retries</code>) 일어나는지 확인. 픽스 없이는 <code>expected: 3 but was: 6</code>으로 실패, 픽스 후엔 통과.
+        </p>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">PR</span><a href="https://github.com/spring-projects/spring-kafka/pull/4469" target="_blank" rel="noopener">spring-projects/spring-kafka#4469</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/spring-projects/spring-kafka/issues/4465" target="_blank" rel="noopener">spring-projects/spring-kafka#4465</a></li>
+          <li><span class="k">Project</span><a href="/contributions/spring-kafka.html">Spring Kafka 기여 개요</a></li>
+          <li><span class="k">Next</span><a href="/contributions/spring-kafka/4505.html">PR #4505 — GH-4504 (후속)</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
