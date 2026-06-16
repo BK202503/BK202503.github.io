@@ -101,6 +101,22 @@ a:hover { text-decoration: underline; }
   z-index: 20;
   box-shadow: 0 12px 28px rgba(0,0,0,0.45);
 }
+/* Invisible bridge that keeps the dropdown open while the cursor
+   travels across the visual gap between the parent link and the menu. */
+.nav-group .dropdown::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+/* Hover area extends below the parent link so the cursor never leaves
+   .nav-group while moving down toward the dropdown. */
+.nav-group > a {
+  display: inline-block;
+  padding: 8px 0;
+}
 .nav-group:hover .dropdown,
 .nav-group:focus-within .dropdown,
 .nav-group.open .dropdown { display: block; }
