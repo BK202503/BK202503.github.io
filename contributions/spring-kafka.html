@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Spring Kafka 기여 — suspend listener async retry 버그 수정 | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 업스트림 패치. suspend @KafkaListener + DefaultErrorHandler 조합에서 비동기 retry가 무한 재전송되던 회귀를 추적해 큐 중복 제거, 회귀 테스트와 함께 머지." />
+  <meta name="keywords" content="Spring Kafka contribution, Spring Kafka suspend KafkaListener, DefaultErrorHandler async retry, Spring Kafka unbounded re-delivery, GH-4465, GH-4504, Spring Kafka 4.1, suspend listener retry bug, Kotlin coroutine Spring Kafka, 김빌, Bill Kim, BK202503, Spring Kafka contributor" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/spring-kafka.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Spring Kafka 기여 — suspend listener async retry 버그 수정" />
+  <meta property="og:description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 업스트림 패치. suspend @KafkaListener의 비동기 retry 무한 재전송 회귀 수정." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/spring-kafka.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Spring Kafka 기여 — suspend listener async retry 버그 수정" />
+  <meta name="twitter:description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 업스트림 패치." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Kafka" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Kafka 기여 — suspend listener async retry 버그 수정",
+    "url": "https://bk202503.github.io/contributions/spring-kafka.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Kafka", "Kotlin Coroutines", "Suspend KafkaListener", "DefaultErrorHandler"],
+    "keywords": "Spring Kafka, suspend @KafkaListener, DefaultErrorHandler, async retry, GH-4465, GH-4504"
+  }
+  </script>
+
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="../">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <a href="../#contributions">Contributions</a>
+        <a href="../#libraries">Libraries</a>
+        <a href="../#projects">Projects</a>
+        <a href="../#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="../">Home</a></li>
+          <li><a href="../#contributions">Contributions</a></li>
+          <li aria-current="page">Spring Kafka</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Contribution · Spring Kafka · Kotlin Coroutines</p>
+        <h1 class="title">Spring Kafka — suspend listener async retry 버그 수정</h1>
+        <p class="lede">
+          <code>suspend @KafkaListener</code> + <code>DefaultErrorHandler</code> 조합에서 비동기 retry가 무한 재전송되는 회귀를 추적해 원인이 되는 큐 중복을 제거했습니다. 버그를 재현하는 회귀 테스트와 함께 머지됐습니다.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>문제 — GH-4465</h2>
+        <p>
+          Spring Kafka 4.1 시리즈 직전에 머지된 <code>#4254</code>의 변경으로 비동기 리스너의 실패가 <code>seekAfterHandling=true</code>인 <code>CommonErrorHandler</code>(예: <code>DefaultErrorHandler</code>)로 전달되도록 바뀌었습니다. 정상적으로는 seek 후 다음 poll에서 재배달되어야 하는데, <code>ListenerConsumer#handleAsyncFailure</code>가 <code>RecordInRetryException</code>을 받았을 때 <code>failedRecords</code> 큐에 다시 넣고 있었습니다. 결과적으로 같은 레코드가 매 루프마다 두 번 처리(큐에서 한 번, seek-induced re-delivery로 한 번)되고, 백오프가 소진되어 tracker entry가 recovery되더라도 큐에 남은 중복이 새 retry 사이클을 시작해 무한 재배달이 발생했습니다.
+        </p>
+
+        <h2>수정</h2>
+        <p>
+          <code>RecordInRetryException</code> catch에서 <code>failedRecords.addLast(failedRecord)</code> re-queue를 제거했습니다. 에러 핸들러가 이미 컨슈머를 실패 offset으로 seek 했고, <code>FailedRecordTracker</code> 엔트리는 (topic, partition, offset)으로 키잉돼 루프 반복에 걸쳐 살아남기 때문에 attempt 카운터는 자연스러운 재배달 위에서 그대로 누적됩니다.
+        </p>
+        <p>
+          회귀 테스트는 <code>EnableKafkaKotlinCoroutinesTests</code>에 추가했습니다. always-failing suspend 리스너에 <code>DefaultErrorHandler(FixedBackOff(100L, 2L))</code>를 적용하고 리스너 호출이 정확히 3회만 일어나는지 확인. 픽스 없이는 <code>expected: 3 but was: 6</code>으로 실패하고, 픽스 후에는 통과.
+        </p>
+
+        <h2>후속 — GH-4504</h2>
+        <p>
+          머지 후, 같은 reporter가 "두 개 이상의 레코드가 같은 파티션에서 실패하면 r1이 silent 유실되고 r2만 retry/recover된다"는 후속 이슈를 신고했습니다. 같은 파티션의 async failure들을 offset 순서대로 정렬해 에러 핸들러에 넘기는 fix를 PR로 제출했습니다 (PR #4505).
+        </p>
+
+        <h2>PR 목록</h2>
+        <ul class="pr-list">
+          <li>
+            <a href="https://github.com/spring-projects/spring-kafka/pull/4469" target="_blank" rel="noopener">
+              <span class="pr-id">PR #4469</span>
+              <span class="pr-title">GH-4465: Fix unbounded async retry re-delivery</span>
+            </a>
+            <span class="pr-state state-merged">merged</span>
+          </li>
+          <li>
+            <a href="https://github.com/spring-projects/spring-kafka/pull/4505" target="_blank" rel="noopener">
+              <span class="pr-id">PR #4505</span>
+              <span class="pr-title">GH-4504: Fix silent record loss with two failing async records on one partition</span>
+            </a>
+            <span class="pr-state state-open">open</span>
+          </li>
+        </ul>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">Project</span><a href="https://github.com/spring-projects/spring-kafka" target="_blank" rel="noopener">spring-projects/spring-kafka</a></li>
+          <li><span class="k">Author</span><a href="https://github.com/BK202503" target="_blank" rel="noopener">github.com/BK202503</a></li>
+          <li><span class="k">Other</span><a href="apache-kafka.html">Apache Kafka — ByteBuffer remaining-bytes 시리즈</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>

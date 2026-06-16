@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>bk-spring-idempotent — Stripe-style @Idempotent for Spring Boot | 김빌 (Bill Kim)</title>
+  <meta name="description" content="bk-spring-idempotent: 김빌(Bill Kim)이 직접 만든 Spring Boot용 Stripe-style @Idempotent 라이브러리. Kotlin, coroutine-native, JDBC/Redis 플러그러블 스토리지." />
+  <meta name="keywords" content="bk-spring-idempotent, spring-idempotent-kt, Spring Boot idempotent, Spring Boot 멱등성, Idempotency-Key, Stripe idempotent, @Idempotent annotation, Spring Boot idempotency starter, Kotlin idempotent, coroutine idempotent, 김빌, Bill Kim, BK202503, devbilllab, Spring Boot 3, Kotlin library" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/libraries/bk-spring-idempotent.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/libraries/bk-spring-idempotent.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/libraries/bk-spring-idempotent.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/libraries/bk-spring-idempotent.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="bk-spring-idempotent — Stripe-style @Idempotent for Spring Boot" />
+  <meta property="og:description" content="Stripe-style @Idempotent for Spring Boot. Kotlin, coroutine-native, JDBC/Redis 플러그러블 스토리지." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/libraries/bk-spring-idempotent.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="bk-spring-idempotent — Stripe-style @Idempotent for Spring Boot" />
+  <meta name="twitter:description" content="Stripe-style @Idempotent for Spring Boot. Kotlin, coroutine-native, JDBC/Redis 플러그러블 스토리지." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Libraries", "item": "https://bk202503.github.io/#libraries" },
+      { "@type": "ListItem", "position": 3, "name": "bk-spring-idempotent" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "@id": "https://bk202503.github.io/libraries/bk-spring-idempotent.html#software",
+    "name": "bk-spring-idempotent",
+    "alternateName": ["spring-idempotent-kt", "Spring Boot @Idempotent"],
+    "description": "Stripe-style @Idempotent annotation for Spring Boot. Kotlin-first, coroutine-native. One annotation gives production-ready idempotency-key handling on any Spring MVC endpoint: cached replay on retry, 422 on body mismatch, 409 on in-flight collision. Ships JDBC + in-memory storage; pluggable IdempotencyStore SPI for Redis / Mongo.",
+    "programmingLanguage": "Kotlin",
+    "codeRepository": "https://github.com/BK202503/bk-spring-idempotent",
+    "url": "https://github.com/BK202503/bk-spring-idempotent",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "runtimePlatform": ["JVM", "Spring Boot 3"],
+    "keywords": ["Spring Boot", "Idempotency", "Idempotency-Key", "Kotlin", "Coroutines", "Stripe-style", "@Idempotent"],
+    "author": { "@id": "https://bk202503.github.io/#person" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "bk-spring-idempotent — Stripe-style @Idempotent for Spring Boot",
+    "url": "https://bk202503.github.io/libraries/bk-spring-idempotent.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "mainEntity": { "@id": "https://bk202503.github.io/libraries/bk-spring-idempotent.html#software" }
+  }
+  </script>
+
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="../">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <a href="../#contributions">Contributions</a>
+        <a href="../#libraries">Libraries</a>
+        <a href="../#projects">Projects</a>
+        <a href="../#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="../">Home</a></li>
+          <li><a href="../#libraries">Libraries</a></li>
+          <li aria-current="page">bk-spring-idempotent</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Library · Kotlin · Spring Boot</p>
+        <h1 class="title">bk-spring-idempotent</h1>
+        <p class="lede">
+          Spring Boot용 Stripe 스타일 <code>@Idempotent</code> 어노테이션. 하나의 어노테이션으로 Spring MVC 엔드포인트에 프로덕션 수준의 Idempotency-Key 처리를 붙입니다. 김빌(Bill Kim)이 직접 설계하고 메인테이닝하는 Kotlin/coroutine-native 오픈소스 라이브러리입니다.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/BK202503/bk-spring-idempotent" target="_blank" rel="noopener">
+            <span>GitHub</span><span class="pill-sub">BK202503/bk-spring-idempotent</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>한 줄 요약</h2>
+        <p>
+          <code>@Idempotent</code> 한 줄로 끝나는 API. <code>Idempotency-Key</code> 헤더만 보면, 같은 키 + 같은 본문이면 캐시된 응답을 그대로 돌려주고, 같은 키 + 다른 본문이면 <code>422 Unprocessable Entity</code>, 키 없으면 일반 엔드포인트처럼 동작합니다.
+        </p>
+
+        <pre><code>@RestController
+class PaymentsController(private val payments: PaymentService) {
+
+    @PostMapping("/charges")
+    @Idempotent                                       // ← that's the whole API
+    fun charge(@RequestBody req: ChargeRequest): ChargeResponse =
+        payments.charge(req)
+}</code></pre>
+
+        <h2>왜 만들었나</h2>
+        <p>
+          모든 mutating HTTP API는 Idempotency-Key가 필요합니다. 없으면 네트워크 재시도가 결제를 두 번 일으키고, 중복 발송하고, 도메인 상태와 로그가 어긋납니다. Kotlin/Spring Boot 생태계에는 다음 선택지가 있었습니다:
+        </p>
+        <ul>
+          <li><strong>직접 만들기</strong> — 첫 버전은 50줄, "정확한" 버전은 500줄. 동시성 race, body 해시 mismatch, 응답 재생, TTL eviction, 분산 스토리지까지 다 신경써야 합니다.</li>
+          <li><strong>Stripe-mason 같은 자바 라이브러리</strong> — 존재하지만 자바 우선이고 WebFlux와 잘 안 맞습니다. <code>suspend</code> 친화적이거나 Spring Boot 3 autoconfigure starter를 같이 주는 건 없습니다.</li>
+          <li><strong>API 게이트웨이 플러그인</strong> — Kong, Tyk 등. 운영 부담이 크고 인-프로세스 테스트엔 도움 안 되며, 응답 본문 재생도 못합니다.</li>
+        </ul>
+        <p>
+          <code>bk-spring-idempotent</code>는 작은 인-프로세스 중간 옵션입니다. 어노테이션 하나, autoconfigure, sealed <code>Outcome</code> 타입으로 컴파일 단계에서 Fresh / Replayed / Concurrent / BodyMismatch 처리를 강제, Micrometer 메트릭 기본 노출, suspend-네이티브 코어 + MVC 인터셉터 브릿지.
+        </p>
+
+        <h2>주요 기능</h2>
+        <ul>
+          <li>어노테이션 하나. XML 없음, 수동 인터셉터 와이어링 없음.</li>
+          <li><code>IdempotencyStore</code> SPI — JDBC(H2/Postgres 자동 감지), in-memory 기본 제공. Redis/Mongo는 SPI 구현해서 붙임.</li>
+          <li>Sealed <code>Outcome</code> 타입 — 컴파일러가 Fresh / Replayed / Concurrent / BodyMismatch 분기를 강제.</li>
+          <li>Spring Boot autoconfigure + Micrometer 메트릭.</li>
+          <li>Coroutine-네이티브 코어. 전 구간 suspend, MVC 인터셉터는 <code>runBlocking</code>으로 브릿지 — 전통적 blocking 컨트롤러에서도 동작.</li>
+        </ul>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">GitHub</span><a href="https://github.com/BK202503/bk-spring-idempotent" target="_blank" rel="noopener">github.com/BK202503/bk-spring-idempotent</a></li>
+          <li><span class="k">Pair</span><a href="bk-spring-saga.html">bk-spring-saga — 김빌의 Saga 오케스트레이터</a></li>
+          <li><span class="k">Pair</span><a href="bk-spring-outbox.html">bk-spring-outbox — 김빌의 Transactional Outbox</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>

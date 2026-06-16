@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>bk-spring-outbox — Transactional Outbox for Spring Boot | 김빌 (Bill Kim)</title>
+  <meta name="description" content="bk-spring-outbox: 김빌(Bill Kim)이 만든 Spring Boot용 Transactional Outbox. Kotlin-first, coroutine-native, autoconfigured. DB write + 이벤트 발행을 한 트랜잭션으로." />
+  <meta name="keywords" content="bk-spring-outbox, spring-outbox-kt, Transactional Outbox Spring Boot, Outbox pattern Kotlin, Spring Boot Kafka outbox, dual write problem, microservice event outbox, Kotlin outbox starter, 김빌, Bill Kim, BK202503, devbilllab" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/libraries/bk-spring-outbox.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/libraries/bk-spring-outbox.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/libraries/bk-spring-outbox.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/libraries/bk-spring-outbox.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="bk-spring-outbox — Transactional Outbox for Spring Boot" />
+  <meta property="og:description" content="Transactional Outbox for Spring Boot. Kotlin-first, coroutine-native, autoconfigured." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/libraries/bk-spring-outbox.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="bk-spring-outbox — Transactional Outbox for Spring Boot" />
+  <meta name="twitter:description" content="Transactional Outbox for Spring Boot. Kotlin-first, coroutine-native, autoconfigured." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Libraries", "item": "https://bk202503.github.io/#libraries" },
+      { "@type": "ListItem", "position": 3, "name": "bk-spring-outbox" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "@id": "https://bk202503.github.io/libraries/bk-spring-outbox.html#software",
+    "name": "bk-spring-outbox",
+    "alternateName": ["spring-outbox-kt", "Spring Boot Transactional Outbox"],
+    "description": "Transactional Outbox for Spring Boot. Kotlin-first, coroutine-native, autoconfigured. Makes 'write to DB + publish event' atomic by persisting the event into a local table inside the same DB transaction, then forwarding to Kafka via a background coroutine relay. Pairs with bk-spring-saga.",
+    "programmingLanguage": "Kotlin",
+    "codeRepository": "https://github.com/BK202503/bk-spring-outbox",
+    "url": "https://github.com/BK202503/bk-spring-outbox",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "runtimePlatform": ["JVM", "Spring Boot 3"],
+    "keywords": ["Spring Boot", "Outbox", "Transactional Outbox", "Kafka", "Dual Write", "Kotlin", "Coroutines"],
+    "author": { "@id": "https://bk202503.github.io/#person" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "bk-spring-outbox — Transactional Outbox for Spring Boot",
+    "url": "https://bk202503.github.io/libraries/bk-spring-outbox.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "mainEntity": { "@id": "https://bk202503.github.io/libraries/bk-spring-outbox.html#software" }
+  }
+  </script>
+
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="../">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <a href="../#contributions">Contributions</a>
+        <a href="../#libraries">Libraries</a>
+        <a href="../#projects">Projects</a>
+        <a href="../#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="../">Home</a></li>
+          <li><a href="../#libraries">Libraries</a></li>
+          <li aria-current="page">bk-spring-outbox</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Library · Kotlin · Spring Boot · Outbox</p>
+        <h1 class="title">bk-spring-outbox</h1>
+        <p class="lede">
+          Spring Boot용 Transactional Outbox. Kotlin-first, coroutine-native, autoconfigured. "DB에 쓰고 + 이벤트 발행"을 같은 트랜잭션 안에서 원자적으로 처리합니다. 모든 마이크로서비스 튜토리얼이 추천하지만 보일러플레이트가 끔찍해서 아무도 안 깔던 그 패턴, 가장 작은 형태로 정리했습니다. 김빌(Bill Kim)이 직접 설계하고 메인테이닝합니다.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/BK202503/bk-spring-outbox" target="_blank" rel="noopener">
+            <span>GitHub</span><span class="pill-sub">BK202503/bk-spring-outbox</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>한 줄 요약</h2>
+        <p>
+          같은 <code>@Transactional</code> 안에서 도메인 write + <code>outbox.publish(...)</code> 한 번. 백그라운드 코루틴 relay가 <code>outbox_events</code> 테이블을 드레인해서 Kafka(또는 직접 정의한 publisher)로 전달.
+        </p>
+
+        <pre><code>@RestController
+class OrderController(
+    private val orders: JdbcTemplate,
+    private val outbox: OutboxPublisher,
+) {
+
+    @PostMapping("/orders")
+    @Transactional                                       // ← same TX wraps both writes
+    fun createOrder(@RequestBody req: CreateOrderRequest): OrderResponse {
+        val id = "o_${UUID.randomUUID()}"
+        orders.update("INSERT INTO orders (id, user_id, sku, qty) VALUES (?, ?, ?, ?)",
+                      id, req.userId, req.sku, req.quantity)
+
+        outbox.publish(                                  // ← persists in the SAME TX
+            topic = "orders",
+            aggregateType = "Order",
+            aggregateId = id,
+            eventType = "OrderCreated",
+            payload = mapper.writeValueAsBytes(OrderCreated(id, req)),
+        )
+
+        return OrderResponse(id, "CREATED")
+    }
+}</code></pre>
+
+        <p>
+          커밋 후 백그라운드 relay가 <code>outbox_events</code>를 드레인해서 Kafka(또는 사용자 정의 publisher)로 전달합니다. 애플리케이션 관점에선 exactly-once, 브로커 관점에선 at-least-once.
+        </p>
+
+        <h2>왜 만들었나</h2>
+        <p>
+          "Dual write" 문제는 모든 마이크로서비스 팀의 입문 보스입니다. 주문을 저장하고 <code>OrderCreated</code> 이벤트를 발행하고 싶을 때, 둘 다 애플리케이션에서 (<code>save()</code> → <code>producer.send()</code>) 하면 그중 하나는 결국 실패하고 도메인 상태와 이벤트 로그가 어긋납니다. 한 시간 안에 누군가 reconciliation 잡을 짜고 있습니다.
+        </p>
+        <p>
+          Transactional Outbox 패턴은 이벤트를 같은 DB 트랜잭션 안에서 로컬 테이블에 기록해 이 문제를 풀어냅니다. 백그라운드 워커(relay)가 테이블을 읽어 브로커로 forward합니다.
+        </p>
+        <p>
+          Kotlin/Spring 생태계에는 옵션이 있지만 대부분 자바 우선(<code>Eventuate Tram</code>, <code>Debezium</code>)이거나 heavyweight 런타임/CDC 파이프라인을 요구합니다. <code>bk-spring-outbox</code>는 인-프로세스 가장 작은 중간 옵션 — 주입할 <code>OutboxPublisher</code>, JDBC 테이블, 폴링/발행하는 코루틴 워커.
+        </p>
+
+        <h2>주요 기능</h2>
+        <ul>
+          <li><code>OutboxStore</code> → 기본 JDBC. 시작 시 <code>outbox_events</code> 생성. H2 / PostgreSQL 자동 감지.</li>
+          <li><code>OutboxPublisher</code> → 서비스에 주입.</li>
+          <li><code>OutboxRelay</code> → 코루틴 기반 폴링 워커. <code>ApplicationReadyEvent</code>에서 시작.</li>
+          <li>Kafka publisher 옵션 모듈 — <code>outbox-publisher-kafka</code> starter 추가하면 Kafka로 forward.</li>
+          <li><a href="bk-spring-saga.html">bk-spring-saga</a>와 짝으로 동작.</li>
+        </ul>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">GitHub</span><a href="https://github.com/BK202503/bk-spring-outbox" target="_blank" rel="noopener">github.com/BK202503/bk-spring-outbox</a></li>
+          <li><span class="k">Pair</span><a href="bk-spring-saga.html">bk-spring-saga — Saga 오케스트레이터와 짝으로 동작</a></li>
+          <li><span class="k">Pair</span><a href="bk-spring-idempotent.html">bk-spring-idempotent — Stripe-style @Idempotent</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>
