@@ -6,7 +6,7 @@
 
   <title>김빌 (Bill Kim) | Open Source Developer</title>
   <meta name="description" content="김빌(Bill Kim)의 오픈소스 활동 페이지. Apache Kafka, Spring AI, Spring Kafka, Kotlin, Distributed Systems." />
-  <meta name="keywords" content="김빌, 빌김, Bill Kim, billkim, BK202503, devbilllab, 김빌 블로그, 김빌 기술 블로그, 김빌 개발자, 김빌 깃허브, 김빌 오픈소스, Bill Kim OSS, Bill Kim tech blog, 오픈소스, OSS, open source, 오픈소스 컨트리뷰터, 오픈소스 개발자, 기술 블로그, tech blog, 티스토리, tistory, devbilllab tistory, Apache Kafka, Kafka Connect, Spring Kafka, Spring Modulith, Spring AI, Infinispan, Kotlin, Spring Boot, Saga, Idempotent, Outbox, bk-spring-idempotent, bk-spring-saga, bk-spring-outbox, spring-idempotent-kt, spring-saga-kt, spring-outbox-kt, suspend KafkaListener, DefaultErrorHandler, GH-4465, GH-4504, KAFKA-20656, KAFKA-20657, KAFKA-20658, KAFKA-20666, JpaEventPublicationAdapter, korea-cafe" />
+  <meta name="keywords" content="김빌, 빌김, Bill Kim, billkim, BK202503, devbilllab, 김빌 블로그, 김빌 기술 블로그, 김빌 개발자, 김빌 깃허브, 김빌 오픈소스, Bill Kim OSS, Bill Kim tech blog, 오픈소스, OSS, open source, 오픈소스 컨트리뷰터, 오픈소스 개발자, 기술 블로그, tech blog, 티스토리, tistory, devbilllab tistory, Apache Kafka, Kafka Connect, Spring Kafka, Spring Modulith, Spring AI, Infinispan, MapStruct, Kotlin, Spring Boot, Saga, Idempotent, Outbox, bk-spring-idempotent, bk-spring-saga, bk-spring-outbox, spring-idempotent-kt, spring-saga-kt, spring-outbox-kt, suspend KafkaListener, DefaultErrorHandler, GH-4465, GH-4504, KAFKA-20656, KAFKA-20657, KAFKA-20658, KAFKA-20666, JpaEventPublicationAdapter, DefaultAccessorNamingStrategy, korea-cafe" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
@@ -66,6 +66,7 @@
         "Spring Modulith",
         "Spring AI",
         "Infinispan",
+        "MapStruct",
         "Kotlin",
         "Distributed Transactions",
         "Idempotency",
@@ -102,6 +103,7 @@
       { "@type": "WebPage", "name": "Spring Modulith 기여", "url": "https://bk202503.github.io/contributions/spring-modulith.html" },
       { "@type": "WebPage", "name": "Spring AI 기여", "url": "https://bk202503.github.io/contributions/spring-ai.html" },
       { "@type": "WebPage", "name": "Infinispan 기여", "url": "https://bk202503.github.io/contributions/infinispan.html" },
+      { "@type": "WebPage", "name": "MapStruct 기여", "url": "https://bk202503.github.io/contributions/mapstruct.html" },
       { "@type": "WebPage", "name": "korea-cafe", "url": "https://bk202503.github.io/projects/korea-cafe.html" }
     ]
   }
@@ -148,6 +150,9 @@
             <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
             <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
             <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
           </div>
         </div>
         <div class="nav-group">
@@ -354,6 +359,28 @@
                 <a href="https://github.com/infinispan/infinispan/pull/17624" target="_blank" rel="noopener">
                   <span class="pr-id">PR #17624</span>
                   <span class="pr-title">[#14185] Add GitHub workflow for PMD Copy/Paste Detector</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/mapstruct.html">MapStruct</a></h3>
+              <span class="badge">annotation processor</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Lombok @Builder 스타일 fluent setter의 속성명이 JavaBean accessor와 어긋나, 두 번째 글자가 대문자인 필드의 매핑이 누락되던 #4000 버그를 DefaultAccessorNamingStrategy에서 수정했습니다. 회귀 테스트를 함께 보냈습니다."
+               data-en="Fixed #4000 in MapStruct — Lombok @Builder-style fluent setters whose second character is upper case were resolved to a different property name than the JavaBean accessor side, so the corresponding fields were silently skipped. Aligned the fluent-setter branch in DefaultAccessorNamingStrategy with the JavaBean decapitalize rule and shipped a regression test.">
+              Lombok @Builder 스타일 fluent setter의 속성명이 JavaBean accessor와 어긋나, 두 번째 글자가 대문자인 필드의 매핑이 누락되던 #4000 버그를 DefaultAccessorNamingStrategy에서 수정했습니다. 회귀 테스트를 함께 보냈습니다.
+            </p>
+            <p class="group-more"><a href="contributions/mapstruct.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/mapstruct/mapstruct/pull/4074" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #4074</span>
+                  <span class="pr-title">#4000 Fix property name resolution for fluent setters whose second character is upper case</span>
                 </a>
                 <span class="pr-state state-open">open</span>
               </li>
