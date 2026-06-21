@@ -12,6 +12,15 @@
   </url>
 
   <url>
+    <loc>https://bk202503.github.io/profile/billkim.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/profile/billkim.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/profile/billkim.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/profile/billkim.html"/>
+  </url>
+
+  <url>
     <loc>https://bk202503.github.io/libraries/bk-spring-idempotent.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
@@ -162,6 +171,24 @@
     <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/infinispan/17624.html"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/infinispan/17624.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/infinispan/17624.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/mapstruct.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/mapstruct.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/mapstruct.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/mapstruct.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/mapstruct/4074.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/mapstruct/4074.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/mapstruct/4074.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/mapstruct/4074.html"/>
   </url>
 
   <url>
