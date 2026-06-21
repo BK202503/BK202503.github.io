@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>MapStruct PR #4074 — #4000 Fix property name resolution for fluent setters | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 MapStruct에 보낸 PR #4074 (#4000). Lombok @Builder fluent setter의 속성명을 JavaBean Introspector decapitalize 규칙과 정렬해 두 번째 글자가 대문자인 필드의 매핑 누락을 수정." />
+  <meta name="keywords" content="MapStruct PR 4074, MapStruct issue 4000, DefaultAccessorNamingStrategy getPropertyName, fluent setter MapStruct, Lombok Builder property mismatch, JavaBean decapitalize second char upper, xNameField property, 김빌, Bill Kim, BK202503, MapStruct contributor" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/mapstruct/4074.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/mapstruct/4074.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/mapstruct/4074.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/mapstruct/4074.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="MapStruct PR #4074 — #4000 Fix property name resolution for fluent setters" />
+  <meta property="og:description" content="Lombok @Builder fluent setter의 속성명을 JavaBean Introspector decapitalize 규칙과 정렬해 두 번째 글자가 대문자인 필드의 매핑 누락 수정." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/mapstruct/4074.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="MapStruct PR #4074 — #4000 Fix property name resolution for fluent setters" />
+  <meta name="twitter:description" content="fluent setter 속성명 일치 버그 수정." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "MapStruct", "item": "https://bk202503.github.io/contributions/mapstruct.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #4074 · #4000" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "MapStruct PR #4074 — #4000 Fix property name resolution for fluent setters whose second character is upper case",
+    "url": "https://bk202503.github.io/contributions/mapstruct/4074.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["MapStruct", "DefaultAccessorNamingStrategy", "Lombok Builder", "JavaBean Introspector", "Annotation Processor"],
+    "keywords": "MapStruct, DefaultAccessorNamingStrategy, fluent setter, Lombok Builder, JavaBean decapitalize, PR #4074, #4000"
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/mapstruct.html">MapStruct</a></li>
+          <li aria-current="page">PR #4074 · #4000</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">MapStruct · open · 2026-06-21</p>
+        <h1 class="title">PR #4074 — #4000: Fix property name resolution for fluent setters whose second character is upper case</h1>
+        <p class="lede">
+          MapStruct가 Lombok <code>@Builder</code> 스타일 fluent setter의 속성명을 JavaBean accessor와 다르게 해석해, 두 번째 글자가 대문자인 필드가 매핑에서 조용히 누락되던 버그를 <code>DefaultAccessorNamingStrategy</code> 한 분기 수정으로 해결했습니다.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/mapstruct/mapstruct/pull/4074" target="_blank" rel="noopener">
+            <span>GitHub PR</span><span class="pill-sub">mapstruct/mapstruct#4074</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>증상</h2>
+        <p>
+          소스에 <code>private String xNameField</code>가 있고 타겟에 Lombok <code>@Builder</code>가 자동 생성하는 <code>Builder.xNameField(...)</code> fluent setter가 있는 단순 매핑에서, 해당 필드가 결과 코드에 아예 누락됐습니다. <code>@Mapping(target = "xNameField", source = "xNameField")</code>를 명시하면 오히려 <q>did you mean "XNameField"?</q> 오류가 떴고, <code>source = "XNameField"</code>로 대문자를 박으면 정상 동작하는 모순 상태.
+        </p>
+
+        <h2>원인</h2>
+        <p>
+          <code>DefaultAccessorNamingStrategy#getPropertyName(...)</code>은 메서드 종류에 따라 속성명을 두 갈래로 추출합니다.
+        </p>
+        <ul>
+          <li>JavaBean accessor (<code>getXNameField()</code> 등): <code>methodName.substring(3)</code> → <code>IntrospectorUtils.decapitalize(...)</code>. <code>XNameField</code>는 두 글자 모두 대문자라 그대로 유지 → 속성명 <code>XNameField</code>.</li>
+          <li>fluent setter (<code>xNameField(...)</code>) 분기: 메서드명을 raw 그대로 반환 → 속성명 <code>xNameField</code>.</li>
+        </ul>
+        <p>
+          결과적으로 같은 필드인데도 소스 쪽 속성명(<code>XNameField</code>)과 타겟 builder 쪽 속성명(<code>xNameField</code>)이 어긋나 자동 매칭이 실패하고 필드가 silent하게 누락됐습니다.
+        </p>
+
+        <h2>수정</h2>
+        <p>
+          fluent setter 분기에서도 JavaBean 쪽과 같은 decapitalize 규칙을 적용. <code>xNameField</code> → 첫 글자 capitalize → <code>XNameField</code> → <code>decapitalize</code> → <code>XNameField</code>로 정규화해 양쪽 속성명이 같은 값으로 모입니다. 일반적인 fluent setter(<code>settlementDate(...)</code> 등 두 번째 글자가 소문자인 케이스)는 <code>SettlementDate</code> → <code>settlementDate</code>로 결과가 바뀌지 않아 회귀 없음.
+        </p>
+
+        <h2>회귀 테스트</h2>
+        <p>
+          기존 fluent setter 검증 테스트 <code>_1799</code> 패턴을 그대로 복사해 <code>processor/src/test/java/org/mapstruct/ap/test/bugs/_4000/</code>에 4개 파일을 추가했습니다.
+        </p>
+        <ul>
+          <li><code>Source</code> — <code>private String xNameField</code> + <code>getXNameField()</code></li>
+          <li><code>Target</code> — Lombok 스타일 <code>Builder.xNameField(...)</code> fluent setter</li>
+          <li><code>Issue4000Mapper</code> — <code>@Mapper</code> 인터페이스</li>
+          <li><code>Issue4000Test</code> — <code>@ProcessorTest</code>로 매핑 결과 검증</li>
+        </ul>
+        <p>
+          로컬에서 <code>builder</code> / <code>superbuilder</code> / <code>_1799</code> 영역 82개 테스트 모두 통과. <code>NEXT_RELEASE_CHANGELOG.md</code>의 <code>### Bugs</code> 섹션에도 항목 추가.
+        </p>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">PR</span><a href="https://github.com/mapstruct/mapstruct/pull/4074" target="_blank" rel="noopener">mapstruct/mapstruct#4074</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/mapstruct/mapstruct/issues/4000" target="_blank" rel="noopener">mapstruct/mapstruct#4000</a></li>
+          <li><span class="k">Project</span><a href="/contributions/mapstruct.html">MapStruct 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · 김빌</span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
