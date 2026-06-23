@@ -75,6 +75,7 @@
             <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
             <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
             <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 · GH-4504 (amplification)</a>
             <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
             <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
             <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
@@ -159,12 +160,13 @@
 
         <h2>스코프 및 트레이드오프</h2>
         <p>
-          데이터 유실은 잡혔으나 head-of-line amplification (later-offset 레코드의 invocation 수가 <code>(N+2)/(n+1)</code> 배로 증가)은 본 PR 스코프에서 제외. 엄격한 per-record N+1을 원하면 <code>@RetryableTopic</code> 권장 — non-blocking retry 모델로 분리.
+          본 PR은 데이터 유실 fix + 두 레코드 회귀 테스트 + docs caveat만 다룸. 메인테이너 요청으로 amplification (later-offset 레코드의 invocation 수가 burst size에 따라 증가)은 PR #4512로 분리. 엄격한 per-record N+1을 원하면 <code>@RetryableTopic</code> 권장 — non-blocking retry 모델로 분리.
         </p>
 
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">PR</span><a href="https://github.com/spring-projects/spring-kafka/pull/4505" target="_blank" rel="noopener">spring-projects/spring-kafka#4505</a></li>
+          <li><span class="k">Follow-up</span><a href="/contributions/spring-kafka/4512.html">PR #4512 — GH-4504 amplification bound</a></li>
           <li><span class="k">Issue</span><a href="https://github.com/spring-projects/spring-kafka/issues/4504" target="_blank" rel="noopener">spring-projects/spring-kafka#4504</a></li>
           <li><span class="k">Prev</span><a href="/contributions/spring-kafka/4469.html">PR #4469 — GH-4465 (선행)</a></li>
           <li><span class="k">Project</span><a href="/contributions/spring-kafka.html">Spring Kafka 기여 개요</a></li>
