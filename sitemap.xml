@@ -120,6 +120,15 @@
   </url>
 
   <url>
+    <loc>https://bk202503.github.io/contributions/spring-kafka/4512.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka/4512.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka/4512.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka/4512.html"/>
+  </url>
+
+  <url>
     <loc>https://bk202503.github.io/contributions/spring-modulith.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

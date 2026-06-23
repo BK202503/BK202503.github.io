@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Spring Kafka PR #4512 — GH-4504 Bound async retry to linear delivery count (open) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 PR #4512 (GH-4504 follow-up). PR #4505의 데이터 유실 fix 후 남은 head-of-line amplification을 N·(n+2)−1으로 선형 bound. asyncRetryOffsets + seenMultiAttemptRetry 게이트로 dispatch-loop skip + manual seek." />
+  <meta name="keywords" content="Spring Kafka PR 4512, GH-4504, head-of-line amplification, async retry bound, asyncRetryOffsets, seenMultiAttemptRetry, RecordInRetryException, suspend KafkaListener burst, DefaultErrorHandler quadratic, ListenerConsumer dispatch loop skip, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/spring-kafka/4512.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka/4512.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka/4512.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka/4512.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Spring Kafka PR #4512 — GH-4504 Bound async retry to linear delivery count" />
+  <meta property="og:description" content="PR #4505의 데이터 유실 fix 후 남은 head-of-line amplification을 N·(n+2)−1로 선형 bound." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/spring-kafka/4512.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Spring Kafka PR #4512 — GH-4504 Bound async retry to linear delivery count" />
+  <meta name="twitter:description" content="PR #4505의 데이터 유실 fix 후 남은 head-of-line amplification을 N·(n+2)−1로 선형 bound." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Kafka", "item": "https://bk202503.github.io/contributions/spring-kafka.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #4512 · GH-4504 (amplification)" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Kafka PR #4512 — GH-4504: Bound async retry to linear delivery count per record",
+    "url": "https://bk202503.github.io/contributions/spring-kafka/4512.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Kafka", "Kotlin Coroutines", "Suspend KafkaListener", "DefaultErrorHandler", "Head-of-line amplification"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 · GH-4504 (amplification)</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/spring-kafka.html">Spring Kafka</a></li>
+          <li aria-current="page">PR #4512 · GH-4504 (amplification)</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Spring Kafka · open · depends on #4505</p>
+        <h1 class="title">PR #4512 — GH-4504: Bound async retry to linear delivery count per record</h1>
+        <p class="lede">
+          PR #4505가 데이터 유실은 잡았으나 같은 파티션에 항상 실패하는 N개 레코드가 들어오면 suspend 리스너의 invocation 수가 <code>N·(N+2)</code> (quadratic)로 증가하는 head-of-line amplification이 남아 있었습니다. 메인테이너 요청으로 PR을 분리, 본 PR에서 <code>asyncRetryOffsets</code> + <code>seenMultiAttemptRetry</code> 게이트 + manual seek로 invocation을 <code>N·(n+2)−1</code> (linear)로 bound. <code>@RetryableTopic</code> 시나리오(publish-and-done recoverer) 회귀 없이.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/spring-projects/spring-kafka/pull/4512" target="_blank" rel="noopener">
+            <span>GitHub PR</span><span class="pill-sub">spring-projects/spring-kafka#4512</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>맥락</h2>
+        <p>
+          PR #4505 (데이터 유실 fix)가 머지되기 전 reporter가 burst 측정을 보내옴 — <code>DefaultErrorHandler(FixedBackOff(100ms, 2))</code>로 N개 always-failing 레코드를 한 파티션에 보냈을 때 suspend 리스너의 총 invocation이 blocking 리스너의 <code>N·(n+1)</code>과 다르게 <code>N·(N+2)</code>로 증가 (N=20에서 60 vs 440). 원인: 데이터 유실 fix는 head가 retry 중일 때 같은 파티션의 뒤 레코드를 deque에서 drop만 하지, dispatch loop의 listener invocation은 막지 않음 → 매 retry cycle마다 컨슈머가 seek-back으로 전체 backlog를 re-poll하면서 listener를 다시 호출.
+        </p>
+
+        <h2>이전 시도와 회귀</h2>
+        <p>
+          이전 commit <code>48d486bc</code>가 같은 문제를 풀려 했으나 recovery 시점에 <code>offsetsInThisBatch[tp]</code>를 wholesale wipe하면서 <code>DeadLetterPublishingRecoverer</code> 기반 <code>Async{CompletableFuture,Mono}RetryTopicScenarioTests</code>(<code>allFailCaseTest</code>, <code>oneLongSuccessMsgBetween49ShortFailMsg</code>)의 in-flight ack tracking이 깨져 <code>669a66e4</code>로 revert. 본 PR은 wholesale wipe 없이 individual <code>removeOffsetsInBatch</code>만 사용.
+        </p>
+
+        <h2>수정</h2>
+        <ul>
+          <li><code>asyncRetryOffsets: Map&lt;TopicPartition, Long&gt;</code> — partition별 in-flight retry offset 추적. <code>RecordInRetryException</code>이 throw됐을 때만 채워짐.</li>
+          <li><code>seenMultiAttemptRetry</code> 플래그 — 첫 <code>RecordInRetryException</code>에서 켜짐. dispatch loop의 sync-failure detection이 <code>asyncRetryOffsets</code>을 populate하기 전 이 게이트를 확인 → publish-and-done recoverer(<code>RetryTopic</code> 경로)는 <code>RecordInRetryException</code>을 던지지 않아 게이트가 false로 유지, skip 자체가 발동 안 됨.</li>
+          <li><code>doInvokeWithRecords</code> — listener invoke 전에 <code>shouldSkipForAsyncRetry</code>로 partition의 in-flight retry offset보다 큰 offset 레코드를 skip + <code>removeOffsetsInBatch(List.of(cRecord))</code>로 out-of-commit container ack pause 방지.</li>
+          <li><code>handleAsyncFailure</code> — handler가 normal return하고 <code>asyncRetryOffsets[tp]</code>가 그 offset이면 head가 recover된 것 → <code>consumer.seek(tp, offset + 1)</code>로 컨슈머 position을 다음 레코드로 advance, <code>asyncRetryOffsets.remove(tp)</code>.</li>
+        </ul>
+
+        <h2>측정</h2>
+        <p>
+          <code>DefaultErrorHandler(FixedBackOff(100ms, 2))</code>, N개 always-failing 레코드, 단일 파티션. <code>✓</code> = 로컬 측정, <code>✱</code> = 인접 측정점의 공식 예측.
+        </p>
+        <pre><code> N    blocking N·(n+1)    this PR (suspend)    #4505만 적용 (suspend)
+  5                 15                19 ✓                       35
+ 10                 30                39 ✓                      120
+ 15                 45                59 ✱                      255
+ 20                 60                79 ✓                      440
+</code></pre>
+        <p>
+          Linear in N at <code>N·(n+2)−1</code>. non-head 레코드당 <code>+1</code> extra delivery는 iter-0 dispatch invocation (게이트가 첫 <code>RecordInRetryException</code>에서 켜지기 직전). 이걸 더 줄이려면 <code>BackOff</code>를 설정 시점에 introspect하거나 per-poll parallelism을 포기해야 함 — "record당 +1"에서 라인을 그음.
+        </p>
+
+        <h2>회귀 테스트</h2>
+        <p>
+          <code>EnableKafkaKotlinCoroutinesTests#test suspend function bounded burst stays linear with N</code> 추가 (N=10). 총 listener invocation이 <code>N·(n+2)−1 = 39</code>인지 검증. dispatch-loop skip 없으면 <code>N·(N+2) = 120</code>이 나와 assertion 실패. 같은 파일의 two-record 테스트 assertion도 <code>r2 = 5</code> → <code>r2 = 4</code>로 조정 (iter-0 dispatch + own n+1 retry cycle).
+        </p>
+
+        <h2>RetryTopic 시나리오</h2>
+        <p>
+          <code>@RetryableTopic</code> 경로는 <code>RecordInRetryException</code>을 던지지 않아 <code>seenMultiAttemptRetry</code> 게이트가 false 유지 → <code>asyncRetryOffsets</code>이 빈 채로 남고 dispatch-loop skip 자체가 발동 안 됨. <code>Async{CompletableFuture,Mono}RetryTopicScenarioTests</code> 7개 + <code>AsyncMonoRetryTopicComplexScenarioTests</code> + <code>RetryTopicIntegrationTests</code> 등 회귀 없음. 전체 <code>:spring-kafka:test</code> sweep 통과.
+        </p>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">PR</span><a href="https://github.com/spring-projects/spring-kafka/pull/4512" target="_blank" rel="noopener">spring-projects/spring-kafka#4512</a></li>
+          <li><span class="k">Depends</span><a href="/contributions/spring-kafka/4505.html">PR #4505 — GH-4504 데이터 유실 fix (선행)</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/spring-projects/spring-kafka/issues/4504" target="_blank" rel="noopener">spring-projects/spring-kafka#4504</a></li>
+          <li><span class="k">Project</span><a href="/contributions/spring-kafka.html">Spring Kafka 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
