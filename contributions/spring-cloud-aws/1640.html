@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Spring Cloud AWS PR #1640 — GH-1143 Add IGNORE QueueNotFoundStrategy (open) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Spring Cloud AWS에 보낸 PR #1640 (GH-1143). SQS 컨테이너에 IGNORE QueueNotFoundStrategy 추가. 큐가 없을 때 listener를 조용히 skip하고 application context 부팅을 막지 않음. 2.x의 기본 동작을 3.x에 복원." />
+  <meta name="keywords" content="Spring Cloud AWS PR 1640, GH-1143, QueueNotFoundStrategy IGNORE, SQS missing queue, QueueAttributesResolver, QueueNotFoundException, AbstractSqsMessageSource, SqsMessageListenerContainer, 2.x to 3.x migration, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Spring Cloud AWS PR #1640 — GH-1143 Add IGNORE QueueNotFoundStrategy" />
+  <meta property="og:description" content="SQS 컨테이너에 IGNORE QueueNotFoundStrategy 추가. 큐가 없을 때 listener를 조용히 skip하고 application context 부팅을 막지 않음." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Spring Cloud AWS PR #1640 — GH-1143 Add IGNORE QueueNotFoundStrategy" />
+  <meta name="twitter:description" content="SQS 컨테이너에 IGNORE QueueNotFoundStrategy 추가." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Cloud AWS", "item": "https://bk202503.github.io/contributions/spring-cloud-aws.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #1640 · GH-1143" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Cloud AWS PR #1640 — GH-1143: Add IGNORE QueueNotFoundStrategy option for SQS",
+    "url": "https://bk202503.github.io/contributions/spring-cloud-aws/1640.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Cloud AWS", "SQS", "QueueNotFoundStrategy", "AbstractSqsMessageSource", "QueueAttributesResolver"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 · GH-4504 (amplification)</a>
+            <div class="dropdown-section">Spring Cloud AWS</div>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
+            <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS</a></li>
+          <li aria-current="page">PR #1640 · GH-1143</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Spring Cloud AWS · open</p>
+        <h1 class="title">PR #1640 — GH-1143: Add IGNORE QueueNotFoundStrategy option for SQS</h1>
+        <p class="lede">
+          Spring Cloud AWS 3.x의 <code>QueueNotFoundStrategy</code>에 세 번째 옵션 <code>IGNORE</code>를 추가. SQS 큐가 startup 시점에 없을 때 warning 로그 + listener container의 source를 조용히 skip해 application context 부팅을 막지 않음. 2.x <code>spring-cloud-starter-aws-messaging</code>의 기본 동작을 3.x에 복원하는 패치. 4명 이상이 v2→v3 migration pain으로 보고한 이슈 #1143, 메인테이너 직접 "PRs welcome" 표명.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/awspring/spring-cloud-aws/pull/1640" target="_blank" rel="noopener">
+            <span>GitHub PR</span><span class="pill-sub">awspring/spring-cloud-aws#1640</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>맥락</h2>
+        <p>
+          Spring Cloud AWS 3.x의 <code>QueueNotFoundStrategy</code>는 두 가지 — <code>FAIL</code> (큐 없으면 throw, application startup 차단) 또는 <code>CREATE</code> (큐 없으면 <code>CreateQueue</code> 호출, <code>sqs:CreateQueue</code> IAM 필요 + 외부 관리 큐 설정과 충돌 가능). 둘 다 안 맞는 사용 케이스가 있음 — 예: optional feature queue, multi-region rollout에서 큐가 아직 안 만들어진 상태, deployment마다 queue 존재 여부가 다른 경우. 이런 경우 listener는 그냥 skip하고 앱은 정상 부팅돼야 함. 2.x의 <code>spring-cloud-starter-aws-messaging</code>는 이게 기본 동작이었는데 3.x에서 사라지면서 migration pain이 생김 (이슈에 v2→v3 사용자 4명+ 보고).
+        </p>
+
+        <h2>설계 — typed signal로 분리</h2>
+        <p>
+          메인테이너 (@tomazfernandes) 의 우려: <em>"graciously handle the error thrown by the <code>QueueAttributesResolver</code> and interrupting container startup"</em>. 핵심은 IGNORE 신호를 generic resolver 에러와 어떻게 분리해서 source가 catch할 수 있게 만드느냐. 답은 dedicated exception 타입:
+        </p>
+        <ul>
+          <li>새 클래스 <code>QueueNotFoundException</code> — <code>QueueAttributesResolvingException</code>의 subtype. 기존 catch 사이트는 그대로 동작 (parent 타입으로 잡힘), source는 subtype으로 distinguish 가능.</li>
+          <li><code>QueueAttributesResolver.handleException</code>: <code>QueueDoesNotExistException</code> + <code>IGNORE</code>일 때 <code>QueueNotFoundException</code>으로 failed future 반환. <code>CREATE</code> path는 unchanged.</li>
+          <li><code>QueueAttributesResolver.wrapException</code>: <code>QueueNotFoundException</code>만 unwrap 통과 (generic 재포장 방지). 다른 모든 exception은 종전 그대로 <code>QueueAttributesResolvingException</code>으로 wrap.</li>
+          <li><code>AbstractSqsMessageSource.doStart</code>: <code>CompletionException</code> cause가 <code>QueueNotFoundException</code>이면 <code>skipped</code> 플래그 set + warning + early return (queueAttributes/queueUrl 안 set, conversion context 안 설정).</li>
+          <li><code>AbstractSqsMessageSource.doPollForMessages</code>: <code>skipped</code>면 즉시 <code>CompletableFuture.completedFuture(emptyList())</code> — polling loop은 source 라이프타임 동안 no-op.</li>
+        </ul>
+
+        <h2>FAIL / CREATE / RetryableTopic은 손 안 댐</h2>
+        <p>
+          새 IGNORE constant만 새 branch를 탐. <code>wrapException</code>의 <code>QueueNotFoundException</code> 분기는 IGNORE에서만 생성되므로 다른 strategy / 다른 exception 경로에서는 종전과 동일한 <code>QueueAttributesResolvingException</code>이 떨어짐. 기존 회귀 테스트 6개 모두 동일 exception 타입을 그대로 받음을 LocalStack 통합 테스트로 확인.
+        </p>
+
+        <h2>회귀 테스트</h2>
+        <p>
+          <code>QueueAttributesResolverIntegrationTests#shouldIgnoreQueueWhenStrategyIsIgnore</code> 추가. 기존 <code>#shouldNotCreateQueue</code> 패턴 그대로 사용, LocalStack에 존재하지 않는 큐에 IGNORE 전략을 적용했을 때 <code>QueueNotFoundException</code> (cause = <code>QueueDoesNotExistException</code>)이 surface됨을 검증. 같은 클래스의 7개 테스트(FAIL/CREATE 케이스 포함) 모두 통과.
+        </p>
+
+        <h2>속성 바인딩</h2>
+        <p>
+          <code>SqsProperties</code>에서 <code>QueueNotFoundStrategy</code> enum을 직접 노출하고 있어 코드 변경 없이 <code>spring.cloud.aws.sqs.queue-not-found-strategy=IGNORE</code>로 바로 설정 가능. <code>sqs.adoc</code> 표 항목에 IGNORE 동작 설명 한 줄 추가.
+        </p>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">PR</span><a href="https://github.com/awspring/spring-cloud-aws/pull/1640" target="_blank" rel="noopener">awspring/spring-cloud-aws#1640</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/awspring/spring-cloud-aws/issues/1143" target="_blank" rel="noopener">awspring/spring-cloud-aws#1143</a></li>
+          <li><span class="k">Project</span><a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>

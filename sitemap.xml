@@ -129,6 +129,24 @@
   </url>
 
   <url>
+    <loc>https://bk202503.github.io/contributions/spring-cloud-aws.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-cloud-aws.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-cloud-aws.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-cloud-aws.html"/>
+  </url>
+
+  <url>
+    <loc>https://bk202503.github.io/contributions/spring-cloud-aws/1640.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-cloud-aws/1640.html"/>
+  </url>
+
+  <url>
     <loc>https://bk202503.github.io/contributions/spring-modulith.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
