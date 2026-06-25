@@ -72,12 +72,14 @@
             <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
             <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
             <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
-            <div class="dropdown-section">Spring Kafka</div>
-            <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
-            <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
-            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504 (merged)</a>
-            <a href="/contributions/spring-kafka/4512.html">PR #4512 · GH-4504 (amplification)</a>
-            <a href="/contributions/spring-kafka/4517.html">PR #4517 · 4.0.x backport fix</a>
+            <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
+            <a href="/contributions/spring-kafka-4465.html">overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
+            <div class="dropdown-section">Spring Kafka — silent 유실 (GH-4504)</div>
+            <a href="/contributions/spring-kafka-4504.html">overview</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix)</a>
             <div class="dropdown-section">Spring Cloud AWS</div>
             <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
             <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
@@ -124,21 +126,18 @@
     <section class="page-hero">
       <div class="container">
         <p class="eyebrow">Contribution · Spring Kafka · Kotlin Coroutines</p>
-        <h1 class="title">Spring Kafka — suspend listener async retry 버그 수정</h1>
+        <h1 class="title">Spring Kafka 기여</h1>
         <p class="lede">
-          <code>suspend @KafkaListener</code> + <code>DefaultErrorHandler</code> 조합에서 발견한 두 개의 별개 회귀를 수정했습니다 — (1) 무한 재전송 (GH-4465), (2) 같은 파티션 두 레코드의 silent 유실 (GH-4504).
+          <code>suspend @KafkaListener</code> + <code>DefaultErrorHandler</code> 조합에서 발견한 두 개의 별개 회귀를 수정했습니다. 각 이슈별 상세 페이지를 따로 두었습니다.
         </p>
       </div>
     </section>
 
     <section class="section">
       <div class="container narrow">
-        <h2>문제 1 — 무한 재전송 (GH-4465)</h2>
+        <h2><a href="spring-kafka-4465.html">무한 재전송 (GH-4465)</a></h2>
         <p>
-          Spring Kafka 4.1 시리즈 직전에 머지된 <code>#4254</code>의 변경으로 비동기 리스너의 실패가 <code>seekAfterHandling=true</code>인 <code>CommonErrorHandler</code>(예: <code>DefaultErrorHandler</code>)로 전달되도록 바뀌었습니다. 정상적으로는 seek 후 다음 poll에서 재배달되어야 하는데, <code>ListenerConsumer#handleAsyncFailure</code>가 <code>RecordInRetryException</code>을 받았을 때 <code>failedRecords</code> 큐에 다시 넣고 있었습니다. 결과적으로 같은 레코드가 매 루프마다 두 번 처리(큐에서 한 번, seek-induced re-delivery로 한 번)되고, 백오프가 소진되어 tracker entry가 recovery되더라도 큐에 남은 중복이 새 retry 사이클을 시작해 무한 재배달이 발생했습니다.
-        </p>
-        <p>
-          <strong>수정 (PR #4469, merged)</strong> — <code>RecordInRetryException</code> catch에서 <code>failedRecords.addLast(failedRecord)</code> re-queue를 제거. 에러 핸들러가 이미 컨슈머를 실패 offset으로 seek 했고, <code>FailedRecordTracker</code> 엔트리는 (topic, partition, offset)으로 키잉돼 루프 반복에 걸쳐 살아남기 때문에 attempt 카운터는 자연스러운 재배달 위에서 그대로 누적됩니다. 회귀 테스트는 <code>EnableKafkaKotlinCoroutinesTests</code>에 추가 — always-failing suspend 리스너에 <code>DefaultErrorHandler(FixedBackOff(100L, 2L))</code> 적용하고 리스너 호출이 정확히 3회만 일어나는지 확인 (픽스 없이는 <code>expected: 3 but was: 6</code>).
+          <code>suspend @KafkaListener</code> + <code>DefaultErrorHandler</code> 조합에서 비동기 retry가 무한 재전송되는 회귀를 추적해 원인이 되는 큐 중복을 제거. 회귀 테스트와 함께 머지됐습니다.
         </p>
         <ul class="pr-list">
           <li>
@@ -149,19 +148,11 @@
             <span class="pr-state state-merged">merged</span>
           </li>
         </ul>
+        <p><a href="spring-kafka-4465.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
 
-        <h2>문제 2 — 두 레코드 silent 유실 (GH-4504)</h2>
+        <h2><a href="spring-kafka-4504.html">두 레코드 silent 유실 (GH-4504)</a></h2>
         <p>
-          PR #4469 머지 후 같은 reporter가 후속 이슈 신고: "두 개 이상의 레코드가 같은 파티션에서 실패하면 r1이 silent 유실되고 r2만 retry/recover된다". <code>handleAsyncFailure</code>가 같은 파티션 실패들을 도착 순서로 하나씩 처리하면서 각 호출이 독립적인 seek를 등록 → 뒤 호출의 seek가 앞 호출의 seek를 덮어써서 r1이 영영 재배달되지 않고 committed offset이 그 너머로 advance → 영구 유실.
-        </p>
-        <p>
-          <strong>수정 (PR #4505, merged 2026-06-24, commit <code>87710ea</code>)</strong> — 같은 파티션의 async failure들을 <code>(topic, partition, offset)</code> 순으로 정렬하고, head record가 retry 들어가면 같은 파티션의 뒤 레코드는 큐에서 drop. 등록된 seek가 다음 poll에서 자연 재배달하도록 맡김.
-        </p>
-        <p>
-          <strong>후속 (PR #4512, open)</strong> — reporter가 burst 시 invocation이 <code>N·(N+2)</code> (quadratic)로 증가하는 head-of-line amplification을 측정. 메인테이너 요청으로 PR을 분리, <code>asyncRetryOffsets</code> + <code>seenMultiAttemptRetry</code> 게이트로 dispatch loop skip + manual seek를 적용해 invocation을 <code>N·(n+2)−1</code> (linear)로 bound.
-        </p>
-        <p>
-          <strong>4.0.x backport fix (PR #4517, open)</strong> — PR #4505가 <code>4.0.x</code>로 backport됐을 때 main에만 있던 precursor commit이 누락돼 테스트 3개가 깨졌습니다. fix-forward로 cherry-pick.
+          같은 파티션 두 비동기 실패 레코드가 per-record seek 클로버링으로 earlier-offset 레코드가 silent 유실되던 회귀를 offset-order grouping으로 수정. 후속으로 head-of-line amplification을 linear로 bound하는 PR과 4.0.x backport 회귀 fix-forward PR도 진행 중.
         </p>
         <ul class="pr-list">
           <li>
@@ -186,6 +177,7 @@
             <span class="pr-state state-open">open</span>
           </li>
         </ul>
+        <p><a href="spring-kafka-4504.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
 
         <h2>관련 자료</h2>
         <ul class="contact-list">
