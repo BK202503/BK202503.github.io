@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Spring Kafka PR #4517 — 4.0.x backport fix-forward for PR #4505 (open) | 김빌 (Bill Kim)</title>
+  <title>Spring Kafka PR #4517 — 4.0.x backport fix-forward for PR #4505 (merged) | 김빌 (Bill Kim)</title>
   <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 PR #4517. PR #4505 (GH-4504 데이터 유실 fix)가 4.0.x로 backport된 뒤 precursor 누락으로 EnableKafkaKotlinCoroutinesTests의 3개 테스트가 깨진 회귀를, main의 813f6891 (Support CommonErrorHandler for suspend functions)을 4.0.x에 cherry-pick으로 해결." />
   <meta name="keywords" content="Spring Kafka PR 4517, 4.0.x backport, fix forward, 813f6891 cherry-pick, GH-3618, CommonErrorHandler suspend, setCallbackForAsyncFailure, KafkaBackoffAwareMessageListenerAdapter, RecordMessagingMessageListenerAdapter, DelegatingMessageListener, EnableKafkaKotlinCoroutinesTests, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
@@ -78,7 +78,7 @@
             <a href="/contributions/spring-kafka-4504.html">overview</a>
             <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
             <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
-            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix, merged)</a>
             <div class="dropdown-section">Spring Cloud AWS</div>
             <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
             <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
@@ -145,10 +145,10 @@
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Spring Kafka · open · 4.0.x</p>
+        <p class="eyebrow">Spring Kafka · merged · 4.0.x</p>
         <h1 class="title">PR #4517 — 4.0.x backport fix for PR #4505</h1>
         <p class="lede">
-          PR #4505가 <code>4.0.x</code>로 backport됐을 때 main에만 있던 precursor commit 하나가 누락돼 suspend listener 테스트 3개가 깨졌습니다. main의 <code>813f6891</code>을 4.0.x로 cherry-pick하는 fix-forward PR.
+          PR #4505가 <code>4.0.x</code>로 backport됐을 때 main에만 있던 precursor commit 하나가 누락돼 suspend listener 테스트 3개가 깨졌습니다. main의 <code>813f6891</code>을 4.0.x로 cherry-pick하는 fix-forward로 머지됐습니다 (merge commit <code>81c72898</code>, 2026-06-25).
         </p>
         <div class="hero-meta">
           <a class="pill" href="https://github.com/spring-projects/spring-kafka/pull/4517" target="_blank" rel="noopener">
