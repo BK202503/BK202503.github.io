@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Appendix · Spring Kafka ↔ Apache Kafka — joint architecture & sequence | 김빌 (Bill Kim)</title>
+  <meta name="description" content="An appendix that wires the Spring Kafka container hierarchy together with the Apache Kafka broker cluster: one architecture diagram covering both sides and one end-to-end sequence diagram (KafkaTemplate.send → leader append → ISR replicate → consumer fetch → ListenerConsumer → adapter → @KafkaListener method → ack → commit)." />
+  <meta name="keywords" content="Spring Kafka Apache Kafka integration, KafkaTemplate, @KafkaListener, broker cluster, ISR replication, ListenerConsumer, consumer group, end-to-end sequence, joint architecture, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/kafka-integration.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/kafka-integration.html" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/kafka-integration.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Appendix · Spring Kafka ↔ Apache Kafka — joint architecture & sequence" />
+  <meta property="og:description" content="One diagram tying the Spring Kafka container hierarchy to the Apache Kafka broker cluster, plus an end-to-end produce → replicate → consume sequence." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/kafka-integration.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Appendix · Spring Kafka ↔ Apache Kafka" />
+  <meta name="twitter:description" content="Joint architecture diagram and end-to-end sequence connecting Spring Kafka to the Apache Kafka cluster." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "OSS", "item": "https://bk202503.github.io/#oss" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Kafka ↔ Apache Kafka (appendix)" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Kafka ↔ Apache Kafka — joint architecture & sequence (appendix)",
+    "url": "https://bk202503.github.io/kafka-integration.html",
+    "inLanguage": "en",
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Kafka", "Apache Kafka", "Integration", "Architecture", "Sequence"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .diagram { margin: 0 0 28px; padding: 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 10px; overflow-x: auto; }
+    .diagram svg { display: block; max-width: 100%; height: auto; }
+    .diagram-caption { margin: -12px 0 24px; font-size: 13px; color: var(--muted, #8a96a3); font-style: italic; }
+  </style>
+</head>
+<body data-lang="en">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
+            <a href="/contributions/spring-kafka-4465.html">overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
+            <div class="dropdown-section">Spring Kafka — silent 유실 (GH-4504)</div>
+            <a href="/contributions/spring-kafka-4504.html">overview</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix)</a>
+            <div class="dropdown-section">Spring Cloud AWS</div>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
+            <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/apache-kafka.html">Overview</a>
+            <a href="/apache-kafka.html#architecture">Architecture</a>
+            <a href="/apache-kafka.html#message-flow">Message Flow</a>
+            <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
+            <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
+            <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/spring-kafka.html">Overview</a>
+            <a href="/spring-kafka.html#architecture">Architecture</a>
+            <a href="/spring-kafka.html#message-flow">Message Flow</a>
+            <a href="/spring-kafka.html#features">Features</a>
+            <a href="/spring-kafka.html#internals">Internals</a>
+            <div class="dropdown-section">Appendix</div>
+            <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#oss">OSS</a></li>
+          <li aria-current="page">Spring Kafka ↔ Apache Kafka — appendix</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Appendix · OSS</p>
+        <h1 class="title">Spring Kafka ↔ Apache Kafka — joint architecture &amp; end-to-end sequence</h1>
+        <p class="lede">
+          A short appendix that wires the two existing pages together. One diagram shows how the <strong>Spring Boot application</strong> (<code>KafkaTemplate</code> on the produce side, <code>@KafkaListener</code> container hierarchy on the consume side) connects to a real <strong>Kafka cluster</strong> (broker, topic, partition leader / follower / ISR, consumer group). The second diagram traces a single message end-to-end across both sides — from application code calling <code>send()</code> through broker append + ISR replication, back through consumer fetch and the listener container, into the user's <code>@KafkaListener</code> method, and on to the offset commit.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+
+        <h2>Joint architecture</h2>
+        <p>
+          Two Spring Boot applications around the same Kafka cluster. The <em>producer-side</em> app uses <code>KafkaTemplate</code> (with optional transactions). The <em>consumer-side</em> app uses an <code>@KafkaListener</code> driven by Spring Kafka's container hierarchy. The cluster in the middle is the same Apache Kafka covered on the <a href="/apache-kafka.html">Apache Kafka page</a>; the client-side pieces on either flank are the same ones covered on the <a href="/spring-kafka.html">Spring Kafka page</a>.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 880 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Joint architecture: Producer-side Spring Boot app with KafkaTemplate and (optional) transactional producer connects to a 3-broker Kafka cluster with topic partitions and ISR, and a Consumer-side Spring Boot app with ConcurrentMessageListenerContainer running multiple KafkaMessageListenerContainer/ListenerConsumer instances reads from the cluster as a consumer group.">
+            <defs>
+              <marker id="aki" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="aki-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="aki-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#5f6b7a"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .arr-ok { stroke:#9ece6a; stroke-width:1.6; fill:none; }
+                .arr-dim { stroke:#5f6b7a; stroke-width:1.2; fill:none; stroke-dasharray:4 3; }
+                .cluster { fill:none; stroke:#3a4660; stroke-width:1.2; stroke-dasharray:5 4; rx:10; ry:10; }
+                .label-side { fill:#8a96a3; font: 11px/1 ui-monospace, monospace; }
+              </style>
+            </defs>
+
+            <!-- Producer side Spring Boot app -->
+            <rect class="cluster" x="15" y="20" width="220" height="380"/>
+            <text class="label-side" x="125" y="38" text-anchor="middle">Producer-side Spring Boot app</text>
+
+            <rect class="box" x="35" y="60" width="180" height="46"/>
+            <text class="lbl-b" x="125" y="80" text-anchor="middle">Application code</text>
+            <text class="lbl-s" x="125" y="96" text-anchor="middle">REST handler, scheduled job, ...</text>
+
+            <rect class="box-em" x="35" y="120" width="180" height="62"/>
+            <text class="lbl-b" x="125" y="140" text-anchor="middle">KafkaTemplate</text>
+            <text class="lbl-s" x="125" y="156" text-anchor="middle">send(topic, key, value)</text>
+            <text class="lbl-s" x="125" y="172" text-anchor="middle">executeInTransaction(...)</text>
+
+            <rect class="box" x="35" y="196" width="180" height="62"/>
+            <text class="lbl-b" x="125" y="216" text-anchor="middle">DefaultKafkaProducerFactory</text>
+            <text class="lbl-s" x="125" y="232" text-anchor="middle">org.apache.kafka.clients</text>
+            <text class="lbl-s" x="125" y="248" text-anchor="middle">.producer.KafkaProducer</text>
+
+            <rect class="box" x="35" y="272" width="180" height="56"/>
+            <text class="lbl-b" x="125" y="292" text-anchor="middle">Idempotent / transactional</text>
+            <text class="lbl-s" x="125" y="308" text-anchor="middle">enable.idempotence=true</text>
+            <text class="lbl-s" x="125" y="324" text-anchor="middle">transactional.id (optional)</text>
+
+            <path class="arr" d="M125,106 L125,118" marker-end="url(#aki)"/>
+            <path class="arr" d="M125,182 L125,194" marker-end="url(#aki)"/>
+            <path class="arr" d="M125,258 L125,270" marker-end="url(#aki)"/>
+
+            <!-- Kafka cluster -->
+            <rect class="cluster" x="265" y="20" width="350" height="380"/>
+            <text class="label-side" x="440" y="38" text-anchor="middle">Apache Kafka cluster (3 brokers)</text>
+
+            <rect class="box" x="285" y="60" width="150" height="80"/>
+            <text class="lbl-b" x="360" y="80" text-anchor="middle">Broker 1</text>
+            <text class="lbl"   x="360" y="100" text-anchor="middle">events P0 (leader)</text>
+            <text class="lbl"   x="360" y="116" text-anchor="middle">events P1 (follower)</text>
+            <text class="lbl-s" x="360" y="134" text-anchor="middle">ISR: {1,2,3}</text>
+
+            <rect class="box" x="445" y="60" width="150" height="80"/>
+            <text class="lbl-b" x="520" y="80" text-anchor="middle">Broker 2</text>
+            <text class="lbl"   x="520" y="100" text-anchor="middle">events P1 (leader)</text>
+            <text class="lbl"   x="520" y="116" text-anchor="middle">events P2 (follower)</text>
+            <text class="lbl-s" x="520" y="134" text-anchor="middle">ISR: {1,2,3}</text>
+
+            <rect class="box" x="365" y="160" width="150" height="80"/>
+            <text class="lbl-b" x="440" y="180" text-anchor="middle">Broker 3</text>
+            <text class="lbl"   x="440" y="200" text-anchor="middle">events P2 (leader)</text>
+            <text class="lbl"   x="440" y="216" text-anchor="middle">events P0 (follower)</text>
+            <text class="lbl-s" x="440" y="234" text-anchor="middle">ISR: {1,2,3}</text>
+
+            <rect class="box" x="285" y="260" width="310" height="44"/>
+            <text class="lbl-b" x="440" y="280" text-anchor="middle">KRaft controller quorum</text>
+            <text class="lbl-s" x="440" y="296" text-anchor="middle">leaders · ISR · configs · ACLs · __transaction_state</text>
+
+            <rect class="box" x="285" y="320" width="310" height="62"/>
+            <text class="lbl-b" x="440" y="340" text-anchor="middle">Internal topics</text>
+            <text class="lbl-s" x="440" y="356" text-anchor="middle">__consumer_offsets · __transaction_state</text>
+            <text class="lbl-s" x="440" y="372" text-anchor="middle">used by consumer groups + EOS</text>
+
+            <!-- Producer → leader brokers (blue) -->
+            <path class="arr" d="M216,160 C250,100 270,90 283,90" marker-end="url(#aki)"/>
+            <path class="arr" d="M216,170 C260,170 280,100 283,100" marker-end="url(#aki)"/>
+
+            <!-- Replication arrows (dashed) -->
+            <path class="arr-dim" d="M360,140 C360,150 410,155 425,162" marker-end="url(#aki-dim)"/>
+            <path class="arr-dim" d="M520,140 C520,150 470,155 460,162" marker-end="url(#aki-dim)"/>
+
+            <!-- Consumer side Spring Boot app -->
+            <rect class="cluster" x="645" y="20" width="220" height="380"/>
+            <text class="label-side" x="755" y="38" text-anchor="middle">Consumer-side Spring Boot app</text>
+
+            <rect class="box-em" x="665" y="60" width="180" height="62"/>
+            <text class="lbl-b" x="755" y="80" text-anchor="middle">@KafkaListener method</text>
+            <text class="lbl-s" x="755" y="96" text-anchor="middle">user code · @SendTo · async</text>
+            <text class="lbl-s" x="755" y="112" text-anchor="middle">CompletableFuture/Mono/suspend</text>
+
+            <rect class="box" x="665" y="134" width="180" height="48"/>
+            <text class="lbl-b" x="755" y="154" text-anchor="middle">Listener adapter chain</text>
+            <text class="lbl-s" x="755" y="170" text-anchor="middle">RecordMessagingMessageListenerAdapter</text>
+
+            <rect class="box" x="665" y="194" width="180" height="78"/>
+            <text class="lbl-b" x="755" y="214" text-anchor="middle">Container hierarchy</text>
+            <text class="lbl-s" x="755" y="230" text-anchor="middle">KafkaListenerContainerFactory</text>
+            <text class="lbl-s" x="755" y="246" text-anchor="middle">→ ConcurrentMessageListenerContainer</text>
+            <text class="lbl-s" x="755" y="262" text-anchor="middle">→ KafkaMessageListenerContainer · ListenerConsumer</text>
+
+            <rect class="box" x="665" y="284" width="180" height="62"/>
+            <text class="lbl-b" x="755" y="304" text-anchor="middle">CommonErrorHandler</text>
+            <text class="lbl-s" x="755" y="320" text-anchor="middle">DefaultErrorHandler · BackOff</text>
+            <text class="lbl-s" x="755" y="336" text-anchor="middle">→ DeadLetterPublishingRecoverer</text>
+
+            <rect class="box" x="665" y="356" width="180" height="32"/>
+            <text class="lbl-s" x="755" y="376" text-anchor="middle">consumer group: billing (3 members)</text>
+
+            <!-- Consumer fetches from leaders (green) -->
+            <path class="arr-ok" d="M435,100 C520,80 580,80 663,90" marker-end="url(#aki-ok)"/>
+            <path class="arr-ok" d="M515,200 C580,200 620,220 663,220" marker-end="url(#aki-ok)"/>
+            <path class="arr-ok" d="M515,116 C580,140 620,165 663,165" marker-end="url(#aki-ok)"/>
+
+            <!-- Offset commit back to cluster (consumer → __consumer_offsets) -->
+            <path class="arr" d="M663,360 C620,360 600,340 595,340" marker-end="url(#aki)"/>
+            <text class="lbl-s" x="630" y="354">commit</text>
+
+            <!-- Internal arrows on consumer side -->
+            <path class="arr" d="M755,272 L755,282" marker-end="url(#aki)"/>
+            <path class="arr-dim" d="M755,194 L755,182" marker-end="url(#aki-dim)"/>
+            <path class="arr-dim" d="M755,134 L755,122" marker-end="url(#aki-dim)"/>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Blue arrows: produce / commit requests. Green arrows: consumer fetch (uses zero-copy on the broker side). Dashed arrows: leader-to-follower replication and the internal dispatch chain inside the listener container. The cluster in the middle is the same one drawn on the Apache Kafka page; the producer and consumer flanks are the same components covered on the Spring Kafka page.
+        </p>
+
+        <h2>End-to-end sequence</h2>
+        <p>
+          A single record's journey across both halves — produce path on top, consume path on the bottom, with offset commit at the end.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 920 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="End-to-end sequence: app code calls KafkaTemplate.send which goes through KafkaProducer to the leader broker which appends and replicates to the follower then acks back; the consumer-side ListenerConsumer polls the leader, the listener adapter converts and invokes the user @KafkaListener method, then on success the consumer commits the offset.">
+            <defs>
+              <marker id="seq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="seq-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <style>
+                .lane { stroke:#3a4660; stroke-width:1.2; stroke-dasharray:4 4; }
+                .head { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:6; ry:6; }
+                .head-t { fill:#dde3ec; font: bold 11px/1 ui-monospace, monospace; }
+                .step { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .step-ok { stroke:#9ece6a; stroke-width:1.6; fill:none; }
+                .step-t { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .step-n { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+              </style>
+            </defs>
+
+            <!-- 6 swim lanes -->
+            <rect class="head" x="20"  y="20" width="120" height="38"/>
+            <text class="head-t" x="80"  y="38" text-anchor="middle">Producer-side</text>
+            <text class="head-t" x="80"  y="52" text-anchor="middle">app code</text>
+
+            <rect class="head" x="170" y="20" width="120" height="38"/>
+            <text class="head-t" x="230" y="38" text-anchor="middle">KafkaTemplate</text>
+            <text class="head-t" x="230" y="52" text-anchor="middle">+ KafkaProducer</text>
+
+            <rect class="head" x="320" y="20" width="120" height="38"/>
+            <text class="head-t" x="380" y="38" text-anchor="middle">Leader broker</text>
+            <text class="head-t" x="380" y="52" text-anchor="middle">(partition P)</text>
+
+            <rect class="head" x="470" y="20" width="120" height="38"/>
+            <text class="head-t" x="530" y="38" text-anchor="middle">Follower broker</text>
+            <text class="head-t" x="530" y="52" text-anchor="middle">(ISR)</text>
+
+            <rect class="head" x="620" y="20" width="140" height="38"/>
+            <text class="head-t" x="690" y="38" text-anchor="middle">ListenerConsumer</text>
+            <text class="head-t" x="690" y="52" text-anchor="middle">+ adapter chain</text>
+
+            <rect class="head" x="790" y="20" width="120" height="38"/>
+            <text class="head-t" x="850" y="38" text-anchor="middle">Consumer-side</text>
+            <text class="head-t" x="850" y="52" text-anchor="middle">@KafkaListener</text>
+
+            <!-- Lifelines -->
+            <line class="lane" x1="80"  y1="64" x2="80"  y2="600"/>
+            <line class="lane" x1="230" y1="64" x2="230" y2="600"/>
+            <line class="lane" x1="380" y1="64" x2="380" y2="600"/>
+            <line class="lane" x1="530" y1="64" x2="530" y2="600"/>
+            <line class="lane" x1="690" y1="64" x2="690" y2="600"/>
+            <line class="lane" x1="850" y1="64" x2="850" y2="600"/>
+
+            <!-- 1 app -> template -->
+            <path class="step" d="M80,95 L228,95" marker-end="url(#seq)"/>
+            <text class="step-n" x="82" y="87">1</text>
+            <text class="step-t" x="154" y="87" text-anchor="middle">kafkaTemplate.send(topic, key, value)</text>
+
+            <!-- 2 template -> leader -->
+            <path class="step" d="M230,125 L378,125" marker-end="url(#seq)"/>
+            <text class="step-n" x="232" y="117">2</text>
+            <text class="step-t" x="304" y="117" text-anchor="middle">ProduceRequest (batched, compressed, acks=all)</text>
+
+            <!-- 3 leader appends (self) -->
+            <path class="step" d="M380,150 C420,150 420,175 380,175" marker-end="url(#seq)"/>
+            <text class="step-n" x="382" y="143">3</text>
+            <text class="step-t" x="430" y="166">append to log, assign offset N</text>
+
+            <!-- 4 leader -> follower replicate -->
+            <path class="step" d="M380,205 L528,205" marker-end="url(#seq)"/>
+            <text class="step-n" x="382" y="197">4</text>
+            <text class="step-t" x="454" y="197" text-anchor="middle">FetchRequest (follower pulls)</text>
+
+            <!-- 5 follower acks -->
+            <path class="step-ok" d="M530,235 L382,235" marker-end="url(#seq-ok)"/>
+            <text class="step-n" x="528" y="227" text-anchor="end">5</text>
+            <text class="step-t" x="454" y="227" text-anchor="middle">FetchResponse · LEO advanced</text>
+
+            <!-- 6 leader advance HW, ack producer -->
+            <path class="step-ok" d="M378,265 L232,265" marker-end="url(#seq-ok)"/>
+            <text class="step-n" x="378" y="257" text-anchor="end">6</text>
+            <text class="step-t" x="304" y="257" text-anchor="middle">advance HW · ProduceResponse(offset)</text>
+
+            <!-- 7 template back to app -->
+            <path class="step-ok" d="M228,295 L82,295" marker-end="url(#seq-ok)"/>
+            <text class="step-n" x="228" y="287" text-anchor="end">7</text>
+            <text class="step-t" x="154" y="287" text-anchor="middle">CompletableFuture&lt;SendResult&gt; completes</text>
+
+            <!-- divider -->
+            <line x1="20" y1="320" x2="910" y2="320" stroke="#3a4660" stroke-width="0.5"/>
+            <text class="step-n" x="465" y="334" text-anchor="middle">consumer side (8 onwards)</text>
+
+            <!-- 8 ListenerConsumer poll -->
+            <path class="step" d="M690,360 L382,360" marker-end="url(#seq)"/>
+            <text class="step-n" x="688" y="352" text-anchor="end">8</text>
+            <text class="step-t" x="536" y="352" text-anchor="middle">consumer.poll(timeout) — FetchRequest up to HW</text>
+
+            <!-- 9 leader returns records -->
+            <path class="step-ok" d="M380,390 L688,390" marker-end="url(#seq-ok)"/>
+            <text class="step-n" x="382" y="382">9</text>
+            <text class="step-t" x="536" y="382" text-anchor="middle">FetchResponse(records up to lastOffset) · zero-copy</text>
+
+            <!-- 10 listener adapter -> user method -->
+            <path class="step" d="M690,420 L848,420" marker-end="url(#seq)"/>
+            <text class="step-n" x="692" y="412">10</text>
+            <text class="step-t" x="770" y="412" text-anchor="middle">adapter converts payload, invokes method</text>
+
+            <!-- 11 user returns -->
+            <path class="step-ok" d="M848,450 L692,450" marker-end="url(#seq-ok)"/>
+            <text class="step-n" x="848" y="442" text-anchor="end">11</text>
+            <text class="step-t" x="770" y="442" text-anchor="middle">return / suspend resume / future complete</text>
+
+            <!-- 12 ListenerConsumer ack + commit offset to leader -->
+            <path class="step" d="M690,490 L382,490" marker-end="url(#seq)"/>
+            <text class="step-n" x="688" y="482" text-anchor="end">12</text>
+            <text class="step-t" x="536" y="482" text-anchor="middle">OffsetCommit(group=billing, offset=N+1)</text>
+
+            <!-- 13 broker acks commit -->
+            <path class="step-ok" d="M380,520 L688,520" marker-end="url(#seq-ok)"/>
+            <text class="step-n" x="382" y="512">13</text>
+            <text class="step-t" x="536" y="512" text-anchor="middle">OffsetCommitResponse — written to __consumer_offsets</text>
+
+            <!-- 14 on failure: error handler -> retry/recover (drawn as side note) -->
+            <text class="step-n" x="465" y="568" text-anchor="middle">on failure: 10' user throws → CommonErrorHandler → SeekUtils retry → recoverer (DLT)</text>
+            <text class="step-n" x="465" y="582" text-anchor="middle">— see Spring Kafka page, "Message Flow" section, steps 5b–11b for the full failure path</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Steps 1–7: produce path through <code>KafkaTemplate</code> → broker leader → ISR follower → <code>HW</code> advance → ack. Steps 8–13: consume path through <code>ListenerConsumer</code> → adapter → user method → offset commit to <code>__consumer_offsets</code>. The failure branch is summarised at the bottom and drawn in full on the <a href="/spring-kafka.html#message-flow">Spring Kafka — Message Flow</a> diagram.
+        </p>
+
+        <h2>Where to go next</h2>
+        <ul class="contact-list">
+          <li><span class="k">Apache Kafka</span><a href="/apache-kafka.html">/apache-kafka.html</a> — broker / partition / ISR architecture, exactly-once, memory & CPU pipeline, CLI</li>
+          <li><span class="k">Spring Kafka</span><a href="/spring-kafka.html">/spring-kafka.html</a> — container hierarchy, dispatch flow, features, internals</li>
+          <li><span class="k">My PRs</span><a href="/contributions/spring-kafka.html">Spring Kafka contributions</a></li>
+          <li><span class="k">My PRs</span><a href="/contributions/apache-kafka.html">Apache Kafka contributions</a></li>
+        </ul>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
