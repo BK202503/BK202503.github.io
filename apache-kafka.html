@@ -115,6 +115,8 @@
             <a href="/apache-kafka.html">Overview</a>
             <a href="/apache-kafka.html#architecture">Architecture</a>
             <a href="/apache-kafka.html#message-flow">Message Flow</a>
+            <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
+            <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
             <a href="/apache-kafka.html#cli">CLI Commands</a>
             <div class="dropdown-section">Spring Kafka</div>
             <a href="/spring-kafka.html">Overview</a>
@@ -171,6 +173,8 @@
           <ol>
             <li><a href="#architecture">Architecture</a></li>
             <li><a href="#message-flow">Message Flow</a></li>
+            <li><a href="#exactly-once">Exactly-Once Semantics</a></li>
+            <li><a href="#runtime">Memory / CPU / I/O Pipeline</a></li>
             <li><a href="#cli">CLI Commands</a></li>
           </ol>
         </div>
@@ -392,7 +396,293 @@
           <li><strong>Step 9–10 (offset commit)</strong> — committing <em>after</em> processing gives at-least-once delivery (a crash between processing and commit re-processes records). Committing <em>before</em> processing gives at-most-once. Exactly-once across produce + consume requires the transactional API (<code>enable.idempotence=true</code>, <code>transactional.id</code>, <code>isolation.level=read_committed</code>).</li>
         </ul>
 
-        <h2 id="cli">3. CLI Commands</h2>
+        <h2 id="exactly-once">3. Exactly-Once Semantics</h2>
+
+        <p>
+          Kafka's exactly-once story is built out of two independent mechanisms layered on top of each other: an <strong>idempotent producer</strong> that eliminates duplicates from producer retries within a single partition, and a <strong>transactional API</strong> that ties multiple partition writes and a consumer-offset commit into a single atomic unit. The transactional API enables the canonical <em>consume → process → produce</em> pattern (the basis of Kafka Streams' EOS guarantee) where the input offset commit and the output records become visible to downstream consumers together or not at all.
+        </p>
+
+        <h3>Idempotent producer</h3>
+        <p>
+          When you set <code>enable.idempotence=true</code>, the producer is assigned a 64-bit <strong>Producer ID (PID)</strong> by the broker at first contact and a per-partition monotonically increasing <strong>sequence number</strong> is attached to every record batch. The leader broker remembers the last sequence number it accepted from a <code>(PID, partition)</code> pair; any batch arriving with a sequence number that has already been committed (because the producer retried after a transient ack failure) is silently de-duplicated, and any out-of-order sequence is rejected with <code>OutOfOrderSequenceException</code>. The guarantee is scoped to a single producer session and a single partition.
+        </p>
+
+        <h3>Transactional API</h3>
+        <p>
+          Setting <code>transactional.id</code> (in addition to <code>enable.idempotence=true</code>) promotes the producer to a transactional one and pins it to a <strong>transaction coordinator</strong> — the broker that leads the <code>__transaction_state</code> partition corresponding to the <code>transactional.id</code> hash. The coordinator hands out a <strong>producer epoch</strong> that fences any older instance of the same <code>transactional.id</code> (so a zombie producer that comes back after a long pause cannot publish into a transaction owned by its successor). The transaction lifecycle is a two-phase commit:
+        </p>
+        <ul>
+          <li><strong>BeginTxn</strong> — producer signals "I'm starting a transaction". No broker-side write yet.</li>
+          <li><strong>AddPartitionsToTxn</strong> — for every new partition the producer touches, it tells the coordinator. The coordinator records this in <code>__transaction_state</code> so it knows which partitions need a commit/abort marker at the end.</li>
+          <li><strong>Send records</strong> — the producer writes data records as usual, but each batch carries the <code>(PID, epoch, txn-flag)</code>. The records are appended to the data partitions <em>before</em> commit; consumers using <code>read_committed</code> will not see them yet.</li>
+          <li><strong>SendOffsetsToTxn</strong> (consume-process-produce) — the producer tells the coordinator "commit these consumer offsets atomically with the transaction". The coordinator forwards the offset commit to the group coordinator inside the transaction.</li>
+          <li><strong>CommitTxn / AbortTxn</strong> — the coordinator writes a <strong>PREPARE_COMMIT</strong> (or <code>PREPARE_ABORT</code>) record to <code>__transaction_state</code>, then dispatches <strong>control records</strong> (commit or abort markers) to every partition the transaction touched. Only after all markers are appended does the coordinator write <strong>COMPLETE_COMMIT</strong>. Consumers using <code>isolation.level=read_committed</code> follow the markers to filter out aborted batches and only return committed ones, up to the <strong>last stable offset (LSO)</strong> — the offset before the earliest still-open transaction.</li>
+        </ul>
+
+        <div class="diagram">
+          <svg viewBox="0 0 800 510" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kafka exactly-once two-phase commit: producer registers partitions with the transaction coordinator, writes data records to topic partitions, sends consumer offsets, then CommitTxn triggers control markers to be appended to every touched partition; consumers in read_committed filter aborted batches and read up to the last stable offset.">
+            <defs>
+              <marker id="arrx" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="arrx-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="arrx-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e0af68"/>
+              </marker>
+              <style>
+                .lane { stroke:#3a4660; stroke-width:1.2; stroke-dasharray:4 4; }
+                .head { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:6; ry:6; }
+                .head-t { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .step { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .step-ok { stroke:#9ece6a; stroke-width:1.6; fill:none; }
+                .step-warn { stroke:#e0af68; stroke-width:1.6; fill:none; }
+                .step-t { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .step-n { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+              </style>
+            </defs>
+
+            <rect class="head" x="20"  y="20" width="150" height="34"/>
+            <text class="head-t" x="95"  y="42" text-anchor="middle">Tx Producer</text>
+            <rect class="head" x="200" y="20" width="170" height="34"/>
+            <text class="head-t" x="285" y="42" text-anchor="middle">Transaction Coordinator</text>
+            <rect class="head" x="400" y="20" width="170" height="34"/>
+            <text class="head-t" x="485" y="42" text-anchor="middle">Topic partitions (A, B)</text>
+            <rect class="head" x="600" y="20" width="180" height="34"/>
+            <text class="head-t" x="690" y="42" text-anchor="middle">Consumer (read_committed)</text>
+
+            <line class="lane" x1="95"  y1="60" x2="95"  y2="490"/>
+            <line class="lane" x1="285" y1="60" x2="285" y2="490"/>
+            <line class="lane" x1="485" y1="60" x2="485" y2="490"/>
+            <line class="lane" x1="690" y1="60" x2="690" y2="490"/>
+
+            <!-- 1 initTransactions -->
+            <path class="step" d="M95,90 L283,90" marker-end="url(#arrx)"/>
+            <text class="step-n" x="97" y="82">1</text>
+            <text class="step-t" x="190" y="82" text-anchor="middle">initTransactions() · get PID + epoch (fences zombies)</text>
+
+            <!-- 2 beginTxn -->
+            <path class="step" d="M95,120 L283,120" marker-end="url(#arrx)"/>
+            <text class="step-n" x="97" y="112">2</text>
+            <text class="step-t" x="190" y="112" text-anchor="middle">beginTransaction()</text>
+
+            <!-- 3 AddPartitionsToTxn -->
+            <path class="step" d="M95,150 L283,150" marker-end="url(#arrx)"/>
+            <text class="step-n" x="97" y="142">3</text>
+            <text class="step-t" x="190" y="142" text-anchor="middle">AddPartitionsToTxn(A, B)</text>
+
+            <!-- 4 coordinator writes BEGIN to __transaction_state (self loop) -->
+            <path class="step" d="M285,178 C325,178 325,205 285,205" marker-end="url(#arrx)"/>
+            <text class="step-n" x="287" y="170">4</text>
+            <text class="step-t" x="332" y="195">write BEGIN to __transaction_state</text>
+
+            <!-- 5 produce records to A -->
+            <path class="step" d="M95,235 L483,235" marker-end="url(#arrx)"/>
+            <text class="step-n" x="97" y="227">5</text>
+            <text class="step-t" x="290" y="227" text-anchor="middle">send(A, records) · batch tagged (PID, epoch, txn=true)</text>
+
+            <!-- 6 produce to B -->
+            <path class="step" d="M95,265 L483,265" marker-end="url(#arrx)"/>
+            <text class="step-n" x="97" y="257">6</text>
+            <text class="step-t" x="290" y="257" text-anchor="middle">send(B, records)</text>
+
+            <!-- 7 sendOffsetsToTxn -->
+            <path class="step" d="M95,295 L283,295" marker-end="url(#arrx)"/>
+            <text class="step-n" x="97" y="287">7</text>
+            <text class="step-t" x="190" y="287" text-anchor="middle">sendOffsetsToTransaction(consumer offsets)</text>
+
+            <!-- 8 commit start -->
+            <path class="step" d="M95,330 L283,330" marker-end="url(#arrx)"/>
+            <text class="step-n" x="97" y="322">8</text>
+            <text class="step-t" x="190" y="322" text-anchor="middle">commitTransaction()</text>
+
+            <!-- 9 coordinator writes PREPARE_COMMIT -->
+            <path class="step-warn" d="M285,358 C325,358 325,385 285,385" marker-end="url(#arrx-warn)"/>
+            <text class="step-n" x="287" y="350">9</text>
+            <text class="step-t" x="332" y="375">write PREPARE_COMMIT to __transaction_state</text>
+
+            <!-- 10 write commit markers to A and B -->
+            <path class="step-ok" d="M285,410 L483,410" marker-end="url(#arrx-ok)"/>
+            <text class="step-n" x="287" y="402">10</text>
+            <text class="step-t" x="385" y="402" text-anchor="middle">append CommitMarker to A, B (control records)</text>
+
+            <!-- 11 LSO advances, consumer can now see -->
+            <path class="step-ok" d="M485,440 L688,440" marker-end="url(#arrx-ok)"/>
+            <text class="step-n" x="487" y="432">11</text>
+            <text class="step-t" x="586" y="432" text-anchor="middle">LSO advances · committed batches visible to read_committed</text>
+
+            <!-- 12 coordinator writes COMPLETE -->
+            <path class="step-ok" d="M285,470 C325,470 325,485 285,485" marker-end="url(#arrx-ok)"/>
+            <text class="step-n" x="287" y="462">12</text>
+            <text class="step-t" x="332" y="478">write COMPLETE_COMMIT to __transaction_state</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Blue: client request flow. Orange: coordinator-internal control writes that drive the commit decision. Green: commit markers + the LSO advance that makes data visible to <code>read_committed</code> consumers. Until step 10 lands on every touched partition, the data records from steps 5–6 sit in the log but are invisible to <code>read_committed</code>.
+        </p>
+
+        <h3>Key knobs and properties</h3>
+        <ul>
+          <li><strong>Producer</strong> — <code>enable.idempotence=true</code>, <code>transactional.id=&lt;stable-id&gt;</code>, <code>acks=all</code> (forced by idempotence), <code>max.in.flight.requests.per.connection</code> ≤ 5 (forced).</li>
+          <li><strong>Consumer</strong> — <code>isolation.level=read_committed</code>. With <code>read_uncommitted</code> (the default) you see aborted batches too.</li>
+          <li><strong>Broker</strong> — <code>transaction.state.log.replication.factor</code>, <code>transaction.state.log.min.isr</code>, <code>transaction.max.timeout.ms</code>. The <code>__transaction_state</code> topic is created automatically.</li>
+          <li><strong>Failure mode</strong> — if the producer crashes mid-transaction, the coordinator times out the transaction and writes an <code>AbortTxn</code> marker, so consumers never see the half-written batches. A zombie producer with a stale epoch is rejected on its next request.</li>
+        </ul>
+
+        <h2 id="runtime">4. Memory / CPU / I/O Pipeline</h2>
+
+        <p>
+          A Kafka broker is essentially a network-attached append-only log that aggressively uses the kernel page cache instead of a JVM-resident cache. The throughput numbers Kafka is known for come from three architectural choices: <strong>sequential disk I/O</strong> on the produce path, <strong>page-cache reads served via <code>sendfile()</code> zero-copy</strong> on the consume path, and a <strong>thread pool design</strong> that decouples slow network I/O from CPU-bound request processing.
+        </p>
+
+        <h3>Memory layout of a broker process</h3>
+        <ul>
+          <li><strong>JVM heap (often 6–8 GB)</strong> — controller / metadata cache, request queues, in-flight produce buffers, request-handler local state, index entries cached in heap. Intentionally kept small relative to RAM so the kernel can use the rest as page cache.</li>
+          <li><strong>Off-heap (direct buffers)</strong> — Java NIO buffers used by the network layer and by <code>FileChannel</code> reads/writes. Sized by <code>-XX:MaxDirectMemorySize</code>.</li>
+          <li><strong>Page cache (all remaining RAM)</strong> — OS-owned, holds recently written log segments. Both producers and consumers hit this rather than going to disk. A reader at the tail of the log (lag ≈ 0) almost never touches a spinning platter; it reads the same page the producer just wrote.</li>
+          <li><strong>Disk</strong> — log segments stored as flat append-only files under <code>log.dirs</code>. The OS flushes dirty pages on its own schedule (controlled by <code>vm.dirty_*</code> sysctls). Kafka deliberately does <em>not</em> call <code>fsync</code> per record; durability comes from ISR replication, not from waiting for disk.</li>
+        </ul>
+
+        <h3>CPU / threading model</h3>
+        <ul>
+          <li><strong>Network threads (<code>num.network.threads</code>, default 3)</strong> — non-blocking <code>epoll</code>-style loop. One acceptor binds the listener, the others read framed requests off sockets and enqueue them onto a request channel. No per-connection thread.</li>
+          <li><strong>Request handler / IO threads (<code>num.io.threads</code>, default 8)</strong> — pull from the request channel and execute the actual work against <code>ReplicaManager</code> / <code>LogManager</code> / <code>GroupCoordinator</code> / <code>TransactionCoordinator</code>. This is where the CPU spends most of its time on the produce path (CRC, compression, log append) and on the consume path (offset lookup, fetch session bookkeeping).</li>
+          <li><strong>Replica fetcher threads</strong> — follower brokers run dedicated fetcher threads that issue <code>FetchRequest</code> against partition leaders to replicate. ISR membership is driven by how fresh each follower's fetch position is relative to the leader's log-end offset.</li>
+          <li><strong>Background threads</strong> — log cleaner (compaction), log retention deleter, group coordinator heartbeat, transaction coordinator expiration, controller event thread (in KRaft mode the controllers run a separate Raft event loop).</li>
+        </ul>
+
+        <div class="diagram">
+          <svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Broker runtime pipeline: NIC and kernel network stack feed network threads, which enqueue into a request channel consumed by IO request handler threads; produce path appends to log files through page cache with eventual OS flush, consume path uses FileChannel.transferTo to sendfile bytes from page cache directly to the socket, and follower brokers run replica fetcher threads.">
+            <defs>
+              <marker id="arrr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="arrr-z" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-cache { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .arr-z { stroke:#9ece6a; stroke-width:1.8; fill:none; }
+                .cluster { fill:none; stroke:#3a4660; stroke-width:1.2; stroke-dasharray:5 4; rx:10; ry:10; }
+                .ring { fill:none; stroke:#e0af68; stroke-width:1.2; stroke-dasharray:3 3; rx:10; ry:10; }
+              </style>
+            </defs>
+
+            <!-- NIC + kernel -->
+            <rect class="box" x="20" y="40" width="120" height="48"/>
+            <text class="lbl-b" x="80" y="62" text-anchor="middle">NIC</text>
+            <text class="lbl-s" x="80" y="78" text-anchor="middle">producers / consumers</text>
+
+            <rect class="box" x="20" y="110" width="120" height="56"/>
+            <text class="lbl-b" x="80" y="132" text-anchor="middle">Linux kernel</text>
+            <text class="lbl-s" x="80" y="148" text-anchor="middle">epoll · TCP stack</text>
+            <text class="lbl-s" x="80" y="162" text-anchor="middle">sendfile() syscall</text>
+
+            <!-- Broker JVM cluster -->
+            <rect class="cluster" x="180" y="20" width="430" height="290"/>
+            <text class="lbl-s" x="194" y="38">Broker JVM process</text>
+
+            <!-- Network threads -->
+            <rect class="box" x="200" y="60" width="170" height="60"/>
+            <text class="lbl-b" x="285" y="80" text-anchor="middle">Network threads</text>
+            <text class="lbl-s" x="285" y="96" text-anchor="middle">num.network.threads (≈3)</text>
+            <text class="lbl-s" x="285" y="112" text-anchor="middle">epoll loop · no per-conn thread</text>
+
+            <!-- Request channel -->
+            <rect class="box" x="200" y="140" width="170" height="42"/>
+            <text class="lbl-b" x="285" y="160" text-anchor="middle">RequestChannel queue</text>
+            <text class="lbl-s" x="285" y="176" text-anchor="middle">bounded · backpressure</text>
+
+            <!-- IO handler threads -->
+            <rect class="box-em" x="200" y="200" width="170" height="80"/>
+            <text class="lbl-b" x="285" y="220" text-anchor="middle">IO request handlers</text>
+            <text class="lbl-s" x="285" y="236" text-anchor="middle">num.io.threads (≈8)</text>
+            <text class="lbl-s" x="285" y="252" text-anchor="middle">ReplicaManager / LogManager</text>
+            <text class="lbl-s" x="285" y="268" text-anchor="middle">Group / Tx coordinator</text>
+
+            <!-- Page cache (large) -->
+            <rect class="box-cache" x="400" y="60" width="190" height="100"/>
+            <text class="lbl-b" x="495" y="80" text-anchor="middle">Page cache (OS)</text>
+            <text class="lbl-s" x="495" y="96" text-anchor="middle">most RAM lives here</text>
+            <text class="lbl-s" x="495" y="112" text-anchor="middle">recent log segments</text>
+            <text class="lbl-s" x="495" y="128" text-anchor="middle">tail reads = no disk seek</text>
+            <text class="lbl-s" x="495" y="144" text-anchor="middle">OS flushes dirty pages async</text>
+
+            <!-- Log segment files -->
+            <rect class="box" x="400" y="180" width="190" height="100"/>
+            <text class="lbl-b" x="495" y="200" text-anchor="middle">Log segment files</text>
+            <text class="lbl-s" x="495" y="216" text-anchor="middle">log.dirs (sequential append)</text>
+            <text class="lbl-s" x="495" y="232" text-anchor="middle">.log · .index · .timeindex</text>
+            <text class="lbl-s" x="495" y="248" text-anchor="middle">retention / compaction in bg</text>
+            <text class="lbl-s" x="495" y="264" text-anchor="middle">durability via ISR, not fsync</text>
+
+            <!-- Background threads ring -->
+            <rect class="ring" x="190" y="288" width="410" height="20"/>
+            <text class="lbl-s" x="395" y="302" text-anchor="middle">background: log cleaner · retention · controller / KRaft event loop · fetcher schedulers</text>
+
+            <!-- Replica fetcher (follower brokers / replication) -->
+            <rect class="box" x="650" y="60" width="130" height="80"/>
+            <text class="lbl-b" x="715" y="80" text-anchor="middle">Replica fetcher</text>
+            <text class="lbl-s" x="715" y="96" text-anchor="middle">on follower brokers</text>
+            <text class="lbl-s" x="715" y="112" text-anchor="middle">FetchRequest loop</text>
+            <text class="lbl-s" x="715" y="128" text-anchor="middle">drives ISR membership</text>
+
+            <!-- Consumer / Producer client (right side bottom) -->
+            <rect class="box" x="650" y="200" width="130" height="80"/>
+            <text class="lbl-b" x="715" y="220" text-anchor="middle">Consumer fetch</text>
+            <text class="lbl-s" x="715" y="236" text-anchor="middle">FileChannel.transferTo</text>
+            <text class="lbl-s" x="715" y="252" text-anchor="middle">zero-copy: page cache</text>
+            <text class="lbl-s" x="715" y="268" text-anchor="middle">→ NIC, no user copy</text>
+
+            <!-- Arrows -->
+            <!-- NIC ↔ kernel -->
+            <path class="arr" d="M80,88 L80,108" marker-end="url(#arrr)"/>
+            <path class="arr" d="M70,108 L70,90" marker-end="url(#arrr)"/>
+            <!-- kernel → network threads -->
+            <path class="arr" d="M140,138 L198,90" marker-end="url(#arrr)"/>
+            <!-- network → request channel -->
+            <path class="arr" d="M285,120 L285,138" marker-end="url(#arrr)"/>
+            <!-- request channel → IO handlers -->
+            <path class="arr" d="M285,182 L285,198" marker-end="url(#arrr)"/>
+            <!-- IO handlers → page cache (produce write) -->
+            <path class="arr" d="M370,222 L398,100" marker-end="url(#arrr)"/>
+            <!-- page cache → log segments (OS flush, dashed) -->
+            <path class="arr" d="M495,160 L495,178" marker-end="url(#arrr)" stroke-dasharray="4 3"/>
+            <!-- IO handlers ↔ replica fetcher (follower replication source) -->
+            <path class="arr" d="M370,240 L648,110" marker-end="url(#arrr)"/>
+
+            <!-- Zero-copy consume path (green): page cache → kernel sendfile → NIC -->
+            <path class="arr-z" d="M590,110 C620,90 640,80 648,220" marker-end="url(#arrr-z)"/>
+            <text class="lbl-s" x="612" y="190">zero-copy</text>
+
+            <!-- Footnote anchors (legend at bottom) -->
+            <text class="lbl-s" x="20" y="350">Blue = request path (CPU-bound stages).</text>
+            <text class="lbl-s" x="20" y="368">Orange = page cache (OS-managed, holds most RAM).</text>
+            <text class="lbl-s" x="20" y="386">Green = zero-copy consume (page cache → kernel sendfile → NIC, skips user space).</text>
+            <text class="lbl-s" x="20" y="404">Dashed = async OS flush of dirty pages to disk.</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          The hot path for a tail-following consumer never reads from disk — bytes flow page cache → kernel <code>sendfile</code> → NIC with no copy into user space. The hot path for produce is a sequential append into the same page cache, and durability is provided by ISR replication (followers pull through their own fetcher threads), not by <code>fsync</code> per write.
+        </p>
+
+        <h3>Why Kafka is fast (in one paragraph each)</h3>
+        <ul>
+          <li><strong>Sequential append</strong> — every produce is a write to the end of a flat file. SSDs and spinning disks both like this; there are no random seeks, no in-place updates.</li>
+          <li><strong>Page cache instead of an internal cache</strong> — keeping JVM heap small lets the OS use the rest of RAM as page cache. A tail-following consumer hits the same page the producer just wrote, so there is no disk I/O on the hot path.</li>
+          <li><strong>Zero-copy on consume</strong> — <code>FileChannel.transferTo()</code> calls <code>sendfile()</code>; bytes go page cache → NIC without traversing user-space buffers. CPU spends no cycles on memcpy.</li>
+          <li><strong>Batching + compression</strong> — producers batch records per partition before sending; brokers store, replicate, and serve those batches as-is. Compression is end-to-end (decompress only at the consumer).</li>
+          <li><strong>Pull-based replication</strong> — followers fetch from the leader on their own schedule with the same fetch API as a consumer; the leader has no per-follower send loop. ISR membership is driven by how fresh each follower's pull is.</li>
+        </ul>
+
+        <h2 id="cli">5. CLI Commands</h2>
 
         <p>
           The scripts ship inside the Kafka distribution's <code>bin/</code> directory. Examples assume <code>BOOTSTRAP=localhost:9092</code>. For a secured cluster, add <code>--command-config client.properties</code>.
