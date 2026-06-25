@@ -140,6 +140,15 @@
         <p>
           <strong>수정 (PR #4469, merged)</strong> — <code>RecordInRetryException</code> catch에서 <code>failedRecords.addLast(failedRecord)</code> re-queue를 제거. 에러 핸들러가 이미 컨슈머를 실패 offset으로 seek 했고, <code>FailedRecordTracker</code> 엔트리는 (topic, partition, offset)으로 키잉돼 루프 반복에 걸쳐 살아남기 때문에 attempt 카운터는 자연스러운 재배달 위에서 그대로 누적됩니다. 회귀 테스트는 <code>EnableKafkaKotlinCoroutinesTests</code>에 추가 — always-failing suspend 리스너에 <code>DefaultErrorHandler(FixedBackOff(100L, 2L))</code> 적용하고 리스너 호출이 정확히 3회만 일어나는지 확인 (픽스 없이는 <code>expected: 3 but was: 6</code>).
         </p>
+        <ul class="pr-list">
+          <li>
+            <a href="https://github.com/spring-projects/spring-kafka/pull/4469" target="_blank" rel="noopener">
+              <span class="pr-id">PR #4469</span>
+              <span class="pr-title">GH-4465: Fix unbounded async retry re-delivery</span>
+            </a>
+            <span class="pr-state state-merged">merged</span>
+          </li>
+        </ul>
 
         <h2>문제 2 — 두 레코드 silent 유실 (GH-4504)</h2>
         <p>
@@ -154,16 +163,7 @@
         <p>
           <strong>4.0.x backport fix (PR #4517, open)</strong> — PR #4505가 <code>4.0.x</code>로 backport됐을 때 main에만 있던 precursor commit이 누락돼 테스트 3개가 깨졌습니다. fix-forward로 cherry-pick.
         </p>
-
-        <h2>PR 목록</h2>
         <ul class="pr-list">
-          <li>
-            <a href="https://github.com/spring-projects/spring-kafka/pull/4469" target="_blank" rel="noopener">
-              <span class="pr-id">PR #4469</span>
-              <span class="pr-title">GH-4465: Fix unbounded async retry re-delivery</span>
-            </a>
-            <span class="pr-state state-merged">merged</span>
-          </li>
           <li>
             <a href="https://github.com/spring-projects/spring-kafka/pull/4505" target="_blank" rel="noopener">
               <span class="pr-id">PR #4505</span>
