@@ -124,9 +124,9 @@
     <section class="page-hero">
       <div class="container">
         <p class="eyebrow">Spring Kafka · open · 4.0.x</p>
-        <h1 class="title">PR #4517 — 4.0.x: Cherry-pick <code>813f6891</code> to fix test regressions from the PR #4505 backport</h1>
+        <h1 class="title">PR #4517 — 4.0.x backport fix for PR #4505</h1>
         <p class="lede">
-          PR #4505 (GH-4504 데이터 유실 fix)가 머지 직후 <code>4.0.x</code>로 backport(<code>ed31b093</code>)됐는데, main에는 있고 4.0.x에는 없는 precursor commit 하나가 누락돼 <code>EnableKafkaKotlinCoroutinesTests</code>의 3개 테스트가 모두 깨졌습니다. main의 <code>813f6891</code>(Support <code>CommonErrorHandler</code> for suspend functions)을 4.0.x로 cherry-pick해 fix-forward.
+          PR #4505가 <code>4.0.x</code>로 backport됐을 때 main에만 있던 precursor commit 하나가 누락돼 suspend listener 테스트 3개가 깨졌습니다. main의 <code>813f6891</code>을 4.0.x로 cherry-pick하는 fix-forward PR.
         </p>
         <div class="hero-meta">
           <a class="pill" href="https://github.com/spring-projects/spring-kafka/pull/4517" target="_blank" rel="noopener">
@@ -138,62 +138,6 @@
 
     <section class="section">
       <div class="container narrow">
-        <h2>맥락</h2>
-        <p>
-          PR #4505가 main에 머지된 직후 메인테이너(@sobychacko)가 <code>4.0.x</code> 브랜치로 cherry-pick(<code>ed31b093</code>)으로 backport. CI에서 <code>EnableKafkaKotlinCoroutinesTests</code>의 3개 테스트가 동시 실패:
-        </p>
-        <ul>
-          <li><code>test suspend function with CommonErrorHandler</code></li>
-          <li><code>test suspend function bounded retries with CommonErrorHandler</code></li>
-          <li><code>test suspend function bounded retries for two records on the same partition</code></li>
-        </ul>
-        <p>
-          메인테이너가 PR #4505 thread에 "tests are failing on the 4.0.x branch ... if need be, we can back out these changes from 4.0.x"이라고 알려옴. 로컬 재현 후 root cause 추적.
-        </p>
-
-        <h2>원인</h2>
-        <p>
-          backport의 새 suspend-listener 테스트 3개 모두 main에만 존재하던 commit <code>813f6891</code>(Support <code>CommonErrorHandler</code> for suspend functions)에 의존. 4.0.x에는 이 precursor가 한 번도 backport된 적 없음.
-        </p>
-        <p>
-          main에서는 <code>setCallbackForAsyncFailure(...)</code>가 모든 <code>RecordMessagingMessageListenerAdapter</code>에 대해 <code>DelegatingMessageListener</code> extraction으로 wire됨. 4.0.x에서는 <code>KafkaBackoffAwareMessageListenerAdapter</code>(즉 <code>@RetryableTopic</code>일 때)만 wire됨. plain suspend <code>@KafkaListener</code> + <code>DefaultErrorHandler</code> 조합에서는 async failure가 <code>failedRecords</code> 큐로 routing 자체가 안 됨 → <code>handleAsyncFailure</code> 호출 안 됨 → recoverer 호출 안 됨 → latch timeout.
-        </p>
-
-        <h2>선택지와 결정</h2>
-        <p>
-          두 방향이 있었음:
-        </p>
-        <ol>
-          <li><strong>Fix forward</strong> — <code>813f6891</code>을 4.0.x에 cherry-pick해 backport가 작동하게 함.</li>
-          <li><strong>Back out</strong> — 4.0.x에서 backport 자체를 되돌려 silent data loss 상태로 유지 (fix는 main에만 존재).</li>
-        </ol>
-        <p>
-          (1)로 결정. silent record loss는 유지되는 브랜치에 그대로 두면 안 되는 종류의 버그. <code>813f6891</code>은 본질이 backport-worthy bug fix 이기도 함.
-        </p>
-
-        <h2>수정</h2>
-        <p>
-          <code>813f6891</code>을 <code>4.0.x</code>로 cherry-pick. 충돌은 테스트 파일 한 곳뿐 (HEAD가 backport(<code>ed31b093</code>)로 이미 superset of 813f6891의 테스트를 가지고 있어서) → HEAD 채택으로 자연 해소. container 코드는 auto-merge로 정확히 필요한 wiring 변경 (<code>setCallbackForAsyncFailure(...)</code>의 <code>KafkaBackoffAwareMessageListenerAdapter</code>-only 분기를 generic <code>DelegatingMessageListener</code> extraction으로 교체)만 들어옴.
-        </p>
-        <p>
-          다른 잠재적 precursor <code>dfe52787</code>(GH-4465 fix)은 <code>ed31b093</code>이 이미 container 변경(<code>failedRecords.addLast(failedRecord)</code> 제거)과 회귀 테스트 둘 다 통째로 흡수했기 때문에 cherry-pick 시 redundant conflict만 나서 제외.
-        </p>
-
-        <h2>검증</h2>
-        <p>
-          로컬 4.0.x에서 cherry-pick 적용 후 <code>./gradlew :spring-kafka:test</code> 풀 스윕 통과. 깨졌던 3개 테스트 + <code>ObservationTests</code>(813f6891이 함께 손본 파일) 모두 green.
-        </p>
-
-        <h2>두 번째 commit — attribution</h2>
-        <p>
-          본 PR의 두 번째 commit은 <code>KafkaMessageListenerContainer.java</code>의 class-level <code>@author</code> 목록 끝에 <code>Bill Kim</code> 한 줄 추가. PR #4505가 머지될 때 누락된 contributor attribution 보강. PR body에 메인테이너 선호도 따라 drop 가능하다는 단서 명시.
-        </p>
-
-        <h2>DCO 해소</h2>
-        <p>
-          첫 cherry-pick commit (<code>8fa7a8be</code>)이 DCO bot에서 fail — 원작자 zoo-code의 <code>Signed-off-by</code>만 보존되고 committer(BK202503) 본인 signoff가 누락된 상태였음. <code>git rebase -i</code> + <code>git commit --amend --no-edit --signoff</code>로 BK202503 signoff 한 줄 추가하고 원작자 signoff는 그대로 보존. force-push 후 DCO status <code>pass</code>로 전환.
-        </p>
-
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">PR</span><a href="https://github.com/spring-projects/spring-kafka/pull/4517" target="_blank" rel="noopener">spring-projects/spring-kafka#4517</a></li>
