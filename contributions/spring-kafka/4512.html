@@ -74,7 +74,7 @@
             <div class="dropdown-section">Spring Kafka</div>
             <a href="/contributions/spring-kafka.html">Spring Kafka — overview</a>
             <a href="/contributions/spring-kafka/4469.html">PR #4469 · GH-4465 (merged)</a>
-            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 · GH-4504 (merged)</a>
             <a href="/contributions/spring-kafka/4512.html">PR #4512 · GH-4504 (amplification)</a>
             <div class="dropdown-section">Spring Cloud AWS</div>
             <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
@@ -122,7 +122,7 @@
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Spring Kafka · open · depends on #4505</p>
+        <p class="eyebrow">Spring Kafka · open · follow-up to merged #4505</p>
         <h1 class="title">PR #4512 — GH-4504: Bound async retry to linear delivery count per record</h1>
         <p class="lede">
           PR #4505가 데이터 유실은 잡았으나 같은 파티션에 항상 실패하는 N개 레코드가 들어오면 suspend 리스너의 invocation 수가 <code>N·(N+2)</code> (quadratic)로 증가하는 head-of-line amplification이 남아 있었습니다. 메인테이너 요청으로 PR을 분리, 본 PR에서 <code>asyncRetryOffsets</code> + <code>seenMultiAttemptRetry</code> 게이트 + manual seek로 invocation을 <code>N·(n+2)−1</code> (linear)로 bound. <code>@RetryableTopic</code> 시나리오(publish-and-done recoverer) 회귀 없이.
@@ -139,7 +139,7 @@
       <div class="container narrow">
         <h2>맥락</h2>
         <p>
-          PR #4505 (데이터 유실 fix)가 머지되기 전 reporter가 burst 측정을 보내옴 — <code>DefaultErrorHandler(FixedBackOff(100ms, 2))</code>로 N개 always-failing 레코드를 한 파티션에 보냈을 때 suspend 리스너의 총 invocation이 blocking 리스너의 <code>N·(n+1)</code>과 다르게 <code>N·(N+2)</code>로 증가 (N=20에서 60 vs 440). 원인: 데이터 유실 fix는 head가 retry 중일 때 같은 파티션의 뒤 레코드를 deque에서 drop만 하지, dispatch loop의 listener invocation은 막지 않음 → 매 retry cycle마다 컨슈머가 seek-back으로 전체 backlog를 re-poll하면서 listener를 다시 호출.
+          PR #4505 (데이터 유실 fix, 2026-06-24 merge commit <code>87710ea</code>) 작업 중 reporter가 burst 측정을 보내옴 — <code>DefaultErrorHandler(FixedBackOff(100ms, 2))</code>로 N개 always-failing 레코드를 한 파티션에 보냈을 때 suspend 리스너의 총 invocation이 blocking 리스너의 <code>N·(n+1)</code>과 다르게 <code>N·(N+2)</code>로 증가 (N=20에서 60 vs 440). 원인: 데이터 유실 fix는 head가 retry 중일 때 같은 파티션의 뒤 레코드를 deque에서 drop만 하지, dispatch loop의 listener invocation은 막지 않음 → 매 retry cycle마다 컨슈머가 seek-back으로 전체 backlog를 re-poll하면서 listener를 다시 호출.
         </p>
 
         <h2>이전 시도와 회귀</h2>
@@ -182,7 +182,7 @@
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">PR</span><a href="https://github.com/spring-projects/spring-kafka/pull/4512" target="_blank" rel="noopener">spring-projects/spring-kafka#4512</a></li>
-          <li><span class="k">Depends</span><a href="/contributions/spring-kafka/4505.html">PR #4505 — GH-4504 데이터 유실 fix (선행)</a></li>
+          <li><span class="k">Depends</span><a href="/contributions/spring-kafka/4505.html">PR #4505 — GH-4504 데이터 유실 fix (merged 2026-06-24)</a></li>
           <li><span class="k">Issue</span><a href="https://github.com/spring-projects/spring-kafka/issues/4504" target="_blank" rel="noopener">spring-projects/spring-kafka#4504</a></li>
           <li><span class="k">Project</span><a href="/contributions/spring-kafka.html">Spring Kafka 기여 개요</a></li>
           <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
