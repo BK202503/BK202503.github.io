@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Spring Kafka — Architecture, Message Flow, Features, Internals | 김빌 (Bill Kim)</title>
+  <meta name="description" content="A compact reference to Spring Kafka: the container hierarchy that drives @KafkaListener, the record dispatch and error-handling flow, the features that come up day-to-day (DefaultErrorHandler, @RetryableTopic, DLT, transactions, async return types, Kotlin coroutines), and the source files where the real logic lives." />
+  <meta name="keywords" content="Spring Kafka, KafkaListenerContainerFactory, ConcurrentMessageListenerContainer, KafkaMessageListenerContainer, ListenerConsumer, MessagingMessageListenerAdapter, RecordMessagingMessageListenerAdapter, DefaultErrorHandler, FailedRecordTracker, SeekUtils, DeadLetterPublishingRecoverer, RetryTopicConfigurer, KafkaBackoffAwareMessageListenerAdapter, KafkaTemplate, suspend KafkaListener, async return types, exactly-once, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/spring-kafka.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/spring-kafka.html" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/spring-kafka.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Spring Kafka — Architecture, Message Flow, Features, Internals" />
+  <meta property="og:description" content="Container hierarchy, record dispatch flow, error-handling internals, and the key source files of Spring Kafka." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/spring-kafka.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Spring Kafka — Architecture, Message Flow, Features, Internals" />
+  <meta name="twitter:description" content="Container hierarchy, dispatch flow, features, and internals reference for Spring Kafka." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "OSS", "item": "https://bk202503.github.io/#oss" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Kafka" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Kafka — Architecture, Message Flow, Features, Internals",
+    "url": "https://bk202503.github.io/spring-kafka.html",
+    "inLanguage": "en",
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Kafka", "KafkaListener", "DefaultErrorHandler", "RetryableTopic", "Dead Letter Topic", "Kotlin Coroutines"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .diagram { margin: 0 0 28px; padding: 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 10px; overflow-x: auto; }
+    .diagram svg { display: block; max-width: 100%; height: auto; }
+    .diagram-caption { margin: -12px 0 24px; font-size: 13px; color: var(--muted, #8a96a3); font-style: italic; }
+    .toc { margin: 0 0 28px; padding: 14px 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 8px; }
+    .toc ol { margin: 0; padding-left: 22px; }
+    .toc li { margin: 4px 0; }
+  </style>
+</head>
+<body data-lang="en">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
+            <a href="/contributions/spring-kafka-4465.html">overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
+            <div class="dropdown-section">Spring Kafka — silent 유실 (GH-4504)</div>
+            <a href="/contributions/spring-kafka-4504.html">overview</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix)</a>
+            <div class="dropdown-section">Spring Cloud AWS</div>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
+            <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/apache-kafka.html">Overview</a>
+            <a href="/apache-kafka.html#architecture">Architecture</a>
+            <a href="/apache-kafka.html#message-flow">Message Flow</a>
+            <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/spring-kafka.html">Overview</a>
+            <a href="/spring-kafka.html#architecture">Architecture</a>
+            <a href="/spring-kafka.html#message-flow">Message Flow</a>
+            <a href="/spring-kafka.html#features">Features</a>
+            <a href="/spring-kafka.html#internals">Internals</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#oss">OSS</a></li>
+          <li aria-current="page">Spring Kafka</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Reference · Spring Ecosystem</p>
+        <h1 class="title">Spring Kafka — Architecture, Message Flow, Features, Internals</h1>
+        <p class="lede">
+          A compact reference to Spring Kafka: the container hierarchy that drives <code>@KafkaListener</code>, the record dispatch and error-handling flow, the features that come up day-to-day (<code>DefaultErrorHandler</code>, <code>@RetryableTopic</code>, DLT, transactions, async return types, Kotlin coroutines), and the source files where the real logic lives.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+
+        <div class="toc">
+          <ol>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#message-flow">Message Flow</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#internals">Internals — key source files</a></li>
+          </ol>
+        </div>
+
+        <h2 id="architecture">1. Architecture</h2>
+
+        <p>
+          Spring Kafka layers a Spring-managed container hierarchy on top of the plain Kafka client. The application registers a <strong><code>KafkaListenerContainerFactory</code></strong> bean; the framework discovers <code>@KafkaListener</code>-annotated methods and asks the factory to produce a <strong><code>ConcurrentMessageListenerContainer</code></strong> per listener. That container spins up one <strong><code>KafkaMessageListenerContainer</code></strong> per concurrency unit, each of which runs a single-threaded <strong><code>ListenerConsumer</code></strong> that owns one <code>Consumer</code> client. <code>ListenerConsumer</code> drives the poll loop, hands records to a <strong>listener adapter chain</strong>, and routes failures to the configured <strong><code>CommonErrorHandler</code></strong> (most often <code>DefaultErrorHandler</code> with a backoff and a recoverer such as <code>DeadLetterPublishingRecoverer</code>).
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 780 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spring Kafka container hierarchy: ContainerFactory creates ConcurrentMessageListenerContainer, which spins up multiple KafkaMessageListenerContainer each running a ListenerConsumer that dispatches records through a listener adapter chain to user code, with failures routed to CommonErrorHandler and recoverer.">
+            <defs>
+              <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="arr3-err" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#f7768e"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .arr-err { stroke:#f7768e; stroke-width:1.6; fill:none; }
+                .cluster { fill:none; stroke:#3a4660; stroke-width:1.2; stroke-dasharray:5 4; rx:10; ry:10; }
+              </style>
+            </defs>
+
+            <!-- App context -->
+            <rect class="box" x="20" y="30" width="170" height="56"/>
+            <text class="lbl-b" x="105" y="52" text-anchor="middle">@SpringBootApplication</text>
+            <text class="lbl-s" x="105" y="70" text-anchor="middle">discovers @KafkaListener beans</text>
+
+            <!-- Factory -->
+            <rect class="box" x="20" y="110" width="170" height="56"/>
+            <text class="lbl-b" x="105" y="132" text-anchor="middle">KafkaListenerContainerFactory</text>
+            <text class="lbl-s" x="105" y="150" text-anchor="middle">+ ConsumerFactory, ErrorHandler</text>
+
+            <path class="arr" d="M105,86 L105,108" marker-end="url(#arr3)"/>
+            <path class="arr" d="M190,138 L220,138" marker-end="url(#arr3)"/>
+
+            <!-- Concurrent container -->
+            <rect class="cluster" x="220" y="20" width="320" height="240"/>
+            <text class="lbl-s" x="232" y="36">ConcurrentMessageListenerContainer (concurrency=3)</text>
+
+            <rect class="box-em" x="240" y="50" width="280" height="50"/>
+            <text class="lbl-b" x="380" y="70" text-anchor="middle">KafkaMessageListenerContainer #1</text>
+            <text class="lbl-s" x="380" y="86" text-anchor="middle">ListenerConsumer thread · 1 Consumer</text>
+
+            <rect class="box" x="240" y="115" width="280" height="50"/>
+            <text class="lbl-b" x="380" y="135" text-anchor="middle">KafkaMessageListenerContainer #2</text>
+            <text class="lbl-s" x="380" y="151" text-anchor="middle">ListenerConsumer thread · 1 Consumer</text>
+
+            <rect class="box" x="240" y="180" width="280" height="50"/>
+            <text class="lbl-b" x="380" y="200" text-anchor="middle">KafkaMessageListenerContainer #3</text>
+            <text class="lbl-s" x="380" y="216" text-anchor="middle">ListenerConsumer thread · 1 Consumer</text>
+
+            <!-- Listener adapter chain -->
+            <rect class="box" x="570" y="50" width="190" height="80"/>
+            <text class="lbl-b" x="665" y="70" text-anchor="middle">Listener adapter chain</text>
+            <text class="lbl"   x="665" y="88" text-anchor="middle">RecordMessagingMessageListenerAdapter</text>
+            <text class="lbl-s" x="665" y="104" text-anchor="middle">payload conversion · @SendTo · async</text>
+            <text class="lbl-s" x="665" y="120" text-anchor="middle">callback wiring for failures</text>
+
+            <!-- User method -->
+            <rect class="box" x="570" y="148" width="190" height="44"/>
+            <text class="lbl-b" x="665" y="167" text-anchor="middle">@KafkaListener method</text>
+            <text class="lbl-s" x="665" y="183" text-anchor="middle">user code (sync / async / suspend)</text>
+
+            <path class="arr" d="M520,75 C560,75 545,75 568,75" marker-end="url(#arr3)"/>
+            <path class="arr" d="M665,130 L665,146" marker-end="url(#arr3)"/>
+
+            <!-- Error handler -->
+            <rect class="box" x="240" y="280" width="280" height="56"/>
+            <text class="lbl-b" x="380" y="300" text-anchor="middle">CommonErrorHandler</text>
+            <text class="lbl"   x="380" y="318" text-anchor="middle">DefaultErrorHandler + BackOff</text>
+            <text class="lbl-s" x="380" y="334" text-anchor="middle">seekAfterHandling · throws RecordInRetryException</text>
+
+            <!-- Recoverer -->
+            <rect class="box" x="570" y="280" width="190" height="56"/>
+            <text class="lbl-b" x="665" y="300" text-anchor="middle">ConsumerRecordRecoverer</text>
+            <text class="lbl-s" x="665" y="318" text-anchor="middle">DeadLetterPublishingRecoverer</text>
+            <text class="lbl-s" x="665" y="334" text-anchor="middle">publish to DLT with cause headers</text>
+
+            <path class="arr-err" d="M665,192 C665,235 665,235 665,278" marker-end="url(#arr3-err)"/>
+            <path class="arr-err" d="M570,308 L522,308" marker-end="url(#arr3-err)"/>
+            <text class="lbl-s" x="546" y="298" text-anchor="middle">on attempt exhaust</text>
+
+            <!-- KafkaTemplate (producer) -->
+            <rect class="box" x="20" y="280" width="170" height="56"/>
+            <text class="lbl-b" x="105" y="300" text-anchor="middle">KafkaTemplate</text>
+            <text class="lbl-s" x="105" y="318" text-anchor="middle">produce path · transactions</text>
+            <text class="lbl-s" x="105" y="334" text-anchor="middle">used by app + by DLT recoverer</text>
+
+            <path class="arr" d="M190,308 L238,308" marker-end="url(#arr3)"/>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Blue arrows: normal dispatch and produce paths. Red arrows: failure path through <code>CommonErrorHandler</code> to the recoverer. Each <code>KafkaMessageListenerContainer</code> is single-threaded — concurrency above one is achieved by running more containers, not by parallelizing inside one consumer.
+        </p>
+
+        <h2 id="message-flow">2. Message Flow</h2>
+
+        <p>
+          The path of a single record from broker poll to user method, with both the success path (offset commit) and the failure path (backoff retry → recover to DLT) drawn in.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 780 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence: ListenerConsumer polls, listener adapter converts payload and invokes user method, on success commit offset, on failure CommonErrorHandler seeks back for retry until attempts exhausted then recoverer publishes to DLT.">
+            <defs>
+              <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="arr4-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="arr4-err" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#f7768e"/>
+              </marker>
+              <style>
+                .lane { stroke:#3a4660; stroke-width:1.2; stroke-dasharray:4 4; }
+                .head { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:6; ry:6; }
+                .head-t { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .step { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .step-ok { stroke:#9ece6a; stroke-width:1.6; fill:none; }
+                .step-err { stroke:#f7768e; stroke-width:1.6; fill:none; }
+                .step-t { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .step-n { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+              </style>
+            </defs>
+
+            <rect class="head" x="20"  y="20" width="140" height="34"/>
+            <text class="head-t" x="90"  y="42" text-anchor="middle">Broker</text>
+            <rect class="head" x="200" y="20" width="160" height="34"/>
+            <text class="head-t" x="280" y="42" text-anchor="middle">ListenerConsumer</text>
+            <rect class="head" x="400" y="20" width="160" height="34"/>
+            <text class="head-t" x="480" y="42" text-anchor="middle">Listener adapter</text>
+            <rect class="head" x="600" y="20" width="160" height="34"/>
+            <text class="head-t" x="680" y="42" text-anchor="middle">User method · CommonErrorHandler</text>
+
+            <line class="lane" x1="90"  y1="60"  x2="90"  y2="520"/>
+            <line class="lane" x1="280" y1="60"  x2="280" y2="520"/>
+            <line class="lane" x1="480" y1="60"  x2="480" y2="520"/>
+            <line class="lane" x1="680" y1="60"  x2="680" y2="520"/>
+
+            <!-- 1 poll -->
+            <path class="step" d="M280,90 L92,90" marker-end="url(#arr4)"/>
+            <text class="step-n" x="278" y="82" text-anchor="end">1</text>
+            <text class="step-t" x="185" y="82" text-anchor="middle">consumer.poll(timeout)</text>
+
+            <!-- 2 records back -->
+            <path class="step-ok" d="M92,118 L278,118" marker-end="url(#arr4-ok)"/>
+            <text class="step-n" x="92" y="110">2</text>
+            <text class="step-t" x="185" y="110" text-anchor="middle">ConsumerRecords(records)</text>
+
+            <!-- 3 dispatch -->
+            <path class="step" d="M280,148 L478,148" marker-end="url(#arr4)"/>
+            <text class="step-n" x="282" y="140">3</text>
+            <text class="step-t" x="380" y="140" text-anchor="middle">for each record → adapter.onMessage(rec)</text>
+
+            <!-- 4 invoke user -->
+            <path class="step" d="M480,178 L678,178" marker-end="url(#arr4)"/>
+            <text class="step-n" x="482" y="170">4</text>
+            <text class="step-t" x="580" y="170" text-anchor="middle">convert payload + invoke method</text>
+
+            <!-- 5a success return -->
+            <path class="step-ok" d="M678,210 L482,210" marker-end="url(#arr4-ok)"/>
+            <text class="step-n" x="678" y="202" text-anchor="end">5a</text>
+            <text class="step-t" x="580" y="202" text-anchor="middle">return (sync) / CompletableFuture.complete / suspend resume</text>
+
+            <!-- 6a back to consumer -->
+            <path class="step-ok" d="M478,238 L282,238" marker-end="url(#arr4-ok)"/>
+            <text class="step-n" x="478" y="230" text-anchor="end">6a</text>
+            <text class="step-t" x="380" y="230" text-anchor="middle">success → ack queued</text>
+
+            <!-- 7a commit -->
+            <path class="step-ok" d="M280,268 L92,268" marker-end="url(#arr4-ok)"/>
+            <text class="step-n" x="278" y="260" text-anchor="end">7a</text>
+            <text class="step-t" x="185" y="260" text-anchor="middle">commitAsync per AckMode (RECORD/BATCH/MANUAL...)</text>
+
+            <!-- divider line -->
+            <line x1="60" y1="290" x2="740" y2="290" stroke="#3a4660" stroke-width="0.5"/>
+            <text class="step-n" x="400" y="304" text-anchor="middle">failure path (5b–9b)</text>
+
+            <!-- 5b error -->
+            <path class="step-err" d="M678,330 L482,330" marker-end="url(#arr4-err)"/>
+            <text class="step-n" x="678" y="322" text-anchor="end">5b</text>
+            <text class="step-t" x="580" y="322" text-anchor="middle">throw / CompletableFuture.completeExceptionally / suspend throws</text>
+
+            <!-- 6b adapter -> consumer (sync: throw; async: callbackForAsyncFailure adds to failedRecords) -->
+            <path class="step-err" d="M478,360 L282,360" marker-end="url(#arr4-err)"/>
+            <text class="step-n" x="478" y="352" text-anchor="end">6b</text>
+            <text class="step-t" x="380" y="352" text-anchor="middle">sync: rethrow · async: callback → failedRecords queue</text>
+
+            <!-- 7b commonErrorHandler.handleRemaining -->
+            <path class="step-err" d="M280,392 L678,392" marker-end="url(#arr4-err)"/>
+            <text class="step-n" x="282" y="384">7b</text>
+            <text class="step-t" x="480" y="384" text-anchor="middle">CommonErrorHandler.handleRemaining(rec, ex)</text>
+
+            <!-- 8b tracker decides + seek -->
+            <path class="step-err" d="M678,422 L282,422" marker-end="url(#arr4-err)"/>
+            <text class="step-n" x="678" y="414" text-anchor="end">8b</text>
+            <text class="step-t" x="480" y="414" text-anchor="middle">FailedRecordTracker++ · SeekUtils.doSeeks · throw RecordInRetryException</text>
+
+            <!-- 9b retry loop back to poll -->
+            <path class="step-err" d="M280,452 L92,452" marker-end="url(#arr4-err)"/>
+            <text class="step-n" x="278" y="444" text-anchor="end">9b</text>
+            <text class="step-t" x="185" y="444" text-anchor="middle">next poll re-delivers same offset (until BackOff exhausted)</text>
+
+            <!-- 10b recover (when attempts exhausted) -->
+            <path class="step-err" d="M280,484 L678,484" marker-end="url(#arr4-err)"/>
+            <text class="step-n" x="282" y="476">10b</text>
+            <text class="step-t" x="480" y="476" text-anchor="middle">attempts exhausted → recoverer.accept(rec, ex)</text>
+
+            <!-- 11b DLT publish -->
+            <path class="step-err" d="M678,514 L92,514" marker-end="url(#arr4-err)"/>
+            <text class="step-n" x="678" y="506" text-anchor="end">11b</text>
+            <text class="step-t" x="380" y="506" text-anchor="middle">DeadLetterPublishingRecoverer → KafkaTemplate.send(DLT) · commit offset</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Top half (1–7a): success path with offset commit. Bottom half (5b–11b): failure path through <code>DefaultErrorHandler</code>, with <code>SeekUtils</code> driving in-place retry until <code>FailedRecordTracker</code>'s attempt budget is exhausted, then the recoverer publishes to a DLT and the offset commits past the bad record.
+        </p>
+
+        <h2 id="features">3. Features</h2>
+
+        <h3>Listener side</h3>
+        <ul>
+          <li><strong><code>@KafkaListener</code></strong> on a method — declarative subscription. Supports topic literals, patterns, explicit partition assignments, and SpEL.</li>
+          <li><strong>Return types</strong> — <code>void</code>, a value (used with <code>@SendTo</code> for request-reply), <code>CompletableFuture&lt;T&gt;</code>, <code>Mono&lt;T&gt;</code>, and Kotlin <code>suspend</code>. Async return types automatically switch <code>AckMode</code> to <code>MANUAL</code> with out-of-order commits.</li>
+          <li><strong>Batch mode</strong> — set the container factory's <code>batchListener=true</code> and accept <code>List&lt;ConsumerRecord&lt;K,V&gt;&gt;</code>; the listener processes a full poll's worth of records per invocation.</li>
+          <li><strong><code>@KafkaHandler</code></strong> on class-level <code>@KafkaListener</code> — payload-type dispatch (different methods for different message payload classes).</li>
+          <li><strong>Consumer-aware injection</strong> — <code>Consumer</code>, <code>Acknowledgment</code>, <code>ConsumerRecordMetadata</code> can be method parameters.</li>
+        </ul>
+
+        <h3>Error handling and retry</h3>
+        <ul>
+          <li><strong><code>DefaultErrorHandler</code></strong> — the standard <code>CommonErrorHandler</code>. Uses a <code>BackOff</code> (<code>FixedBackOff</code>, <code>ExponentialBackOff</code>) for in-place retry and a <code>ConsumerRecordRecoverer</code> when attempts are exhausted. <em>Blocks the partition</em> during retry.</li>
+          <li><strong><code>@RetryableTopic</code></strong> — non-blocking retry. Failed records are published to a chain of retry topics (each with its own delay) and finally a DLT; the main partition keeps advancing. Useful when one bad record must not block its partition peers.</li>
+          <li><strong><code>DeadLetterPublishingRecoverer</code></strong> — pluggable recoverer that publishes the failed record to a DLT with structured headers (cause class, stack trace, original topic / partition / offset, timestamp).</li>
+          <li><strong><code>KafkaListenerErrorHandler</code></strong> — per-listener hook for translating exceptions before they reach the container's <code>CommonErrorHandler</code>.</li>
+          <li><strong>Reply-side error handling</strong> — when using <code>@SendTo</code>, exceptions thrown by the listener can be converted to error replies via <code>KafkaTemplate</code>'s <code>setBinaryReplyHeader</code> wiring.</li>
+        </ul>
+
+        <h3>Producer side</h3>
+        <ul>
+          <li><strong><code>KafkaTemplate</code></strong> — main producer entrypoint. Supports <code>send(ProducerRecord)</code>, <code>send(topic, key, value)</code>, transactional <code>executeInTransaction</code>, and <code>sendAndReceive</code> for request-reply.</li>
+          <li><strong><code>ReplyingKafkaTemplate</code></strong> — request-reply on top of <code>KafkaTemplate</code> + a reply container; correlates by a generated header.</li>
+          <li><strong>Transactions</strong> — <code>KafkaTransactionManager</code> + transactional producer. Combine with <code>JpaTransactionManager</code> via <code>ChainedKafkaTransactionManager</code> for "do DB write + publish" atomicity within the same Spring transaction boundary.</li>
+        </ul>
+
+        <h3>Exactly-once and ordering</h3>
+        <ul>
+          <li><strong>Exactly-once semantics</strong> — set <code>enable.idempotence=true</code> + <code>transactional.id</code> on the producer, use transactional <code>KafkaTemplate</code>, and set the consumer's <code>isolation.level=read_committed</code>.</li>
+          <li><strong>Per-key ordering</strong> — Kafka guarantees ordering inside a partition. Spring Kafka preserves it on the blocking <code>@KafkaListener</code> path. Async return types (suspend / <code>Mono</code> / <code>CompletableFuture</code>) dispatch concurrently within a partition unless you wait for completion — consider this when ordering matters.</li>
+        </ul>
+
+        <h3>Operability</h3>
+        <ul>
+          <li><strong>Observation</strong> — <code>MessagingObservation</code> conventions emit traces and metrics through Micrometer (producer, consumer, listener invocation spans).</li>
+          <li><strong>Container lifecycle</strong> — <code>start()</code> / <code>stop()</code> / <code>pause()</code> / <code>resume()</code> at runtime; per-partition pause via <code>ConsumerSeekAware</code> callbacks.</li>
+          <li><strong><code>ConsumerSeekAware</code></strong> — let the listener bean register seek callbacks to reposition partitions at startup / on demand (replay windows, offset reset on deploy).</li>
+          <li><strong>Spring Boot auto-configuration</strong> — <code>spring.kafka.*</code> properties drive producer / consumer / listener / admin / streams. Listener container factory is auto-named <code>kafkaListenerContainerFactory</code>.</li>
+        </ul>
+
+        <h2 id="internals">4. Internals — key source files</h2>
+
+        <p>
+          Where the logic actually lives. Browsing these in this order maps cleanly onto the dispatch flow above.
+        </p>
+
+        <ul>
+          <li><strong><code>KafkaMessageListenerContainer$ListenerConsumer</code></strong> — the heart of the consumer side. Single-threaded poll loop. Owns the <code>Consumer</code>, the <code>failedRecords</code> deque (for async failures), the offset tracking maps (<code>offsetsInThisBatch</code>, <code>deferredOffsets</code>, <code>lastCommits</code>), and the calls into the listener adapter and <code>CommonErrorHandler</code>. <code>handleAsyncFailure()</code> drains <code>failedRecords</code> into the error handler each loop iteration.</li>
+          <li><strong><code>ConcurrentMessageListenerContainer</code></strong> — supervisor that creates and lifecycles N <code>KafkaMessageListenerContainer</code> instances based on <code>concurrency</code>.</li>
+          <li><strong><code>MessagingMessageListenerAdapter</code> / <code>RecordMessagingMessageListenerAdapter</code></strong> — the listener-adapter chain. Converts <code>ConsumerRecord</code> to a Spring <code>Message&lt;?&gt;</code>, invokes the user method through <code>InvocableHandlerMethod</code>, handles the return value (<code>@SendTo</code> reply, async unwrap), and routes failures to either a sync throw or the <code>callbackForAsyncFailure</code> hook that pushes into <code>ListenerConsumer.failedRecords</code>.</li>
+          <li><strong><code>DefaultErrorHandler</code></strong> (extends <code>FailedBatchProcessor</code>) — the standard <code>CommonErrorHandler</code>. Coordinates the <code>BackOff</code>, calls <code>SeekUtils</code> to register seeks, decides recover-vs-retry via <code>FailedRecordTracker</code>, and throws <code>RecordInRetryException</code> to signal "this record is in retry, do not commit past it".</li>
+          <li><strong><code>FailedRecordTracker</code></strong> — keyed by <code>(topic, partition, offset)</code>. Tracks attempt count for each in-flight failure, returns the next backoff interval, and decides <code>STOP</code> (recover) vs <code>CONTINUE</code> (retry).</li>
+          <li><strong><code>SeekUtils</code></strong> — utility that issues per-partition <code>consumer.seek(...)</code> calls to reposition the consumer back to the failing offset for the next poll-induced re-delivery.</li>
+          <li><strong><code>DeadLetterPublishingRecoverer</code></strong> — implements <code>ConsumerRecordRecoverer</code>. Builds the DLT <code>ProducerRecord</code> with structured headers (original topic / partition / offset, cause class, cause message, stack trace) and publishes via an injected <code>KafkaTemplate</code>.</li>
+          <li><strong><code>KafkaBackoffAwareMessageListenerAdapter</code> / <code>RetryTopicConfigurer</code> / <code>RetryTopicConfiguration</code></strong> — the <code>@RetryableTopic</code> infrastructure. Generates the retry topic chain at startup, wires a backoff-aware adapter that delays a record by the appropriate amount before invoking the user method on the next attempt.</li>
+          <li><strong><code>KafkaTemplate</code></strong> — producer-side entrypoint. Wraps a <code>Producer</code>, supports transactions through <code>ProducerFactoryUtils</code>, exposes <code>send(...)</code> / <code>sendAndReceive(...)</code> / <code>executeInTransaction(...)</code>.</li>
+          <li><strong><code>ConsumerFactory</code> / <code>ProducerFactory</code></strong> — pluggable client factories. <code>DefaultKafkaConsumerFactory</code> / <code>DefaultKafkaProducerFactory</code> are the standard implementations; both are aware of per-instance config overrides.</li>
+          <li><strong><code>KafkaListenerAnnotationBeanPostProcessor</code></strong> — discovers <code>@KafkaListener</code> methods at startup and asks the chosen <code>KafkaListenerContainerFactory</code> to create the matching container.</li>
+        </ul>
+
+        <h2>Related</h2>
+        <ul class="contact-list">
+          <li><span class="k">Source</span><a href="https://github.com/spring-projects/spring-kafka" target="_blank" rel="noopener">spring-projects/spring-kafka</a></li>
+          <li><span class="k">Docs</span><a href="https://docs.spring.io/spring-kafka/reference/" target="_blank" rel="noopener">docs.spring.io/spring-kafka/reference</a></li>
+          <li><span class="k">My PRs</span><a href="/contributions/spring-kafka.html">Spring Kafka contributions</a></li>
+          <li><span class="k">Sibling</span><a href="/apache-kafka.html">Apache Kafka — Architecture, Message Flow, CLI</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -163,11 +163,19 @@
           </div>
         </div>
         <div class="nav-group">
-          <a href="/apache-kafka.html">Apache Kafka</a>
+          <a href="/#oss">OSS</a>
           <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/apache-kafka.html">Overview</a>
             <a href="/apache-kafka.html#architecture">Architecture</a>
             <a href="/apache-kafka.html#message-flow">Message Flow</a>
             <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/spring-kafka.html">Overview</a>
+            <a href="/spring-kafka.html#architecture">Architecture</a>
+            <a href="/spring-kafka.html#message-flow">Message Flow</a>
+            <a href="/spring-kafka.html#features">Features</a>
+            <a href="/spring-kafka.html#internals">Internals</a>
           </div>
         </div>
         <div class="nav-group">
@@ -454,6 +462,41 @@
             </ul>
           </article>
 
+        </div>
+      </div>
+    </section>
+
+    <section id="oss" class="section">
+      <div class="container">
+        <header class="section-header">
+          <h2 data-ko="OSS 레퍼런스" data-en="OSS reference">OSS 레퍼런스</h2>
+          <p class="muted"
+             data-ko="Apache Kafka와 Spring Kafka의 구조, 메시지 흐름, 주요 소스 / 명령어를 한 페이지에 정리한 참고용 자료입니다."
+             data-en="Compact references for Apache Kafka and Spring Kafka — architecture, message flow, CLI / key source files — gathered on one page each.">
+            Apache Kafka와 Spring Kafka의 구조, 메시지 흐름, 주요 소스 / 명령어를 한 페이지에 정리한 참고용 자료입니다.
+          </p>
+        </header>
+
+        <div class="cards">
+          <article class="card">
+            <h3><a href="apache-kafka.html">Apache Kafka</a></h3>
+            <p class="card-desc"
+               data-ko="브로커 / 토픽 / 파티션 / 컨슈머 그룹 아키텍처, produce → replicate → consume 메시지 흐름(acks=all + HW), kafka-topics / kafka-console-* / kafka-consumer-groups 주요 CLI 명령어 레퍼런스."
+               data-en="Broker / topic / partition / consumer-group architecture, produce → replicate → consume message flow with acks=all + HW, and a CLI command reference for kafka-topics, kafka-console-producer / consumer, kafka-consumer-groups, and more.">
+              브로커 / 토픽 / 파티션 / 컨슈머 그룹 아키텍처, produce → replicate → consume 메시지 흐름(acks=all + HW), kafka-topics / kafka-console-* / kafka-consumer-groups 주요 CLI 명령어 레퍼런스.
+            </p>
+            <p class="card-more"><a href="apache-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+          </article>
+
+          <article class="card">
+            <h3><a href="spring-kafka.html">Spring Kafka</a></h3>
+            <p class="card-desc"
+               data-ko="ContainerFactory → ConcurrentMessageListenerContainer → KafkaMessageListenerContainer / ListenerConsumer 컨테이너 계층, @KafkaListener 디스패치 + DefaultErrorHandler / SeekUtils / DeadLetterPublishingRecoverer 에러 처리 흐름, 주요 feature와 핵심 소스 파일 인덱스."
+               data-en="Container hierarchy (ContainerFactory → ConcurrentMessageListenerContainer → KafkaMessageListenerContainer / ListenerConsumer), @KafkaListener dispatch + DefaultErrorHandler / SeekUtils / DeadLetterPublishingRecoverer failure flow, key features, and an index of the source files where the real logic lives.">
+              ContainerFactory → ConcurrentMessageListenerContainer → KafkaMessageListenerContainer / ListenerConsumer 컨테이너 계층, @KafkaListener 디스패치 + DefaultErrorHandler / SeekUtils / DeadLetterPublishingRecoverer 에러 처리 흐름, 주요 feature와 핵심 소스 파일 인덱스.
+            </p>
+            <p class="card-more"><a href="spring-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+          </article>
         </div>
       </div>
     </section>
