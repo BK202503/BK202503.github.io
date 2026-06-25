@@ -278,7 +278,7 @@
 
           <article class="group">
             <header class="group-head">
-              <h3><a href="contributions/spring-kafka.html">Spring Kafka</a></h3>
+              <h3><a href="contributions/spring-kafka.html">Spring Kafka — 무한 재전송 (GH-4465)</a></h3>
               <span class="badge badge-merged">merged</span>
             </header>
             <p class="group-desc"
@@ -295,6 +295,21 @@
                 </a>
                 <span class="pr-state state-merged">merged</span>
               </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/spring-kafka.html">Spring Kafka — 두 레코드 silent 유실 (GH-4504)</a></h3>
+              <span class="badge">silent record loss</span>
+            </header>
+            <p class="group-desc"
+               data-ko="같은 파티션의 두 레코드가 같이 비동기 실패하면 earlier-offset 레코드가 한 번만 invoke되고 recoverer에 도달하지 못해 silent 유실되는 회귀. handleAsyncFailure가 같은 파티션 실패들을 도착 순서로 처리하면서 뒤 호출의 seek가 앞 호출의 seek를 덮어쓰던 문제를, offset 순 정렬 + partition-in-retry skip으로 수정. 후속으로 head-of-line amplification(burst quadratic)을 linear로 bound하는 PR과 4.0.x backport 회귀 fix PR도 진행 중."
+               data-en="Same-partition async failures had each call registering an independent seek, so the later call clobbered the earlier one and the earlier-offset record was never re-delivered or recovered — its offset was silently committed past. Fixed by sorting failures by (topic, partition, offset) and skipping same-partition records once the head is in retry. Follow-ups bound the head-of-line amplification to a linear delivery count and carry a 4.0.x backport fix-forward.">
+              같은 파티션의 두 레코드가 같이 비동기 실패하면 earlier-offset 레코드가 한 번만 invoke되고 recoverer에 도달하지 못해 silent 유실되는 회귀. handleAsyncFailure가 같은 파티션 실패들을 도착 순서로 처리하면서 뒤 호출의 seek가 앞 호출의 seek를 덮어쓰던 문제를, offset 순 정렬 + partition-in-retry skip으로 수정. 후속으로 head-of-line amplification(burst quadratic)을 linear로 bound하는 PR과 4.0.x backport 회귀 fix PR도 진행 중.
+            </p>
+            <p class="group-more"><a href="contributions/spring-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
               <li>
                 <a href="https://github.com/spring-projects/spring-kafka/pull/4505" target="_blank" rel="noopener">
                   <span class="pr-id">PR #4505</span>
