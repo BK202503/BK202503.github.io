@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Apache Kafka — Architecture, Message Flow, and CLI Reference | 김빌 (Bill Kim)</title>
+  <meta name="description" content="A compact reference to Apache Kafka: the broker / topic / partition / consumer-group architecture, the end-to-end produce / replicate / consume message flow, and the most-used CLI commands (kafka-topics, kafka-console-producer/consumer, kafka-consumer-groups, kafka-configs)." />
+  <meta name="keywords" content="Apache Kafka architecture, Kafka internals, Kafka broker, Kafka topic, Kafka partition, leader replica ISR, Kafka producer, Kafka consumer group, KRaft controller, Kafka message flow, acks=all, Kafka CLI, kafka-topics, kafka-console-producer, kafka-console-consumer, kafka-consumer-groups, kafka-configs, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/apache-kafka.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/apache-kafka.html" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/apache-kafka.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Apache Kafka — Architecture, Message Flow, and CLI Reference" />
+  <meta property="og:description" content="Broker / topic / partition / consumer-group architecture, end-to-end produce / replicate / consume message flow, and the most-used CLI commands." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/apache-kafka.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Apache Kafka — Architecture, Message Flow, and CLI Reference" />
+  <meta name="twitter:description" content="Architecture diagram, message flow sequence, and CLI commands for Apache Kafka." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Apache Kafka" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Apache Kafka — Architecture, Message Flow, and CLI Reference",
+    "url": "https://bk202503.github.io/apache-kafka.html",
+    "inLanguage": "en",
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Apache Kafka", "Distributed Systems", "Event Streaming", "Kafka Architecture", "Kafka CLI"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .diagram {
+      margin: 0 0 28px;
+      padding: 18px;
+      background: var(--bg-card, #11151c);
+      border: 1px solid var(--border, #1f2630);
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+    .diagram svg { display: block; max-width: 100%; height: auto; }
+    .diagram-caption {
+      margin: -12px 0 24px;
+      font-size: 13px;
+      color: var(--muted, #8a96a3);
+      font-style: italic;
+    }
+    .toc { margin: 0 0 28px; padding: 14px 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 8px; }
+    .toc ol { margin: 0; padding-left: 22px; }
+    .toc li { margin: 4px 0; }
+  </style>
+</head>
+<body data-lang="en">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
+            <a href="/contributions/spring-kafka-4465.html">overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
+            <div class="dropdown-section">Spring Kafka — silent 유실 (GH-4504)</div>
+            <a href="/contributions/spring-kafka-4504.html">overview</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix)</a>
+            <div class="dropdown-section">Spring Cloud AWS</div>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
+            <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/apache-kafka.html">Apache Kafka</a>
+          <div class="dropdown">
+            <a href="/apache-kafka.html#architecture">Architecture</a>
+            <a href="/apache-kafka.html#message-flow">Message Flow</a>
+            <a href="/apache-kafka.html#cli">CLI Commands</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li aria-current="page">Apache Kafka</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Reference · Distributed Systems</p>
+        <h1 class="title">Apache Kafka — Architecture, Message Flow, and CLI Reference</h1>
+        <p class="lede">
+          A compact reference for the parts of Kafka that come up most often when designing, debugging, or operating a cluster: the broker / topic / partition / consumer-group architecture, the end-to-end produce → replicate → consume flow with <code>acks=all</code> and ISR semantics, and the CLI commands used to inspect and manage all of the above.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+
+        <div class="toc">
+          <ol>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#message-flow">Message Flow</a></li>
+            <li><a href="#cli">CLI Commands</a></li>
+          </ol>
+        </div>
+
+        <h2 id="architecture">1. Architecture</h2>
+
+        <p>
+          A Kafka cluster is a set of <strong>brokers</strong> that store messages in append-only logs. Each log is a <strong>partition</strong>, and partitions are grouped into named <strong>topics</strong>. Every partition has one <strong>leader</strong> broker and zero or more <strong>follower</strong> replicas; producers and consumers always talk to the leader for a given partition. The set of replicas that are caught up with the leader is the <strong>in-sync replica</strong> set (ISR). Cluster metadata (which broker leads which partition, which replicas are in-sync, topic configs, ACLs) is managed by the <strong>controller</strong> — in modern Kafka, this is a KRaft quorum running inside the broker JVMs; in older deployments, it is an external ZooKeeper ensemble.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kafka cluster architecture: producers send to leader brokers, followers replicate, consumers in a group read from leaders, KRaft controllers manage metadata.">
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="arr-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#5f6b7a"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .lbl { fill:#dde3ec; font: 12px/1 ui-monospace, monospace; }
+                .lbl-b { fill:#dde3ec; font: bold 13px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 11px/1 ui-monospace, monospace; }
+                .arr { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .arr-dim { stroke:#5f6b7a; stroke-width:1.2; fill:none; stroke-dasharray:4 3; }
+                .cluster { fill:none; stroke:#3a4660; stroke-width:1.2; stroke-dasharray:5 4; rx:10; ry:10; }
+              </style>
+            </defs>
+
+            <!-- Producers -->
+            <rect class="box" x="20" y="40" width="120" height="48"/>
+            <text class="lbl-b" x="80" y="62" text-anchor="middle">Producer A</text>
+            <text class="lbl-s" x="80" y="78" text-anchor="middle">acks=all</text>
+
+            <rect class="box" x="20" y="120" width="120" height="48"/>
+            <text class="lbl-b" x="80" y="142" text-anchor="middle">Producer B</text>
+            <text class="lbl-s" x="80" y="158" text-anchor="middle">key=orderId</text>
+
+            <!-- Cluster outline -->
+            <rect class="cluster" x="180" y="20" width="370" height="320"/>
+            <text class="lbl-s" x="190" y="38">Kafka cluster (3 brokers)</text>
+
+            <!-- Broker 1 (leader P0) -->
+            <rect class="box" x="200" y="60" width="150" height="80"/>
+            <text class="lbl-b" x="275" y="80" text-anchor="middle">Broker 1</text>
+            <text class="lbl" x="275" y="100" text-anchor="middle">orders P0 (leader)</text>
+            <text class="lbl" x="275" y="118" text-anchor="middle">orders P1 (follower)</text>
+            <text class="lbl-s" x="275" y="134" text-anchor="middle">ISR: {1,2,3}</text>
+
+            <!-- Broker 2 (leader P1) -->
+            <rect class="box" x="380" y="60" width="150" height="80"/>
+            <text class="lbl-b" x="455" y="80" text-anchor="middle">Broker 2</text>
+            <text class="lbl" x="455" y="100" text-anchor="middle">orders P1 (leader)</text>
+            <text class="lbl" x="455" y="118" text-anchor="middle">orders P2 (follower)</text>
+            <text class="lbl-s" x="455" y="134" text-anchor="middle">ISR: {1,2,3}</text>
+
+            <!-- Broker 3 (leader P2) -->
+            <rect class="box" x="290" y="170" width="150" height="80"/>
+            <text class="lbl-b" x="365" y="190" text-anchor="middle">Broker 3</text>
+            <text class="lbl" x="365" y="210" text-anchor="middle">orders P2 (leader)</text>
+            <text class="lbl" x="365" y="228" text-anchor="middle">orders P0 (follower)</text>
+            <text class="lbl-s" x="365" y="244" text-anchor="middle">ISR: {1,2,3}</text>
+
+            <!-- KRaft controller -->
+            <rect class="box" x="200" y="280" width="330" height="44"/>
+            <text class="lbl-b" x="365" y="300" text-anchor="middle">KRaft controller quorum</text>
+            <text class="lbl-s" x="365" y="316" text-anchor="middle">metadata: leaders, ISR, configs, ACLs</text>
+
+            <!-- Consumer group -->
+            <rect class="cluster" x="585" y="20" width="160" height="220"/>
+            <text class="lbl-s" x="595" y="38">Consumer group: billing</text>
+
+            <rect class="box" x="600" y="55" width="130" height="44"/>
+            <text class="lbl-b" x="665" y="74" text-anchor="middle">Consumer 1</text>
+            <text class="lbl-s" x="665" y="90" text-anchor="middle">assigned: P0</text>
+
+            <rect class="box" x="600" y="110" width="130" height="44"/>
+            <text class="lbl-b" x="665" y="129" text-anchor="middle">Consumer 2</text>
+            <text class="lbl-s" x="665" y="145" text-anchor="middle">assigned: P1</text>
+
+            <rect class="box" x="600" y="165" width="130" height="44"/>
+            <text class="lbl-b" x="665" y="184" text-anchor="middle">Consumer 3</text>
+            <text class="lbl-s" x="665" y="200" text-anchor="middle">assigned: P2</text>
+
+            <!-- Arrows: producers -> leaders -->
+            <path class="arr" d="M140,64 C170,64 175,100 200,100" marker-end="url(#arr)"/>
+            <path class="arr" d="M140,144 C170,144 175,110 200,110" marker-end="url(#arr)"/>
+
+            <!-- Arrows: leader replication to followers (dashed) -->
+            <path class="arr-dim" d="M350,118 C365,140 360,165 365,170" marker-end="url(#arr-dim)"/>
+            <path class="arr-dim" d="M455,140 C455,150 430,170 440,180" marker-end="url(#arr-dim)"/>
+
+            <!-- Arrows: brokers -> consumers (fetch) -->
+            <path class="arr" d="M350,90 C480,82 540,77 600,77" marker-end="url(#arr)"/>
+            <path class="arr" d="M530,100 C560,110 580,128 600,132" marker-end="url(#arr)"/>
+            <path class="arr" d="M440,210 C500,200 560,195 600,188" marker-end="url(#arr)"/>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Solid arrows: producer → partition leader and leader → consumer fetch. Dashed arrows: leader → follower replication (only ISR members are eligible for leader election on failure).
+        </p>
+
+        <h3>Core concepts in one line each</h3>
+        <ul>
+          <li><strong>Broker</strong> — a Kafka server process; holds partition replicas on local disk and serves produce / fetch requests.</li>
+          <li><strong>Topic</strong> — a named, partitioned, append-only log. Retention is time-based or size-based; compacted topics keep the latest value per key.</li>
+          <li><strong>Partition</strong> — the unit of parallelism, ordering, and replication. Order is guaranteed within a partition, never across partitions.</li>
+          <li><strong>Leader / Follower</strong> — one replica per partition is the leader; followers replicate from it. Reads and writes go to the leader by default.</li>
+          <li><strong>ISR (in-sync replicas)</strong> — replicas that have caught up to the leader. <code>acks=all</code> + <code>min.insync.replicas</code> defines the durability contract.</li>
+          <li><strong>Producer</strong> — picks a partition (by key hash, sticky partitioner, or explicit), batches records, and waits for the configured acks before considering a send successful.</li>
+          <li><strong>Consumer group</strong> — a set of consumers that share partition assignments via the group coordinator. Each partition is consumed by exactly one member of a group at a time.</li>
+          <li><strong>Offset</strong> — the monotonically increasing position within a partition. Consumers commit progress to the <code>__consumer_offsets</code> internal topic.</li>
+          <li><strong>Controller</strong> — broker(s) that own cluster metadata. In KRaft mode this is a Raft quorum of dedicated or co-located controllers; in legacy mode it lives in ZooKeeper.</li>
+        </ul>
+
+        <h2 id="message-flow">2. Message Flow</h2>
+
+        <p>
+          The end-to-end path of a single record with <code>acks=all</code>, two-replica replication, and a consumer group that commits offsets after processing.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 760 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence: producer sends to leader, leader appends and replicates to follower, follower acks, leader acks producer, consumer polls and commits offset.">
+            <defs>
+              <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="arr2-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <style>
+                .lane { stroke:#3a4660; stroke-width:1.2; stroke-dasharray:4 4; }
+                .head { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:6; ry:6; }
+                .head-t { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .step { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .step-ok { stroke:#9ece6a; stroke-width:1.6; fill:none; }
+                .step-t { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .step-n { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+              </style>
+            </defs>
+
+            <!-- Swim lane headers -->
+            <rect class="head" x="20"  y="20" width="140" height="34"/>
+            <text class="head-t" x="90"  y="42" text-anchor="middle">Producer</text>
+            <rect class="head" x="200" y="20" width="140" height="34"/>
+            <text class="head-t" x="270" y="42" text-anchor="middle">Leader broker</text>
+            <rect class="head" x="380" y="20" width="160" height="34"/>
+            <text class="head-t" x="460" y="42" text-anchor="middle">Follower broker (ISR)</text>
+            <rect class="head" x="580" y="20" width="160" height="34"/>
+            <text class="head-t" x="660" y="42" text-anchor="middle">Consumer (group: billing)</text>
+
+            <!-- Lifelines -->
+            <line class="lane" x1="90"  y1="60"  x2="90"  y2="440"/>
+            <line class="lane" x1="270" y1="60"  x2="270" y2="440"/>
+            <line class="lane" x1="460" y1="60"  x2="460" y2="440"/>
+            <line class="lane" x1="660" y1="60"  x2="660" y2="440"/>
+
+            <!-- Step 1: produce -->
+            <path class="step" d="M90,90 L268,90" marker-end="url(#arr2)"/>
+            <text class="step-n" x="92"  y="82">1</text>
+            <text class="step-t" x="180" y="82" text-anchor="middle">ProduceRequest(record, acks=all)</text>
+
+            <!-- Step 2: append to log on leader (self loop) -->
+            <path class="step" d="M270,115 C310,115 310,140 270,140" marker-end="url(#arr2)"/>
+            <text class="step-n" x="272" y="108">2</text>
+            <text class="step-t" x="318" y="132">append to log, assign offset</text>
+
+            <!-- Step 3: replicate to follower -->
+            <path class="step" d="M270,170 L458,170" marker-end="url(#arr2)"/>
+            <text class="step-n" x="272" y="162">3</text>
+            <text class="step-t" x="365" y="162" text-anchor="middle">FetchRequest (followers pull)</text>
+
+            <!-- Step 4: follower appends, acks leader -->
+            <path class="step-ok" d="M460,200 L272,200" marker-end="url(#arr2-back)"/>
+            <text class="step-n" x="458" y="192" text-anchor="end">4</text>
+            <text class="step-t" x="365" y="192" text-anchor="middle">FetchResponse + LEO advanced</text>
+
+            <!-- Step 5: high-water mark advances on leader -->
+            <path class="step" d="M270,225 C310,225 310,250 270,250" marker-end="url(#arr2)"/>
+            <text class="step-n" x="272" y="218">5</text>
+            <text class="step-t" x="318" y="242">advance high-water mark (HW)</text>
+
+            <!-- Step 6: producer ack -->
+            <path class="step-ok" d="M268,280 L92,280" marker-end="url(#arr2-back)"/>
+            <text class="step-n" x="266" y="272" text-anchor="end">6</text>
+            <text class="step-t" x="180" y="272" text-anchor="middle">ProduceResponse(offset, timestamp)</text>
+
+            <!-- Step 7: consumer poll -->
+            <path class="step" d="M660,320 L272,320" marker-end="url(#arr2)"/>
+            <text class="step-n" x="658" y="312" text-anchor="end">7</text>
+            <text class="step-t" x="466" y="312" text-anchor="middle">FetchRequest (consumer poll, up to HW)</text>
+
+            <!-- Step 8: consumer receives records -->
+            <path class="step-ok" d="M270,350 L658,350" marker-end="url(#arr2-back)"/>
+            <text class="step-n" x="272" y="342">8</text>
+            <text class="step-t" x="466" y="342" text-anchor="middle">FetchResponse(records, lastOffset)</text>
+
+            <!-- Step 9: process + commit offset -->
+            <path class="step" d="M660,380 L272,380" marker-end="url(#arr2)"/>
+            <text class="step-n" x="658" y="372" text-anchor="end">9</text>
+            <text class="step-t" x="466" y="372" text-anchor="middle">OffsetCommit(group=billing, offset=N+1)</text>
+
+            <!-- Step 10: commit ack -->
+            <path class="step-ok" d="M270,410 L658,410" marker-end="url(#arr2-back)"/>
+            <text class="step-n" x="272" y="402">10</text>
+            <text class="step-t" x="466" y="402" text-anchor="middle">OffsetCommitResponse</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Blue arrows: requests. Green arrows: successful responses / acks. <code>HW</code> (high-water mark) is the highest offset that has been replicated to all in-sync replicas — consumers can only read up to it.
+        </p>
+
+        <h3>What the steps guarantee</h3>
+        <ul>
+          <li><strong>Step 1–6 (produce path with <code>acks=all</code>)</strong> — the producer's send returns success only after every in-sync replica has appended the record. With <code>min.insync.replicas=2</code>, a single broker loss does not lose acknowledged data.</li>
+          <li><strong>Step 5 (high-water mark)</strong> — readers only see offsets at or below the HW. Records above HW are written to disk but not yet visible to consumers, which prevents a consumer from reading data that might be lost on leader failover.</li>
+          <li><strong>Step 7–8 (consumer poll)</strong> — order is preserved within a partition. Two consumers in the same group never receive the same partition, so each record is processed by exactly one consumer per group.</li>
+          <li><strong>Step 9–10 (offset commit)</strong> — committing <em>after</em> processing gives at-least-once delivery (a crash between processing and commit re-processes records). Committing <em>before</em> processing gives at-most-once. Exactly-once across produce + consume requires the transactional API (<code>enable.idempotence=true</code>, <code>transactional.id</code>, <code>isolation.level=read_committed</code>).</li>
+        </ul>
+
+        <h2 id="cli">3. CLI Commands</h2>
+
+        <p>
+          The scripts ship inside the Kafka distribution's <code>bin/</code> directory. Examples assume <code>BOOTSTRAP=localhost:9092</code>. For a secured cluster, add <code>--command-config client.properties</code>.
+        </p>
+
+        <h3>Topic lifecycle — <code>kafka-topics.sh</code></h3>
+<pre><code># Create a topic with 6 partitions and replication factor 3
+kafka-topics.sh --bootstrap-server $BOOTSTRAP \
+  --create --topic orders \
+  --partitions 6 --replication-factor 3 \
+  --config min.insync.replicas=2 \
+  --config retention.ms=604800000
+
+# List all topics (excluding internal __ topics)
+kafka-topics.sh --bootstrap-server $BOOTSTRAP --list \
+  --exclude-internal
+
+# Describe a topic: leader, replicas, ISR per partition
+kafka-topics.sh --bootstrap-server $BOOTSTRAP --describe --topic orders
+
+# Increase partition count (cannot decrease)
+kafka-topics.sh --bootstrap-server $BOOTSTRAP \
+  --alter --topic orders --partitions 12
+
+# Delete (requires delete.topic.enable=true on brokers)
+kafka-topics.sh --bootstrap-server $BOOTSTRAP --delete --topic orders</code></pre>
+
+        <h3>Inspect or change topic config — <code>kafka-configs.sh</code></h3>
+<pre><code># Show all configs for a topic (only dynamically overridden ones)
+kafka-configs.sh --bootstrap-server $BOOTSTRAP \
+  --describe --entity-type topics --entity-name orders
+
+# Add or update a topic-level config
+kafka-configs.sh --bootstrap-server $BOOTSTRAP \
+  --alter --entity-type topics --entity-name orders \
+  --add-config min.insync.replicas=2,retention.ms=604800000
+
+# Remove a previously-overridden config (revert to broker default)
+kafka-configs.sh --bootstrap-server $BOOTSTRAP \
+  --alter --entity-type topics --entity-name orders \
+  --delete-config retention.ms
+
+# Same pattern works for entity-type brokers, clients, users, ips</code></pre>
+
+        <h3>Quick produce / consume — <code>kafka-console-producer.sh</code> / <code>kafka-console-consumer.sh</code></h3>
+<pre><code># Produce: one record per line, key:value separated by ':'
+kafka-console-producer.sh --bootstrap-server $BOOTSTRAP \
+  --topic orders \
+  --property "parse.key=true" --property "key.separator=:"
+# > order-42:{"id":42,"amount":1990}
+
+# Consume from the beginning of the topic, printing key, value, offset
+kafka-console-consumer.sh --bootstrap-server $BOOTSTRAP \
+  --topic orders \
+  --from-beginning \
+  --property print.key=true --property print.offset=true \
+  --property print.timestamp=true
+
+# Consume as part of a consumer group, with manual commit disabled
+kafka-console-consumer.sh --bootstrap-server $BOOTSTRAP \
+  --topic orders --group billing \
+  --consumer-property enable.auto.commit=false</code></pre>
+
+        <h3>Consumer groups and offsets — <code>kafka-consumer-groups.sh</code></h3>
+<pre><code># List all consumer groups
+kafka-consumer-groups.sh --bootstrap-server $BOOTSTRAP --list
+
+# Describe a group: current offset, log-end-offset, lag per partition
+kafka-consumer-groups.sh --bootstrap-server $BOOTSTRAP \
+  --describe --group billing
+
+# Reset offsets to the earliest available for the entire topic
+kafka-consumer-groups.sh --bootstrap-server $BOOTSTRAP \
+  --group billing --topic orders \
+  --reset-offsets --to-earliest --execute
+
+# Reset to a specific timestamp (epoch ms) — useful for replay windows
+kafka-consumer-groups.sh --bootstrap-server $BOOTSTRAP \
+  --group billing --topic orders \
+  --reset-offsets --to-datetime 2026-06-20T00:00:00.000 --execute
+
+# Delete a consumer group (only when no active members remain)
+kafka-consumer-groups.sh --bootstrap-server $BOOTSTRAP \
+  --delete --group billing</code></pre>
+
+        <h3>Partition reassignment — <code>kafka-reassign-partitions.sh</code></h3>
+<pre><code># 1. Generate a candidate plan to move two topics across brokers 1,2,3
+cat > topics.json &lt;&lt;'JSON'
+{ "version": 1, "topics": [ { "topic": "orders" }, { "topic": "payments" } ] }
+JSON
+
+kafka-reassign-partitions.sh --bootstrap-server $BOOTSTRAP \
+  --topics-to-move-json-file topics.json \
+  --broker-list "1,2,3" --generate
+
+# 2. Save the proposed assignment to reassign.json, then execute
+kafka-reassign-partitions.sh --bootstrap-server $BOOTSTRAP \
+  --reassignment-json-file reassign.json --execute \
+  --throttle 50000000   # bytes/sec replication throttle
+
+# 3. Verify when the move is complete, then drop the throttle
+kafka-reassign-partitions.sh --bootstrap-server $BOOTSTRAP \
+  --reassignment-json-file reassign.json --verify</code></pre>
+
+        <h3>ACLs — <code>kafka-acls.sh</code></h3>
+<pre><code># Allow user 'billing-app' to consume topic 'orders' as group 'billing'
+kafka-acls.sh --bootstrap-server $BOOTSTRAP \
+  --add --allow-principal User:billing-app \
+  --operation Read --topic orders \
+  --operation Read --group billing
+
+# Allow a producer to write to 'orders' (Write + Describe on the topic)
+kafka-acls.sh --bootstrap-server $BOOTSTRAP \
+  --add --allow-principal User:order-svc \
+  --operation Write --operation Describe --topic orders
+
+# List existing ACLs scoped to a topic
+kafka-acls.sh --bootstrap-server $BOOTSTRAP \
+  --list --topic orders</code></pre>
+
+        <h2>Related</h2>
+        <ul class="contact-list">
+          <li><span class="k">Spec</span><a href="https://kafka.apache.org/documentation/" target="_blank" rel="noopener">kafka.apache.org/documentation</a></li>
+          <li><span class="k">My PRs</span><a href="/contributions/apache-kafka.html">Apache Kafka contributions</a></li>
+          <li><span class="k">Related</span><a href="/contributions/spring-kafka-4504.html">Spring Kafka — silent record loss (GH-4504)</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
