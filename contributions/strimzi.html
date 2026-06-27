@@ -4,28 +4,28 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Infinispan 기여 — PMD Copy/Paste Detector GitHub workflow | 김빌 (Bill Kim)</title>
-  <meta name="description" content="김빌(Bill Kim)이 Infinispan에 보낸 패치. PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로 추가, 기존 spotbugs.yml과 트리거/구조를 정렬하고 CPD 결과를 아티팩트로 업로드." />
-  <meta name="keywords" content="Infinispan contribution, PMD CPD GitHub Actions, Infinispan CI, Copy Paste Detector workflow, GH-14185, Infinispan spotbugs yml, 김빌, Bill Kim, BK202503, Infinispan contributor" />
+  <title>Strimzi 기여 — IOException 처리 일관성 (GH-12847) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Strimzi Kafka Operator에 보낸 업스트림 패치. cert 생성 IOException 처리를 KafkaCluster 패턴으로 통일해 reconciliation이 silent 빈 secret / null CertAndKey로 진행되지 않게 수정." />
+  <meta name="keywords" content="Strimzi contribution, strimzi-kafka-operator, GH-12847, PR 12884, CruiseControl, ClusterCa, KafkaCluster, IOException, NPE, certificate generation, Kafka Operator, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
 
-  <link rel="canonical" href="https://bk202503.github.io/contributions/infinispan.html" />
-  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/infinispan.html" />
-  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/infinispan.html?lang=en" />
-  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/infinispan.html" />
+  <link rel="canonical" href="https://bk202503.github.io/contributions/strimzi.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/strimzi.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/strimzi.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/strimzi.html" />
 
   <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
-  <meta property="og:title" content="Infinispan 기여 — PMD Copy/Paste Detector GitHub workflow" />
-  <meta property="og:description" content="김빌(Bill Kim)이 Infinispan에 보낸 패치. PR마다 PMD CPD를 돌리는 GitHub Actions 워크플로 추가." />
+  <meta property="og:title" content="Strimzi 기여 — IOException 처리 일관성 (GH-12847)" />
+  <meta property="og:description" content="Strimzi Kafka Operator의 cert 생성 IOException 처리를 KafkaCluster 패턴으로 통일." />
   <meta property="og:type" content="article" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:locale:alternate" content="en_US" />
-  <meta property="og:url" content="https://bk202503.github.io/contributions/infinispan.html" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/strimzi.html" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Infinispan 기여 — PMD Copy/Paste Detector GitHub workflow" />
-  <meta name="twitter:description" content="김빌(Bill Kim)이 Infinispan에 보낸 패치." />
+  <meta name="twitter:title" content="Strimzi 기여 — IOException 처리 일관성 (GH-12847)" />
+  <meta name="twitter:description" content="Strimzi Kafka Operator의 cert 생성 IOException 처리를 KafkaCluster 패턴으로 통일." />
 
   <script type="application/ld+json">
   {
@@ -34,7 +34,7 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
       { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
-      { "@type": "ListItem", "position": 3, "name": "Infinispan" }
+      { "@type": "ListItem", "position": 3, "name": "Strimzi" }
     ]
   }
   </script>
@@ -42,12 +42,12 @@
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "Infinispan 기여 — PMD Copy/Paste Detector GitHub workflow",
-    "url": "https://bk202503.github.io/contributions/infinispan.html",
+    "headline": "Strimzi 기여 — IOException 처리 일관성 (GH-12847)",
+    "url": "https://bk202503.github.io/contributions/strimzi.html",
     "inLanguage": ["ko", "en"],
     "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
     "author": { "@id": "https://bk202503.github.io/#person" },
-    "about": ["Infinispan", "GitHub Actions", "PMD", "CI"]
+    "about": ["Strimzi", "Kafka Operator", "Reconciliation", "Certificate Generation"]
   }
   </script>
 
@@ -140,42 +140,47 @@
         <ol>
           <li><a href="../">Home</a></li>
           <li><a href="../#contributions">Contributions</a></li>
-          <li aria-current="page">Infinispan</li>
+          <li aria-current="page">Strimzi</li>
         </ol>
       </div>
     </nav>
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Contribution · Infinispan · CI Workflow</p>
-        <h1 class="title">Infinispan — PMD Copy/Paste Detector GitHub workflow</h1>
+        <p class="eyebrow">Contribution · Strimzi · Kafka Operator</p>
+        <h1 class="title">Strimzi — IOException 처리 일관성 (GH-12847)</h1>
         <p class="lede">
-          PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로를 추가했습니다. 기존 <code>spotbugs.yml</code>의 트리거/구조를 따라 정렬했고, 변경 클래스만 검사하도록 <code>changed-classes.sh</code>를 재사용하며 CPD 결과를 아티팩트로 업로드합니다.
+          Strimzi Kafka Operator의 cert 생성 경로에서 <code>KafkaCluster</code>만 <code>IOException</code> → <code>RuntimeException</code>으로 던져 reconciliation을 실패시키고, <code>CruiseControl</code>·<code>ClusterCa#maybeCopyOrGenerateClientCert</code>는 warning만 로그하고 빈 secret data / <code>null</code> <code>CertAndKey</code>로 진행해 호출자(<code>KafkaExporter</code> 등)가 NPE에 닿는 비대칭을 통일.
         </p>
       </div>
     </section>
 
     <section class="section">
       <div class="container narrow">
-        <h2>배경</h2>
+        <h2>문제 — GH-12847</h2>
         <p>
-          Infinispan은 PR-level 정적분석 워크플로로 <code>spotbugs.yml</code>이 이미 자리잡혀 있었습니다. CONTRIBUTING.md는 PMD CPD(Copy/Paste Detector)도 동일한 방식으로 PR에서 돌리길 권장하지만 실제 워크플로 파일은 비어 있었습니다 — 이슈 #14185에서 요청.
+          세 경로가 같은 조건(cert 생성 중 <code>IOException</code>)에 다르게 반응:
+        </p>
+        <ul>
+          <li><strong><code>KafkaCluster#generatePerBrokerKafkaSecretsForPool</code></strong> — <code>IOException</code>을 <code>RuntimeException</code>으로 wrap → reconciliation 실패, 문제 가시화.</li>
+          <li><strong><code>CruiseControl#generateCertificatesSecret</code></strong> — warning만 로그하고 continue → 빈 <code>data</code>의 <code>Secret</code> 생성, 바로 다음 줄 <code>ccCerts.get(...).caCertGeneration()</code>에서 NPE.</li>
+          <li><strong><code>ClusterCa#maybeCopyOrGenerateClientCert</code></strong> — warning만 로그하고 <code>null</code> 반환 → 호출자(<code>KafkaExporter</code>, <code>EntityOperator</code>, <code>EntityTopicOperator</code>, <code>EntityUserOperator</code>, <code>CaReconciler</code>)가 <code>caCertGeneration()</code> 호출에서 NPE.</li>
+        </ul>
+
+        <h2>수정 (PR #12884)</h2>
+        <p>
+          <code>CruiseControl</code>·<code>ClusterCa</code>의 catch 블록에서 기존 warning 로그는 유지한 채 <code>RuntimeException</code>을 throw하도록 한 줄씩 추가. <code>KafkaCluster</code> 패턴과 동일한 동작이 되어 silent 빈 secret / NPE 경로가 사라지고 reconciliation이 fast-fail.
+        </p>
+        <p>
+          회귀 테스트는 <code>ClusterCaRenewalTest#testClientCertGenerationFailureSurfacesAsRuntimeException</code>으로 추가 — <code>generateSignedCert</code>에서 <code>IOException</code>을 throw하는 anonymous subclass를 만들어 <code>maybeCopyOrGenerateClientCert</code>가 <code>RuntimeException</code>(cause = 원본 <code>IOException</code>)을 던지는지 검증. 기존 130개 테스트(<code>ClusterCaRenewalTest</code>, <code>CruiseControlTest</code>, <code>KafkaExporterTest</code>, <code>EntityOperatorTest</code>, <code>EntityUserOperatorTest</code>, <code>EntityTopicOperatorTest</code>, <code>CaReconcilerTest</code>) 모두 그대로 통과.
         </p>
 
-        <h2>이 PR이 한 일</h2>
-        <p>
-          <code>pmd-cpd.yml</code> 워크플로 추가. 기존 <code>spotbugs.yml</code>과 트리거 필터·변경 클래스 추출 로직(<code>changed-classes.sh</code>)을 그대로 재사용해 일관된 작업 표면을 만들었습니다. Maven goal은 <code>pmd:cpd-check</code>로 통일, CPD 결과 파일은 아티팩트로 업로드해 PR 페이지에서 다운로드 가능.
-        </p>
-        <p>
-          AI 사용 disclosure는 CONTRIBUTING.md의 "Use of Generative AI" 섹션에 맞춰 PR 본문에 명시했습니다.
-        </p>
-
-        <h2>PR</h2>
+        <h2>PR 목록</h2>
         <ul class="pr-list">
           <li>
-            <a href="https://github.com/infinispan/infinispan/pull/17624" target="_blank" rel="noopener">
-              <span class="pr-id">PR #17624</span>
-              <span class="pr-title">[#14185] Add GitHub workflow for PMD Copy/Paste Detector</span>
+            <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12884" target="_blank" rel="noopener">
+              <span class="pr-id">PR #12884</span>
+              <span class="pr-title">Unify IOException handling in cert generation paths</span>
             </a>
             <span class="pr-state state-open">open</span>
           </li>
@@ -183,9 +188,9 @@
 
         <h2>관련 자료</h2>
         <ul class="contact-list">
-          <li><span class="k">Project</span><a href="https://github.com/infinispan/infinispan" target="_blank" rel="noopener">infinispan/infinispan</a></li>
+          <li><span class="k">Project</span><a href="https://github.com/strimzi/strimzi-kafka-operator" target="_blank" rel="noopener">strimzi/strimzi-kafka-operator</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/strimzi/strimzi-kafka-operator/issues/12847" target="_blank" rel="noopener">strimzi/strimzi-kafka-operator#12847</a></li>
           <li><span class="k">Author</span><a href="https://github.com/BK202503" target="_blank" rel="noopener">github.com/BK202503</a></li>
-          <li><span class="k">Other</span><a href="apache-kafka.html">Apache Kafka — ByteBuffer remaining-bytes 시리즈</a></li>
           <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
         </ul>
       </div>
