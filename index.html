@@ -136,12 +136,6 @@
         <div class="nav-group">
           <a href="/#contributions">Contributions</a>
           <div class="dropdown">
-            <div class="dropdown-section">Apache Kafka</div>
-            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
-            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
-            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
-            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
-            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
             <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
             <a href="/contributions/spring-kafka-4465.html">overview</a>
             <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
@@ -150,6 +144,12 @@
             <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
             <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
             <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix, merged)</a>
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
             <div class="dropdown-section">Spring Cloud AWS</div>
             <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
             <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
@@ -257,49 +257,6 @@
 
           <article class="group">
             <header class="group-head">
-              <h3><a href="contributions/apache-kafka.html">Apache Kafka</a></h3>
-              <span class="badge">4 PRs · ByteBuffer remaining-bytes 시리즈</span>
-            </header>
-            <p class="group-desc"
-               data-ko="Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다."
-               data-en="Tracked a class of ByteBuffer.array() misuses across Kafka Connect and submitted a consistent fix. Four separate PRs land the same family of patch into four components so direct/sliced buffers behave correctly.">
-              Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다.
-            </p>
-            <p class="group-more"><a href="contributions/apache-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
-            <ul class="pr-list">
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22536" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22536</span>
-                  <span class="pr-title">KAFKA-20656 — Struct honors ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22535" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22535</span>
-                  <span class="pr-title">KAFKA-20666 — Offset backing stores honor ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22534</span>
-                  <span class="pr-title">KAFKA-20658 — Cast SMT honors ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22533</span>
-                  <span class="pr-title">KAFKA-20657 — JsonConverter BYTES uses ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-            </ul>
-          </article>
-
-          <article class="group">
-            <header class="group-head">
               <h3><a href="contributions/spring-kafka-4465.html">Spring Kafka — 무한 재전송 (GH-4465)</a></h3>
               <span class="badge badge-merged">merged</span>
             </header>
@@ -352,6 +309,49 @@
                   <span class="pr-title">4.0.x: Cherry-pick 813f6891 to fix test regressions from the #4505 backport</span>
                 </a>
                 <span class="pr-state state-merged">merged</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/apache-kafka.html">Apache Kafka</a></h3>
+              <span class="badge">4 PRs · ByteBuffer remaining-bytes 시리즈</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다."
+               data-en="Tracked a class of ByteBuffer.array() misuses across Kafka Connect and submitted a consistent fix. Four separate PRs land the same family of patch into four components so direct/sliced buffers behave correctly.">
+              Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다.
+            </p>
+            <p class="group-more"><a href="contributions/apache-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22536" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22536</span>
+                  <span class="pr-title">KAFKA-20656 — Struct honors ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22535" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22535</span>
+                  <span class="pr-title">KAFKA-20666 — Offset backing stores honor ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22534</span>
+                  <span class="pr-title">KAFKA-20658 — Cast SMT honors ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22533</span>
+                  <span class="pr-title">KAFKA-20657 — JsonConverter BYTES uses ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
               </li>
             </ul>
           </article>
