@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Strimzi — Architecture, Reconciliation, CRD Landscape | 김빌 (Bill Kim)</title>
+  <meta name="description" content="A compact reference to Strimzi Kafka Operator: the operator processes (Cluster / Topic / User Operator), the reconciliation loop driven by Kafka and KafkaNodePool custom resources, and the CRD landscape (Kafka, KafkaNodePool, KafkaTopic, KafkaUser, KafkaConnect, KafkaMirrorMaker2, KafkaBridge, KafkaRebalance)." />
+  <meta name="keywords" content="Strimzi, Strimzi Kafka Operator, Cluster Operator, Topic Operator, User Operator, Kafka CR, KafkaNodePool, KafkaTopic, KafkaUser, KafkaConnect, KafkaMirrorMaker2, KafkaBridge, KafkaRebalance, reconciliation loop, KRaft, ClusterCa, ClientsCa, StrimziPodSet, CruiseControl, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/strimzi.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/strimzi.html" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/strimzi.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Strimzi — Architecture, Reconciliation, CRD Landscape" />
+  <meta property="og:description" content="Cluster / Topic / User Operator processes, the Kafka CR reconciliation loop, and the CRD landscape that drives Strimzi-managed Kafka on Kubernetes." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/strimzi.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Strimzi — Architecture, Reconciliation, CRD Landscape" />
+  <meta name="twitter:description" content="Operator processes, reconciliation loop, and CRD landscape for Strimzi Kafka Operator." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "OSS", "item": "https://bk202503.github.io/#oss" },
+      { "@type": "ListItem", "position": 3, "name": "Strimzi" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Strimzi — Architecture, Reconciliation, CRD Landscape",
+    "url": "https://bk202503.github.io/strimzi.html",
+    "inLanguage": "en",
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Strimzi", "Kafka Operator", "Kubernetes Operator", "Reconciliation", "Custom Resources"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .diagram { margin: 0 0 28px; padding: 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 10px; overflow-x: auto; }
+    .diagram svg { display: block; max-width: 100%; height: auto; }
+    .diagram-caption { margin: -12px 0 24px; font-size: 13px; color: var(--muted, #8a96a3); font-style: italic; }
+    .toc { margin: 0 0 28px; padding: 14px 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 8px; }
+    .toc ol { margin: 0; padding-left: 22px; }
+    .toc li { margin: 4px 0; }
+  </style>
+</head>
+<body data-lang="en">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
+            <a href="/contributions/spring-kafka-4465.html">overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
+            <div class="dropdown-section">Spring Kafka — silent 유실 (GH-4504)</div>
+            <a href="/contributions/spring-kafka-4504.html">overview</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix, merged)</a>
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Cloud AWS</div>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
+            <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/contributions/strimzi.html">Strimzi — overview</a>
+            <a href="/contributions/strimzi/12884.html">PR #12884 · GH-12847</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/apache-kafka.html">Overview</a>
+            <a href="/apache-kafka.html#architecture">Architecture</a>
+            <a href="/apache-kafka.html#message-flow">Message Flow</a>
+            <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
+            <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
+            <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/spring-kafka.html">Overview</a>
+            <a href="/spring-kafka.html#architecture">Architecture</a>
+            <a href="/spring-kafka.html#message-flow">Message Flow</a>
+            <a href="/spring-kafka.html#features">Features</a>
+            <a href="/spring-kafka.html#internals">Internals</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/strimzi.html">Overview</a>
+            <a href="/strimzi.html#architecture">Architecture</a>
+            <a href="/strimzi.html#reconciliation">Reconciliation</a>
+            <a href="/strimzi.html#crds">CRD Landscape</a>
+            <div class="dropdown-section">Appendix</div>
+            <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#oss">OSS</a></li>
+          <li aria-current="page">Strimzi</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Reference · Kubernetes Operator · CNCF</p>
+        <h1 class="title">Strimzi — Architecture, Reconciliation, CRD Landscape</h1>
+        <p class="lede">
+          A compact reference to the Strimzi Kafka Operator: the three operator processes (<strong>Cluster Operator</strong>, <strong>Topic Operator</strong>, <strong>User Operator</strong>) that watch their respective custom resources, the reconciliation loop that turns a <code>Kafka</code> CR into running broker / controller pods with TLS, and the CRD landscape (<code>Kafka</code>, <code>KafkaNodePool</code>, <code>KafkaTopic</code>, <code>KafkaUser</code>, <code>KafkaConnect</code>, <code>KafkaMirrorMaker2</code>, <code>KafkaBridge</code>, <code>KafkaRebalance</code>) that ties the whole thing together.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+
+        <div class="toc">
+          <ol>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#reconciliation">Reconciliation</a></li>
+            <li><a href="#crds">CRD Landscape</a></li>
+          </ol>
+        </div>
+
+        <h2 id="architecture">1. Architecture</h2>
+
+        <p>
+          A Strimzi deployment is three operator processes plus a set of CRDs they watch. The <strong>Cluster Operator</strong> is the central one: it watches every <code>Kafka</code> and <code>KafkaNodePool</code> in its scoped namespaces and, on each change, reconciles the cluster into a set of <code>StrimziPodSet</code> resources (one per node role — controllers, brokers, mixed) plus <code>Service</code>s, <code>ConfigMap</code>s, and TLS <code>Secret</code>s. The <strong>Topic Operator</strong> watches <code>KafkaTopic</code> CRs and creates / updates / deletes topics inside the target cluster via Kafka's Admin API. The <strong>User Operator</strong> does the same for <code>KafkaUser</code> — credentials and ACLs. <code>CruiseControl</code> is optional; when enabled by the Cluster Operator, it ships as a sidecar deployment that the operator queries when a <code>KafkaRebalance</code> CR is created.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 880 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strimzi architecture: Cluster Operator watches Kafka / KafkaNodePool / KafkaConnect / KafkaMirrorMaker2 / KafkaBridge / KafkaRebalance and reconciles into StrimziPodSets, Services, ConfigMaps, Secrets; Topic Operator watches KafkaTopic and calls Admin API; User Operator watches KafkaUser and calls Admin API; the resulting broker / controller / Cruise Control pods serve the Kafka cluster.">
+            <defs>
+              <marker id="ss" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="ss-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .arr-ok { stroke:#9ece6a; stroke-width:1.6; fill:none; }
+                .cluster { fill:none; stroke:#3a4660; stroke-width:1.2; stroke-dasharray:5 4; rx:10; ry:10; }
+              </style>
+            </defs>
+
+            <!-- CRDs on the left -->
+            <rect class="cluster" x="15" y="20" width="200" height="430"/>
+            <text class="lbl-s" x="115" y="38" text-anchor="middle">Custom Resources (etcd / kube-apiserver)</text>
+
+            <rect class="box-em" x="35" y="60" width="160" height="40"/>
+            <text class="lbl-b" x="115" y="80" text-anchor="middle">Kafka</text>
+            <text class="lbl-s" x="115" y="94" text-anchor="middle">cluster spec, listeners, TLS</text>
+
+            <rect class="box-em" x="35" y="112" width="160" height="40"/>
+            <text class="lbl-b" x="115" y="132" text-anchor="middle">KafkaNodePool ×N</text>
+            <text class="lbl-s" x="115" y="146" text-anchor="middle">roles, replicas, storage</text>
+
+            <rect class="box" x="35" y="164" width="160" height="34"/>
+            <text class="lbl-b" x="115" y="183" text-anchor="middle">KafkaTopic ×N</text>
+
+            <rect class="box" x="35" y="208" width="160" height="34"/>
+            <text class="lbl-b" x="115" y="227" text-anchor="middle">KafkaUser ×N</text>
+
+            <rect class="box" x="35" y="252" width="160" height="34"/>
+            <text class="lbl-b" x="115" y="271" text-anchor="middle">KafkaConnect / Connector</text>
+
+            <rect class="box" x="35" y="296" width="160" height="34"/>
+            <text class="lbl-b" x="115" y="315" text-anchor="middle">KafkaMirrorMaker2</text>
+
+            <rect class="box" x="35" y="340" width="160" height="34"/>
+            <text class="lbl-b" x="115" y="359" text-anchor="middle">KafkaBridge</text>
+
+            <rect class="box" x="35" y="384" width="160" height="34"/>
+            <text class="lbl-b" x="115" y="403" text-anchor="middle">KafkaRebalance</text>
+
+            <!-- Operators in the middle -->
+            <rect class="box-em" x="275" y="50" width="220" height="90"/>
+            <text class="lbl-b" x="385" y="72" text-anchor="middle">Cluster Operator</text>
+            <text class="lbl-s" x="385" y="90" text-anchor="middle">watches Kafka, KafkaNodePool,</text>
+            <text class="lbl-s" x="385" y="106" text-anchor="middle">KafkaConnect, MM2, Bridge, Rebalance</text>
+            <text class="lbl-s" x="385" y="124" text-anchor="middle">ClusterCa · ClientsCa management</text>
+
+            <rect class="box-em" x="275" y="170" width="220" height="62"/>
+            <text class="lbl-b" x="385" y="190" text-anchor="middle">Topic Operator</text>
+            <text class="lbl-s" x="385" y="206" text-anchor="middle">watches KafkaTopic</text>
+            <text class="lbl-s" x="385" y="222" text-anchor="middle">→ AdminClient.createTopics / alter</text>
+
+            <rect class="box-em" x="275" y="252" width="220" height="62"/>
+            <text class="lbl-b" x="385" y="272" text-anchor="middle">User Operator</text>
+            <text class="lbl-s" x="385" y="288" text-anchor="middle">watches KafkaUser</text>
+            <text class="lbl-s" x="385" y="304" text-anchor="middle">→ AdminClient ACLs · Secret with creds</text>
+
+            <!-- Reconciliation outputs (right) -->
+            <rect class="cluster" x="555" y="20" width="310" height="430"/>
+            <text class="lbl-s" x="710" y="38" text-anchor="middle">Reconciliation outputs (in target namespace)</text>
+
+            <rect class="box" x="575" y="60" width="270" height="44"/>
+            <text class="lbl-b" x="710" y="80" text-anchor="middle">StrimziPodSet (controllers / brokers)</text>
+            <text class="lbl-s" x="710" y="96" text-anchor="middle">one per KafkaNodePool, KRaft</text>
+
+            <rect class="box" x="575" y="114" width="270" height="40"/>
+            <text class="lbl-b" x="710" y="134" text-anchor="middle">Pods · PVCs · Services</text>
+            <text class="lbl-s" x="710" y="148" text-anchor="middle">bootstrap, brokers, external listeners</text>
+
+            <rect class="box" x="575" y="164" width="270" height="40"/>
+            <text class="lbl-b" x="710" y="184" text-anchor="middle">ConfigMaps (per node)</text>
+            <text class="lbl-s" x="710" y="198" text-anchor="middle">server.properties / log4j2.properties</text>
+
+            <rect class="box" x="575" y="214" width="270" height="40"/>
+            <text class="lbl-b" x="710" y="234" text-anchor="middle">Secrets (TLS, SCRAM, JMX)</text>
+            <text class="lbl-s" x="710" y="248" text-anchor="middle">cluster-ca, clients-ca, per-node certs</text>
+
+            <rect class="box" x="575" y="264" width="270" height="44"/>
+            <text class="lbl-b" x="710" y="284" text-anchor="middle">NetworkPolicy · PodDisruptionBudget</text>
+            <text class="lbl-s" x="710" y="300" text-anchor="middle">Routes / Ingress / LoadBalancer (per listener)</text>
+
+            <rect class="box-warm" x="575" y="320" width="270" height="44"/>
+            <text class="lbl-b" x="710" y="340" text-anchor="middle">Cruise Control deployment</text>
+            <text class="lbl-s" x="710" y="356" text-anchor="middle">optional · driven by KafkaRebalance</text>
+
+            <rect class="box" x="575" y="378" width="270" height="40"/>
+            <text class="lbl-b" x="710" y="398" text-anchor="middle">KafkaConnect / MM2 / Bridge pods</text>
+            <text class="lbl-s" x="710" y="412" text-anchor="middle">one Deployment per matching CR</text>
+
+            <!-- Arrows from CRs -> Operators -->
+            <path class="arr" d="M195,80 L273,90" marker-end="url(#ss)"/>
+            <path class="arr" d="M195,132 L273,110" marker-end="url(#ss)"/>
+            <path class="arr" d="M195,180 L273,190" marker-end="url(#ss)"/>
+            <path class="arr" d="M195,225 L273,270" marker-end="url(#ss)"/>
+            <path class="arr" d="M195,269 L273,100" marker-end="url(#ss)"/>
+            <path class="arr" d="M195,313 L273,120" marker-end="url(#ss)"/>
+            <path class="arr" d="M195,357 L273,130" marker-end="url(#ss)"/>
+            <path class="arr" d="M195,401 L273,140" marker-end="url(#ss)"/>
+
+            <!-- Operators -> outputs -->
+            <path class="arr-ok" d="M495,90 L573,82" marker-end="url(#ss-ok)"/>
+            <path class="arr-ok" d="M495,110 L573,130" marker-end="url(#ss-ok)"/>
+            <path class="arr-ok" d="M495,130 L573,234" marker-end="url(#ss-ok)"/>
+            <path class="arr-ok" d="M495,140 L573,400" marker-end="url(#ss-ok)"/>
+            <path class="arr-ok" d="M495,200 L573,184" marker-end="url(#ss-ok)"/>
+            <path class="arr-ok" d="M495,282 L573,234" marker-end="url(#ss-ok)"/>
+            <path class="arr-ok" d="M495,130 L573,340" marker-end="url(#ss-ok)"/>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Blue arrows: Kubernetes watches by the operators on their respective CRs. Green arrows: resources reconciled into the target namespace. Each operator runs as its own Deployment; the Cluster Operator co-locates the Topic and User Operator inside an <code>EntityOperator</code> pod by default, but they can also run stand-alone.
+        </p>
+
+        <h2 id="reconciliation">2. Reconciliation</h2>
+
+        <p>
+          A typical <em>create a new cluster</em> reconciliation, with KRaft mode and the EntityOperator co-located. The Cluster Operator's reconciliation loop runs every <code>STRIMZI_FULL_RECONCILIATION_INTERVAL_MS</code> (default 2 min) and is also kicked on every CR change.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 880 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strimzi reconciliation sequence: user applies Kafka and KafkaNodePool CRs, kube-apiserver delivers Watch events to Cluster Operator, which generates ClusterCa/ClientsCa secrets, generates StrimziPodSet for controllers and brokers, kubelet starts pods, brokers form KRaft quorum and reach Ready; Topic Operator and User Operator then reconcile topics and users via Admin API.">
+            <defs>
+              <marker id="srcn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="srcn-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <style>
+                .lane { stroke:#3a4660; stroke-width:1.2; stroke-dasharray:4 4; }
+                .head { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:6; ry:6; }
+                .head-t { fill:#dde3ec; font: bold 11px/1 ui-monospace, monospace; }
+                .step { stroke:#7aa2f7; stroke-width:1.6; fill:none; }
+                .step-ok { stroke:#9ece6a; stroke-width:1.6; fill:none; }
+                .step-t { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .step-n { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+              </style>
+            </defs>
+
+            <rect class="head" x="20"  y="20" width="120" height="38"/>
+            <text class="head-t" x="80"  y="38" text-anchor="middle">User</text>
+            <text class="head-t" x="80"  y="52" text-anchor="middle">(kubectl apply)</text>
+
+            <rect class="head" x="170" y="20" width="140" height="38"/>
+            <text class="head-t" x="240" y="38" text-anchor="middle">kube-apiserver</text>
+            <text class="head-t" x="240" y="52" text-anchor="middle">+ etcd</text>
+
+            <rect class="head" x="340" y="20" width="150" height="38"/>
+            <text class="head-t" x="415" y="38" text-anchor="middle">Cluster Operator</text>
+            <text class="head-t" x="415" y="52" text-anchor="middle">(watch + reconcile)</text>
+
+            <rect class="head" x="520" y="20" width="140" height="38"/>
+            <text class="head-t" x="590" y="38" text-anchor="middle">kubelet</text>
+            <text class="head-t" x="590" y="52" text-anchor="middle">+ Kafka pods</text>
+
+            <rect class="head" x="690" y="20" width="170" height="38"/>
+            <text class="head-t" x="775" y="38" text-anchor="middle">Topic / User Operator</text>
+            <text class="head-t" x="775" y="52" text-anchor="middle">(via Admin API)</text>
+
+            <line class="lane" x1="80"  y1="62"  x2="80"  y2="560"/>
+            <line class="lane" x1="240" y1="62"  x2="240" y2="560"/>
+            <line class="lane" x1="415" y1="62"  x2="415" y2="560"/>
+            <line class="lane" x1="590" y1="62"  x2="590" y2="560"/>
+            <line class="lane" x1="775" y1="62"  x2="775" y2="560"/>
+
+            <!-- 1 apply Kafka + KafkaNodePool -->
+            <path class="step" d="M80,90 L238,90" marker-end="url(#srcn)"/>
+            <text class="step-n" x="82" y="82">1</text>
+            <text class="step-t" x="160" y="82" text-anchor="middle">apply Kafka + KafkaNodePool CRs</text>
+
+            <!-- 2 watch event -->
+            <path class="step" d="M240,120 L413,120" marker-end="url(#srcn)"/>
+            <text class="step-n" x="242" y="112">2</text>
+            <text class="step-t" x="326" y="112" text-anchor="middle">Watch event: ADDED Kafka / KNP</text>
+
+            <!-- 3 CO generates CA secrets -->
+            <path class="step" d="M415,150 C450,150 450,175 415,175" marker-end="url(#srcn)"/>
+            <text class="step-n" x="417" y="143">3</text>
+            <text class="step-t" x="455" y="167">generate ClusterCa + ClientsCa</text>
+
+            <!-- 4 CO posts Secrets -->
+            <path class="step" d="M413,205 L242,205" marker-end="url(#srcn)"/>
+            <text class="step-n" x="413" y="197" text-anchor="end">4</text>
+            <text class="step-t" x="326" y="197" text-anchor="middle">create cluster-ca-secret · clients-ca-secret · per-node TLS</text>
+
+            <!-- 5 CO generates StrimziPodSets -->
+            <path class="step" d="M413,235 L242,235" marker-end="url(#srcn)"/>
+            <text class="step-n" x="413" y="227" text-anchor="end">5</text>
+            <text class="step-t" x="326" y="227" text-anchor="middle">create StrimziPodSet (controllers, brokers) · ConfigMap · Services</text>
+
+            <!-- 6 kubelet picks up pods -->
+            <path class="step" d="M240,265 L588,265" marker-end="url(#srcn)"/>
+            <text class="step-n" x="242" y="257">6</text>
+            <text class="step-t" x="414" y="257" text-anchor="middle">Pod schedule → kubelet starts kafka container</text>
+
+            <!-- 7 kafka starts, KRaft quorum -->
+            <path class="step" d="M590,295 C625,295 625,320 590,320" marker-end="url(#srcn)"/>
+            <text class="step-n" x="592" y="287">7</text>
+            <text class="step-t" x="630" y="312">KRaft quorum forms · brokers register</text>
+
+            <!-- 8 Ready signal back -->
+            <path class="step-ok" d="M588,350 L417,350" marker-end="url(#srcn-ok)"/>
+            <text class="step-n" x="588" y="342" text-anchor="end">8</text>
+            <text class="step-t" x="502" y="342" text-anchor="middle">pods Ready · listeners reachable</text>
+
+            <!-- 9 CO updates Kafka.status -->
+            <path class="step-ok" d="M413,380 L242,380" marker-end="url(#srcn-ok)"/>
+            <text class="step-n" x="413" y="372" text-anchor="end">9</text>
+            <text class="step-t" x="326" y="372" text-anchor="middle">update Kafka.status (Ready) + listenerStatus[]</text>
+
+            <!-- 10 TopicOp / UserOp start watching -->
+            <path class="step" d="M240,420 L773,420" marker-end="url(#srcn)"/>
+            <text class="step-n" x="242" y="412">10</text>
+            <text class="step-t" x="506" y="412" text-anchor="middle">Watch events: KafkaTopic / KafkaUser CRs</text>
+
+            <!-- 11 TO/UO call AdminAPI on the brokers -->
+            <path class="step" d="M773,450 L592,450" marker-end="url(#srcn)"/>
+            <text class="step-n" x="773" y="442" text-anchor="end">11</text>
+            <text class="step-t" x="682" y="442" text-anchor="middle">AdminClient.createTopics / createAcls / createUser</text>
+
+            <!-- 12 broker confirms -->
+            <path class="step-ok" d="M590,480 L775,480" marker-end="url(#srcn-ok)"/>
+            <text class="step-n" x="592" y="472">12</text>
+            <text class="step-t" x="682" y="472" text-anchor="middle">AdminResponse OK · topic / user / ACLs in place</text>
+
+            <!-- 13 TO/UO update status -->
+            <path class="step-ok" d="M773,510 L242,510" marker-end="url(#srcn-ok)"/>
+            <text class="step-n" x="773" y="502" text-anchor="end">13</text>
+            <text class="step-t" x="506" y="502" text-anchor="middle">update KafkaTopic.status / KafkaUser.status (Ready)</text>
+
+            <!-- 14 user sees Ready -->
+            <path class="step-ok" d="M240,540 L82,540" marker-end="url(#srcn-ok)"/>
+            <text class="step-n" x="240" y="532" text-anchor="end">14</text>
+            <text class="step-t" x="160" y="532" text-anchor="middle">kubectl get kafka shows READY=True</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          The reconciliation loop is idempotent and level-triggered: re-running it always converges to the desired state, so a missed event or a transient API failure is recovered on the next tick. The same loop also drives <em>rolling updates</em> — for example, certificate renewal generates new secrets in step 3–4 and then rolls pods one-by-one through step 5–8, gated on broker readiness probes.
+        </p>
+
+        <h2 id="crds">3. CRD Landscape</h2>
+
+        <ul>
+          <li><strong><code>Kafka</code></strong> — top-level cluster CR. Declares the listeners (plain, TLS, external load balancer / nodeport / ingress / route), authentication / authorization, EntityOperator, CruiseControl, JMX exporter, and (legacy) ZooKeeper or KRaft topology. In modern Strimzi, the node topology lives in <code>KafkaNodePool</code>s referenced from this CR.</li>
+          <li><strong><code>KafkaNodePool</code></strong> — one per role group. Holds replicas, storage class / size, JVM options, resources, tolerations / affinity, and the role flag (<code>controller</code>, <code>broker</code>, or mixed). The Cluster Operator turns each pool into one <code>StrimziPodSet</code> and one <code>StatefulSet</code>-equivalent set of pods.</li>
+          <li><strong><code>KafkaTopic</code></strong> — managed by the Topic Operator. Declares partitions, replicas, and topic configs. Status reports the corresponding Kafka topic state. Strimzi keeps the CR and the actual topic in sync in both directions (CR change → AlterTopic, broker-side topic change → CR status).</li>
+          <li><strong><code>KafkaUser</code></strong> — managed by the User Operator. Declares authentication type (TLS, SCRAM-SHA-512) and ACLs / quotas. The operator creates a <code>Secret</code> with the user's credentials and registers ACLs via AdminClient.</li>
+          <li><strong><code>KafkaConnect</code> / <code>KafkaConnector</code></strong> — a Kafka Connect cluster Deployment with a REST API. Connector instances can be created either declaratively via <code>KafkaConnector</code> CRs or through the Connect REST API directly.</li>
+          <li><strong><code>KafkaMirrorMaker2</code></strong> — a managed MirrorMaker 2.0 Deployment for cross-cluster replication. Source / target cluster aliases, replication policies, and connector configs go here.</li>
+          <li><strong><code>KafkaBridge</code></strong> — HTTP REST front-end to a Kafka cluster (producer / consumer over HTTP). Useful when a client cannot speak the Kafka wire protocol directly.</li>
+          <li><strong><code>KafkaRebalance</code></strong> — kicks Cruise Control into computing and (optionally) executing a rebalance proposal. The CR's <code>status</code> reports proposal load metrics; the user transitions it to <code>approve</code> to execute.</li>
+        </ul>
+
+        <h2>Related</h2>
+        <ul class="contact-list">
+          <li><span class="k">Source</span><a href="https://github.com/strimzi/strimzi-kafka-operator" target="_blank" rel="noopener">strimzi/strimzi-kafka-operator</a></li>
+          <li><span class="k">Docs</span><a href="https://strimzi.io/documentation/" target="_blank" rel="noopener">strimzi.io/documentation</a></li>
+          <li><span class="k">My PRs</span><a href="/contributions/strimzi.html">Strimzi contributions</a></li>
+          <li><span class="k">Sibling</span><a href="/apache-kafka.html">Apache Kafka — Architecture, Message Flow, CLI</a></li>
+          <li><span class="k">Sibling</span><a href="/spring-kafka.html">Spring Kafka — Architecture, Internals</a></li>
+        </ul>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
