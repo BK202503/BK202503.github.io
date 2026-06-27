@@ -153,6 +153,9 @@
             <div class="dropdown-section">Spring Cloud AWS</div>
             <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
             <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/contributions/strimzi.html">Strimzi — overview</a>
+            <a href="/contributions/strimzi/12884.html">PR #12884 · GH-12847</a>
             <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
             <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
             <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
@@ -372,6 +375,28 @@
                 <a href="https://github.com/awspring/spring-cloud-aws/pull/1640" target="_blank" rel="noopener">
                   <span class="pr-id">PR #1640</span>
                   <span class="pr-title">GH-1143 Add IGNORE QueueNotFoundStrategy option for SQS</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/strimzi.html">Strimzi</a></h3>
+              <span class="badge">cert IOException consistency</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Strimzi Kafka Operator의 cert 생성 경로에서 KafkaCluster만 IOException → RuntimeException으로 던져 reconciliation을 실패시키고, CruiseControl·ClusterCa는 warning만 로그하고 빈 secret data / null CertAndKey로 진행해 호출자(KafkaExporter 등)가 NPE에 닿는 비대칭을 통일. 회귀 테스트도 같이."
+               data-en="Strimzi's cert generation paths handled IOException three different ways — KafkaCluster rethrew as RuntimeException so the reconciliation failed cleanly, but CruiseControl and ClusterCa#maybeCopyOrGenerateClientCert logged a warning and continued with empty secret data / null CertAndKey, which then NPE'd in callers like KafkaExporter. PR aligns all three on the KafkaCluster pattern.">
+              Strimzi Kafka Operator의 cert 생성 경로에서 KafkaCluster만 IOException → RuntimeException으로 던져 reconciliation을 실패시키고, CruiseControl·ClusterCa는 warning만 로그하고 빈 secret data / null CertAndKey로 진행해 호출자(KafkaExporter 등)가 NPE에 닿는 비대칭을 통일. 회귀 테스트도 같이.
+            </p>
+            <p class="group-more"><a href="contributions/strimzi.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12884" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #12884</span>
+                  <span class="pr-title">Unify IOException handling in cert generation paths</span>
                 </a>
                 <span class="pr-state state-open">open</span>
               </li>
