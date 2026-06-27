@@ -85,6 +85,7 @@
             <div class="dropdown-section">Strimzi</div>
             <a href="/contributions/strimzi.html">Strimzi — overview</a>
             <a href="/contributions/strimzi/12884.html">PR #12884 · GH-12847</a>
+            <a href="/contributions/strimzi/12885.html">PR #12885 · GH-12442</a>
             <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
             <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
             <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
@@ -180,12 +181,24 @@
           회귀 테스트는 <code>ClusterCaRenewalTest#testClientCertGenerationFailureSurfacesAsRuntimeException</code>으로 추가 — <code>generateSignedCert</code>에서 <code>IOException</code>을 throw하는 anonymous subclass를 만들어 <code>maybeCopyOrGenerateClientCert</code>가 <code>RuntimeException</code>(cause = 원본 <code>IOException</code>)을 던지는지 검증. 기존 130개 테스트(<code>ClusterCaRenewalTest</code>, <code>CruiseControlTest</code>, <code>KafkaExporterTest</code>, <code>EntityOperatorTest</code>, <code>EntityUserOperatorTest</code>, <code>EntityTopicOperatorTest</code>, <code>CaReconcilerTest</code>) 모두 그대로 통과.
         </p>
 
+        <h2>두 번째 — Cruise Control client trust via Cluster CA (GH-12442)</h2>
+        <p>
+          Cluster Operator의 Cruise Control 클라이언트(<code>CruiseControlApiImpl</code>)가 CC 서버 Secret을 <code>PemTrustSet</code>으로 만들어 트러스트했음 — 즉 CC 서버 공개키를 핀하는 형태. Cluster CA 롤 + CC 서버 cert 회전 사이에 열린 rebalance 연결은 새 서버 cert를 못 믿어 실패. <code>KafkaResources.clusterCaCertificateSecretName(...)</code>을 fetch해 CA 기반 트러스트로 전환 — CA가 sign한 새 서버 cert가 자동으로 신뢰됨. PR #12885로 제출.
+        </p>
+
         <h2>PR 목록</h2>
         <ul class="pr-list">
           <li>
             <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12884" target="_blank" rel="noopener">
               <span class="pr-id">PR #12884</span>
               <span class="pr-title">Unify IOException handling in cert generation paths</span>
+            </a>
+            <span class="pr-state state-open">open</span>
+          </li>
+          <li>
+            <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12885" target="_blank" rel="noopener">
+              <span class="pr-id">PR #12885</span>
+              <span class="pr-title">Use Cluster CA to establish trust in Cruise Control client in CO</span>
             </a>
             <span class="pr-state state-open">open</span>
           </li>

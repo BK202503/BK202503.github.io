@@ -4,45 +4,50 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Apache Kafka PR #22534 — KAFKA-20658 Cast SMT honors ByteBuffer remaining bytes | 김빌 (Bill Kim)</title>
-  <meta name="description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 PR #22534 (KAFKA-20658). Kafka Connect Cast SMT의 BYTES 변환이 ByteBuffer.array() 오용으로 슬라이스 버퍼에서 잘못된 값을 만들던 회귀를 수정." />
-  <meta name="keywords" content="Apache Kafka PR 22534, KAFKA-20658, Kafka Connect Cast SMT, BYTES cast, ByteBuffer.array() bug, sliced buffer, Kafka Connect transformation, 김빌, Bill Kim, BK202503" />
+  <title>Strimzi PR #12885 — GH-12442 CC client trust via Cluster CA (open) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Strimzi에 보낸 PR #12885. Cluster Operator의 Cruise Control 클라이언트가 CC 서버 공개키를 핀하던 것을 Cluster CA 트러스트 기반으로 전환해, CA 롤 + 서버 cert 회전 사이 발생하던 신뢰 불일치를 제거." />
+  <meta name="keywords" content="Strimzi, strimzi-kafka-operator, PR 12885, GH-12442, CruiseControlApiImpl, PemTrustSet, Cluster CA, KafkaRebalanceAssemblyOperator, certificate rotation, TLS trust, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
 
-  <link rel="canonical" href="https://bk202503.github.io/contributions/apache-kafka/22534.html" />
-  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22534.html" />
-  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22534.html?lang=en" />
-  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22534.html" />
+  <link rel="canonical" href="https://bk202503.github.io/contributions/strimzi/12885.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/strimzi/12885.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/strimzi/12885.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/strimzi/12885.html" />
 
   <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
-  <meta property="og:title" content="Apache Kafka PR #22534 — KAFKA-20658 Cast SMT honors ByteBuffer remaining bytes" />
-  <meta property="og:description" content="Kafka Connect Cast SMT의 BYTES 변환에서 ByteBuffer position/remaining을 존중하도록 수정." />
+  <meta property="og:title" content="Strimzi PR #12885 — GH-12442 CC client trust via Cluster CA" />
+  <meta property="og:description" content="CO의 Cruise Control 클라이언트가 server pub key pin → Cluster CA trust로 전환." />
   <meta property="og:type" content="article" />
   <meta property="og:locale" content="ko_KR" />
-  <meta property="og:url" content="https://bk202503.github.io/contributions/apache-kafka/22534.html" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/strimzi/12885.html" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Apache Kafka PR #22534 — KAFKA-20658 Cast SMT honors ByteBuffer remaining bytes" />
-  <meta name="twitter:description" content="Kafka Connect Cast SMT BYTES 변환 수정." />
+  <meta name="twitter:title" content="Strimzi PR #12885 — GH-12442 CC client trust via Cluster CA" />
+  <meta name="twitter:description" content="CO의 Cruise Control 클라이언트가 server pub key pin → Cluster CA trust로 전환." />
 
   <script type="application/ld+json">
-  { "@context": "https://schema.org", "@type": "BreadcrumbList",
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
       { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
-      { "@type": "ListItem", "position": 3, "name": "Apache Kafka", "item": "https://bk202503.github.io/contributions/apache-kafka.html" },
-      { "@type": "ListItem", "position": 4, "name": "PR #22534 · KAFKA-20658" }
-    ]}
+      { "@type": "ListItem", "position": 3, "name": "Strimzi", "item": "https://bk202503.github.io/contributions/strimzi.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #12885 · GH-12442" }
+    ]
+  }
   </script>
   <script type="application/ld+json">
-  { "@context": "https://schema.org", "@type": "TechArticle",
-    "headline": "Apache Kafka PR #22534 — KAFKA-20658: Cast SMT honors ByteBuffer remaining bytes",
-    "url": "https://bk202503.github.io/contributions/apache-kafka/22534.html",
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Strimzi PR #12885 — GH-12442: Use Cluster CA to establish trust in Cruise Control client in CO",
+    "url": "https://bk202503.github.io/contributions/strimzi/12885.html",
     "inLanguage": ["ko", "en"],
     "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
     "author": { "@id": "https://bk202503.github.io/#person" },
-    "about": ["Apache Kafka", "Kafka Connect", "Cast SMT", "ByteBuffer"]
+    "about": ["Strimzi", "Cruise Control", "Cluster CA", "TLS Trust", "Certificate Rotation"]
   }
   </script>
 
@@ -52,7 +57,10 @@
 
   <header class="site-header">
     <div class="container header-row">
-      <a class="brand" href="/"><span class="brand-name">Bill Kim</span><span class="brand-alt">김빌</span></a>
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
       <nav class="nav">
         <div class="nav-group">
           <a href="/#contributions">Contributions</a>
@@ -122,7 +130,9 @@
         </div>
         <div class="nav-group">
           <a href="/#projects">Projects</a>
-          <div class="dropdown"><a href="/projects/korea-cafe.html">korea-cafe</a></div>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
         </div>
         <a href="/#contact">Contact</a>
       </nav>
@@ -130,27 +140,28 @@
   </header>
 
   <main>
+
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <div class="container">
         <ol>
           <li><a href="/">Home</a></li>
           <li><a href="/#contributions">Contributions</a></li>
-          <li><a href="/contributions/apache-kafka.html">Apache Kafka</a></li>
-          <li aria-current="page">PR #22534 · KAFKA-20658</li>
+          <li><a href="/contributions/strimzi.html">Strimzi</a></li>
+          <li aria-current="page">PR #12885 · GH-12442</li>
         </ol>
       </div>
     </nav>
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Apache Kafka · Kafka Connect · open</p>
-        <h1 class="title">PR #22534 — KAFKA-20658: Cast SMT honors ByteBuffer remaining bytes</h1>
+        <p class="eyebrow">Strimzi · open</p>
+        <h1 class="title">PR #12885 — GH-12442: Use Cluster CA to establish trust in Cruise Control client in CO</h1>
         <p class="lede">
-          Kafka Connect의 <code>Cast</code> Single Message Transformation에서 BYTES → BYTES 변환 시 <code>ByteBuffer.array()</code>를 그대로 가져다 쓰던 패턴을 <code>position()</code>/<code>remaining()</code> 기반으로 수정. 슬라이스 버퍼에서도 원본 값을 정확하게 전달.
+          Cluster Operator의 Cruise Control 클라이언트가 <code>CruiseControlApiImpl</code>에서 CC 서버 Secret을 그대로 <code>PemTrustSet</code>으로 만들어 트러스트했음 — 즉 CC 서버 공개키를 핀. Cluster CA 롤 + CC 서버 cert 회전 사이에 열린 rebalance 연결은 신뢰 깨짐. <code>KafkaResources.clusterCaCertificateSecretName(...)</code>을 fetch해 CA 기반 트러스트로 전환.
         </p>
         <div class="hero-meta">
-          <a class="pill" href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">
-            <span>GitHub PR</span><span class="pill-sub">apache/kafka#22534</span>
+          <a class="pill" href="https://github.com/strimzi/strimzi-kafka-operator/pull/12885" target="_blank" rel="noopener">
+            <span>GitHub PR</span><span class="pill-sub">strimzi/strimzi-kafka-operator#12885</span>
           </a>
         </div>
       </div>
@@ -158,25 +169,17 @@
 
     <section class="section">
       <div class="container narrow">
-        <h2>증상</h2>
-        <p>
-          <code>Cast</code> SMT를 BYTES 필드에 적용하는 컨버터 체인에서, 슬라이스/duplicate된 <code>ByteBuffer</code>가 들어오면 자기 영역 밖 데이터까지 함께 cast 결과로 흘러나가는 케이스가 있었습니다. 결과: 다운스트림 컨버터/싱크가 잘못된 길이의 BYTES를 받음.
-        </p>
-        <h2>수정</h2>
-        <p>
-          Cast 경로의 BYTES 처리에서 <code>buffer.array()</code>를 <code>position()</code>/<code>remaining()</code>로 교체. KAFKA-20656/20657/20666과 같은 계열.
-        </p>
-        <h2>관련 PR (시리즈)</h2>
+        <h2>관련 자료</h2>
         <ul class="contact-list">
-          <li><span class="k">This</span><a href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">PR #22534 · KAFKA-20658 (Cast SMT)</a></li>
-          <li><span class="k">Sibling</span><a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656 (Struct)</a></li>
-          <li><span class="k">Sibling</span><a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666 (Offset backing stores)</a></li>
-          <li><span class="k">Sibling</span><a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657 (JsonConverter)</a></li>
-          <li><span class="k">Project</span><a href="/contributions/apache-kafka.html">Apache Kafka 기여 개요</a></li>
+          <li><span class="k">PR</span><a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12885" target="_blank" rel="noopener">strimzi/strimzi-kafka-operator#12885</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/strimzi/strimzi-kafka-operator/issues/12442" target="_blank" rel="noopener">strimzi/strimzi-kafka-operator#12442</a></li>
+          <li><span class="k">Project</span><a href="/contributions/strimzi.html">Strimzi 기여 개요</a></li>
+          <li><span class="k">Sibling</span><a href="/contributions/strimzi/12884.html">PR #12884 · GH-12847 IOException 일관성</a></li>
           <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
         </ul>
       </div>
     </section>
+
   </main>
 
   <footer class="site-footer">
@@ -194,5 +197,6 @@
       });
     });
   </script>
+
 </body>
 </html>
