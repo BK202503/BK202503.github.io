@@ -57,6 +57,10 @@
     .toc { margin: 0 0 28px; padding: 14px 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 8px; }
     .toc ol { margin: 0; padding-left: 22px; }
     .toc li { margin: 4px 0; }
+    table.comparison { width: 100%; margin: 0 0 24px; border-collapse: collapse; font-size: 14px; }
+    table.comparison th, table.comparison td { border: 1px solid var(--border, #1f2630); padding: 10px 12px; vertical-align: top; text-align: left; }
+    table.comparison thead th { background: var(--bg-card, #11151c); font-weight: 600; }
+    table.comparison tbody td:first-child { font-weight: 600; white-space: nowrap; color: var(--accent, #7aa2f7); }
   </style>
 </head>
 <body data-lang="en">
@@ -175,6 +179,7 @@
             <li><a href="#architecture">Architecture</a></li>
             <li><a href="#reconciliation">Reconciliation</a></li>
             <li><a href="#crds">CRD Landscape</a></li>
+            <li><a href="#vs-apache-kafka">Strimzi vs Apache Kafka</a></li>
           </ol>
         </div>
 
@@ -448,6 +453,88 @@
           <li><strong><code>KafkaBridge</code></strong> — HTTP REST front-end to a Kafka cluster (producer / consumer over HTTP). Useful when a client cannot speak the Kafka wire protocol directly.</li>
           <li><strong><code>KafkaRebalance</code></strong> — kicks Cruise Control into computing and (optionally) executing a rebalance proposal. The CR's <code>status</code> reports proposal load metrics; the user transitions it to <code>approve</code> to execute.</li>
         </ul>
+
+        <h2 id="vs-apache-kafka">4. Strimzi vs Apache Kafka</h2>
+
+        <p>
+          Strimzi does not <em>replace</em> Apache Kafka — it runs Apache Kafka. The two sit on different layers: <strong>Apache Kafka is the data plane</strong> (broker / controller processes that own the log and serve produce / fetch), and <strong>Strimzi is the Kubernetes-native control plane</strong> that creates those processes, manages their TLS material, advances their version, and reacts to declarative CRs. A Strimzi-managed cluster is the exact same Kafka binary you would run by hand — wrapped in operator-driven lifecycle.
+        </p>
+
+        <table class="comparison">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Apache Kafka (bare)</th>
+              <th>Strimzi on Kubernetes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Layer / role</td>
+              <td>Data plane — the broker / KRaft controller processes themselves.</td>
+              <td>Control plane — Kubernetes operator that reconciles those processes from CRs. Runs the same broker binary inside the pods it creates.</td>
+            </tr>
+            <tr>
+              <td>Deployment unit</td>
+              <td>JVM process on bare metal / VM / container. Started with <code>kafka-server-start.sh</code>.</td>
+              <td><code>StrimziPodSet</code> → Pods with PVCs + Services + ConfigMaps + Secrets, all materialised by the Cluster Operator.</td>
+            </tr>
+            <tr>
+              <td>Configuration model</td>
+              <td><code>server.properties</code> / shell scripts. Imperative; usually wrapped in Ansible / Chef / Helm.</td>
+              <td>Declarative CRs (<code>Kafka</code>, <code>KafkaNodePool</code>, <code>KafkaTopic</code>, <code>KafkaUser</code>, ...). CR change → reconcile.</td>
+            </tr>
+            <tr>
+              <td>Scaling brokers</td>
+              <td>Edit configs, start a new broker process, run <code>kafka-reassign-partitions.sh</code> by hand.</td>
+              <td>Change <code>KafkaNodePool.spec.replicas</code>. Operator creates the pod / PVC / Service; <code>KafkaRebalance</code> + Cruise Control handles partition movement.</td>
+            </tr>
+            <tr>
+              <td>TLS / certificates</td>
+              <td>Operator team generates keystores / truststores out-of-band and distributes them.</td>
+              <td><code>ClusterCa</code> + <code>ClientsCa</code> objects auto-generate, rotate, and mount per-broker secrets. Renewal is rolling and automatic.</td>
+            </tr>
+            <tr>
+              <td>Users / ACLs</td>
+              <td><code>kafka-acls.sh</code> or AdminClient calls, managed manually.</td>
+              <td><code>KafkaUser</code> CR. User Operator creates the credential <code>Secret</code> and registers ACLs via AdminClient.</td>
+            </tr>
+            <tr>
+              <td>Topics</td>
+              <td><code>kafka-topics.sh</code> or AdminClient, managed manually.</td>
+              <td><code>KafkaTopic</code> CR. Topic Operator keeps the CR and the actual topic in sync in both directions.</td>
+            </tr>
+            <tr>
+              <td>Metrics / observability</td>
+              <td>JMX + (optional) JMX Prometheus exporter sidecar. ServiceMonitor wired by hand.</td>
+              <td><code>JmxPrometheusExporter</code> / <code>StrimziMetricsReporter</code> / <code>KafkaExporter</code> wired by the operator. PodMonitor / Grafana dashboards shipped.</td>
+            </tr>
+            <tr>
+              <td>Rolling upgrades</td>
+              <td>Manual broker-by-broker restart. Operator team tracks inter-broker protocol bump steps.</td>
+              <td><code>KafkaRoller</code> orchestrates the rolling restart with quorum awareness; <code>Kafka.spec.kafka.version</code> bump steps through inter-broker protocol upgrade automatically.</td>
+            </tr>
+            <tr>
+              <td>Rebalancing</td>
+              <td>Cruise Control is a separate process you start and call yourself.</td>
+              <td>Cruise Control is one boolean in the <code>Kafka</code> CR; rebalance is a <code>KafkaRebalance</code> CR whose status surfaces the proposal.</td>
+            </tr>
+            <tr>
+              <td>Mirroring / bridges / Connect</td>
+              <td>Each is its own daemon / Connect cluster you bring up and configure.</td>
+              <td><code>KafkaMirrorMaker2</code>, <code>KafkaBridge</code>, <code>KafkaConnect</code> CRs each create their own managed Deployment.</td>
+            </tr>
+            <tr>
+              <td>Failure recovery</td>
+              <td>Whoever is on-call restarts brokers, restores PVs, re-issues certs.</td>
+              <td>Operator reconciliation loop is level-triggered: lost pod → recreated, lost PVC → reattached, expired cert → rolled. The on-call read of <code>Kafka.status</code> usually replaces the playbook.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          The short version: if you already run Apache Kafka well by hand on Kubernetes, Strimzi is what the operator pattern would have you build anyway. If you do not run Kubernetes at all, Strimzi is the wrong tool — the value is the controller loop, not the broker binary.
+        </p>
 
         <h2>Related</h2>
         <ul class="contact-list">
