@@ -181,6 +181,11 @@
             <a href="/spring-kafka.html#message-flow">Message Flow</a>
             <a href="/spring-kafka.html#features">Features</a>
             <a href="/spring-kafka.html#internals">Internals</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/strimzi.html">Overview</a>
+            <a href="/strimzi.html#architecture">Architecture</a>
+            <a href="/strimzi.html#reconciliation">Reconciliation</a>
+            <a href="/strimzi.html#crds">CRD Landscape</a>
             <div class="dropdown-section">Appendix</div>
             <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
           </div>
@@ -525,6 +530,16 @@
               ContainerFactory → ConcurrentMessageListenerContainer → KafkaMessageListenerContainer / ListenerConsumer 컨테이너 계층, @KafkaListener 디스패치 + DefaultErrorHandler / SeekUtils / DeadLetterPublishingRecoverer 에러 처리 흐름, 주요 feature와 핵심 소스 파일 인덱스.
             </p>
             <p class="card-more"><a href="spring-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+          </article>
+
+          <article class="card">
+            <h3><a href="strimzi.html">Strimzi</a></h3>
+            <p class="card-desc"
+               data-ko="Cluster / Topic / User Operator 세 프로세스, Kafka·KafkaNodePool CR을 받아 StrimziPodSet · Service · Secret 로 reconcile하는 루프, 그리고 Kafka / KafkaNodePool / KafkaTopic / KafkaUser / KafkaConnect / KafkaMirrorMaker2 / KafkaBridge / KafkaRebalance CRD landscape 정리."
+               data-en="Three operator processes (Cluster / Topic / User), the reconciliation loop that turns Kafka and KafkaNodePool CRs into StrimziPodSets, Services, and Secrets, and an index of the full CRD landscape (Kafka, KafkaNodePool, KafkaTopic, KafkaUser, KafkaConnect, KafkaMirrorMaker2, KafkaBridge, KafkaRebalance).">
+              Cluster / Topic / User Operator 세 프로세스, Kafka·KafkaNodePool CR을 받아 StrimziPodSet · Service · Secret 로 reconcile하는 루프, 그리고 Kafka / KafkaNodePool / KafkaTopic / KafkaUser / KafkaConnect / KafkaMirrorMaker2 / KafkaBridge / KafkaRebalance CRD landscape 정리.
+            </p>
+            <p class="card-more"><a href="strimzi.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
           </article>
         </div>
       </div>
