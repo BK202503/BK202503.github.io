@@ -126,6 +126,7 @@
             <a href="/spring-kafka.html#message-flow">Message Flow</a>
             <a href="/spring-kafka.html#features">Features</a>
             <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#runtime">Runtime</a>
             <a href="/spring-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Strimzi</div>
             <a href="/strimzi.html">Overview</a>
@@ -186,6 +187,7 @@
             <li><a href="#reconciliation">Reconciliation</a></li>
             <li><a href="#crds">CRD Landscape</a></li>
             <li><a href="#vs-apache-kafka">Strimzi vs Apache Kafka</a></li>
+            <li><a href="#runtime">CPU / Memory / Network at Runtime</a></li>
             <li><a href="#source-tree">Source Tree (for contributors)</a></li>
           </ol>
         </div>
@@ -543,7 +545,145 @@
           The short version: if you already run Apache Kafka well by hand on Kubernetes, Strimzi is what the operator pattern would have you build anyway. If you do not run Kubernetes at all, Strimzi is the wrong tool — the value is the controller loop, not the broker binary.
         </p>
 
-        <h2 id="source-tree">5. Source Tree (for contributors)</h2>
+        <h2 id="runtime">5. CPU / Memory / Network at Runtime</h2>
+
+        <p>
+          The Strimzi operator pods themselves are <em>cheap</em> — a typical install is three small JVMs that spend almost all their time blocked on Kubernetes Watch events. The heavy runtime work lives in the Kafka cluster Strimzi <em>manages</em> (covered in <a href="/apache-kafka.html#runtime">Apache Kafka — Memory / CPU / I/O Pipeline</a>). What follows is the operator-side picture only: where the operator pods spend CPU, what they hold in heap, and which network connections they keep open.
+        </p>
+
+        <h3>CPU / threading model (operator pods)</h3>
+        <ul>
+          <li><strong>Vert.x event loop</strong> — each operator (cluster, topic, user) is a Vert.x application. Reconciliation runs on Vert.x event-loop threads; long blocking work (cert generation, Kafka AdminClient calls) is dispatched onto the worker pool. The event loop itself is rarely the bottleneck.</li>
+          <li><strong>Reconcile is mostly waiting</strong> — a reconcile loop wakes on a Kube Watch event (CR change, pod status change, Secret change), diffs desired vs actual, and emits Kube API calls. Most of the wall-clock time is spent waiting on those Kube API responses, not on CPU. A namespace with 5 Kafka clusters and no churn typically shows the cluster-operator CPU well under 5%.</li>
+          <li><strong>Burst: certificate generation</strong> — every Cluster CA rotation, every Clients CA rotation, every new broker join is an RSA/ECDSA signing operation. <code>certificate-manager/</code> uses Bouncy Castle on the worker pool; this is the most CPU-heavy operator activity and shows up as short spikes around CA renewal windows.</li>
+          <li><strong>Burst: rolling restart orchestration</strong> — <code>KafkaRoller</code> serialises pod restarts (controllers first, then brokers, then mixed nodes), waits for each pod to reach Ready and rejoin the ISR, and only then moves on. Wall-clock for a full roll is dominated by Kafka startup time per broker, not by operator CPU; but the operator does hold the orchestration thread for the duration.</li>
+          <li><strong>Concurrency knob</strong> — <code>STRIMZI_FULL_RECONCILIATION_INTERVAL_MS</code> sets the periodic full-resync floor (default 120 s). Event-driven reconciles run as soon as a Watch event arrives; the periodic full resync exists only as a safety net for missed events.</li>
+        </ul>
+
+        <h3>Memory layout (operator pods)</h3>
+        <ul>
+          <li><strong>JVM heap (~512 MB typical)</strong> — default Cluster Operator deployment sets <code>-Xmx</code> in the hundreds of MB. Big customers running dozens of <code>Kafka</code> CRs bump it up; a single-cluster install rarely needs more than 256 MB.</li>
+          <li><strong>Informer cache (fabric8 client)</strong> — the operator opens one Watch per CR kind (<code>Kafka</code>, <code>KafkaNodePool</code>, <code>KafkaTopic</code>, <code>KafkaUser</code>, <code>KafkaConnect</code>, <code>KafkaMirrorMaker2</code>, <code>KafkaBridge</code>, <code>KafkaRebalance</code>, plus the secondary resources it owns: <code>StrimziPodSet</code>, <code>Service</code>, <code>ConfigMap</code>, <code>Secret</code>, <code>Pod</code>). Each Watch backs a local cache of every object the operator cares about. This is the single largest heap consumer and scales linearly with the number of managed clusters.</li>
+          <li><strong>Per-reconcile working set</strong> — during a reconcile, the operator materialises the full desired state for that one cluster (the generated <code>StrimziPodSet</code>, <code>ConfigMap</code>s, Secrets, RBAC). Allocated, diffed, applied, dropped. Visible as periodic young-gen activity, not as long-lived heap growth.</li>
+          <li><strong>Topic / User Operator</strong> — even smaller. Topic Operator's main state is a local <code>(KafkaTopic CR ↔ topic-in-cluster)</code> map sized by topic count. User Operator's main state is a <code>(KafkaUser CR ↔ secret + ACLs)</code> map sized by user count.</li>
+          <li><strong>Kafka pods are separate</strong> — every memory-sized warning in <a href="/apache-kafka.html#runtime">apache-kafka.html#runtime</a> (page cache dominance, JVM heap kept small relative to RAM) applies to the broker pods Strimzi creates, not to the operator pods themselves.</li>
+        </ul>
+
+        <h3>Network traffic</h3>
+        <ul>
+          <li><strong>Watch streams to kube-apiserver</strong> — one long-lived HTTPS connection (server-sent stream) per CR kind being watched. Quiet most of the time; emits an event whenever a watched object changes. This is how the operator hears about new CRs, pod status flips, Secret rotations.</li>
+          <li><strong>Kube API writes</strong> — every reconcile result is a burst of <code>PATCH</code> / <code>UPDATE</code> / <code>CREATE</code> / <code>DELETE</code> calls back to <code>kube-apiserver</code> over the same TLS connection. Counts and sizes are dominated by Secret writes (CA rotation) and StrimziPodSet diffs (rolling restart).</li>
+          <li><strong>Kafka AdminClient</strong> — Topic Operator and User Operator each keep one AdminClient per managed cluster, talking mTLS to the brokers (certs come from the cluster's Clients CA). Used to <code>CreateTopics</code> / <code>DeleteTopics</code> / <code>AlterConfigs</code> on topic-operator side and to <code>DescribeAcls</code> / <code>CreateAcls</code> on user-operator side. Idle connection pool; reuses TCP.</li>
+          <li><strong>Cluster Operator → broker readiness (<code>kafka-agent</code>)</strong> — each broker pod runs <code>kafka-agent</code> (small Java agent baked into the image) that exposes broker readiness / KRaft quorum state on a localhost endpoint. The operator queries it via <code>kubectl exec</code>-style readiness probes; this is what <code>KafkaRoller</code> waits on between pod restarts.</li>
+          <li><strong>Cluster Operator → Cruise Control</strong> — when Cruise Control is enabled, the operator opens HTTPS calls to the Cruise Control sidecar service for every <code>KafkaRebalance</code> CR (proposal request, status polling, approval, abort). Trust is established from the Cluster CA cert Secret (see <a href="/contributions/strimzi/12885.html">PR #12885</a>).</li>
+          <li><strong>What the operator does <em>not</em> touch</strong> — it never proxies client traffic. Producers, consumers, MirrorMaker2 instances, Connect workers all talk to the Kafka cluster directly; the operator sits beside them, not in front of them.</li>
+        </ul>
+
+        <div class="diagram diagram--wide">
+          <svg viewBox="0 0 920 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strimzi operator runtime: three small operator pods (cluster, topic, user) each keep Watch connections to kube-apiserver and AdminClient or kafka-agent connections to broker pods; the operator never sits on client data paths.">
+            <defs>
+              <marker id="sx-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="sx-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="sx-y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e0af68"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
+                .box-soft { fill:#161b25; stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 3; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 14px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 12px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.4; fill:none; }
+                .arr-g { stroke:#9ece6a; stroke-width:1.4; fill:none; }
+                .arr-y { stroke:#e0af68; stroke-width:1.4; fill:none; }
+                .lane-t { fill:#8a96a3; font: bold 12px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+                .lane-d { stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 4; }
+              </style>
+            </defs>
+
+            <text class="lane-t" x="20" y="30">OPERATOR PODS (small JVMs, ~512MB heap)</text>
+
+            <rect class="box-em" x="160" y="50" width="200" height="80"/>
+            <text class="lbl-b" x="260" y="74" text-anchor="middle">cluster-operator</text>
+            <text class="lbl-s" x="260" y="92" text-anchor="middle">Vert.x event loop</text>
+            <text class="lbl-s" x="260" y="108" text-anchor="middle">CA + rolling restart bursts</text>
+            <text class="lbl-s" x="260" y="124" text-anchor="middle">informer cache (biggest heap)</text>
+
+            <rect class="box-em" x="380" y="50" width="200" height="80"/>
+            <text class="lbl-b" x="480" y="74" text-anchor="middle">topic-operator</text>
+            <text class="lbl-s" x="480" y="92" text-anchor="middle">KafkaTopic CR ⇄ AdminClient</text>
+            <text class="lbl-s" x="480" y="108" text-anchor="middle">tiny heap</text>
+            <text class="lbl-s" x="480" y="124" text-anchor="middle">idle mostly</text>
+
+            <rect class="box-em" x="600" y="50" width="200" height="80"/>
+            <text class="lbl-b" x="700" y="74" text-anchor="middle">user-operator</text>
+            <text class="lbl-s" x="700" y="92" text-anchor="middle">KafkaUser CR ⇄ AdminClient</text>
+            <text class="lbl-s" x="700" y="108" text-anchor="middle">tiny heap</text>
+            <text class="lbl-s" x="700" y="124" text-anchor="middle">idle mostly</text>
+
+            <line class="lane-d" x1="160" y1="160" x2="910" y2="160"/>
+
+            <text class="lane-t" x="20" y="190">CONTROL PLANE</text>
+            <rect class="box-warm" x="160" y="200" width="280" height="70"/>
+            <text class="lbl-b" x="300" y="222" text-anchor="middle">kube-apiserver</text>
+            <text class="lbl-s" x="300" y="240" text-anchor="middle">Watch stream per CR kind</text>
+            <text class="lbl-s" x="300" y="256" text-anchor="middle">PATCH / UPDATE / DELETE</text>
+
+            <rect class="box-warm" x="460" y="200" width="200" height="70"/>
+            <text class="lbl-b" x="560" y="222" text-anchor="middle">Cruise Control</text>
+            <text class="lbl-s" x="560" y="240" text-anchor="middle">sidecar (optional)</text>
+            <text class="lbl-s" x="560" y="256" text-anchor="middle">HTTPS, ClusterCa trust</text>
+
+            <line class="lane-d" x1="160" y1="290" x2="910" y2="290"/>
+
+            <text class="lane-t" x="20" y="320">KAFKA DATA PLANE (heavy lifting lives here, not in the operators)</text>
+            <rect class="box-soft" x="160" y="335" width="200" height="80"/>
+            <text class="lbl-b" x="260" y="358" text-anchor="middle">broker pod</text>
+            <text class="lbl-s" x="260" y="376" text-anchor="middle">kafka-agent (readiness)</text>
+            <text class="lbl-s" x="260" y="392" text-anchor="middle">AdminClient mTLS endpoint</text>
+            <text class="lbl-s" x="260" y="406" text-anchor="middle">page cache + log segments</text>
+
+            <rect class="box-soft" x="380" y="335" width="200" height="80"/>
+            <text class="lbl-b" x="480" y="358" text-anchor="middle">broker pod</text>
+            <text class="lbl-s" x="480" y="376" text-anchor="middle">kafka-agent (readiness)</text>
+            <text class="lbl-s" x="480" y="392" text-anchor="middle">AdminClient mTLS endpoint</text>
+            <text class="lbl-s" x="480" y="406" text-anchor="middle">page cache + log segments</text>
+
+            <rect class="box-soft" x="600" y="335" width="200" height="80"/>
+            <text class="lbl-b" x="700" y="358" text-anchor="middle">controller pod</text>
+            <text class="lbl-s" x="700" y="376" text-anchor="middle">KRaft quorum member</text>
+            <text class="lbl-s" x="700" y="392" text-anchor="middle">no client traffic</text>
+            <text class="lbl-s" x="700" y="406" text-anchor="middle">metadata log only</text>
+
+            <!-- Arrows -->
+            <path class="arr" d="M260,130 L290,198" marker-end="url(#sx-a)"/>
+            <path class="arr" d="M480,130 L320,198" marker-end="url(#sx-a)"/>
+            <path class="arr" d="M700,130 L350,198" marker-end="url(#sx-a)"/>
+            <text class="lbl-s" x="350" y="175">Watch + writes</text>
+
+            <path class="arr-y" d="M340,130 L530,198" marker-end="url(#sx-y)"/>
+
+            <path class="arr-g" d="M450,130 L260,333" marker-end="url(#sx-g)"/>
+            <path class="arr-g" d="M500,130 L480,333" marker-end="url(#sx-g)"/>
+            <path class="arr-g" d="M680,130 L260,333" marker-end="url(#sx-g)"/>
+            <path class="arr-g" d="M720,130 L500,333" marker-end="url(#sx-g)"/>
+
+            <path class="arr" d="M260,130 L260,333" marker-end="url(#sx-a)"/>
+
+            <text class="lbl-s" x="160" y="450"><tspan fill="#7aa2f7">blue</tspan> = Kube control-plane chatter (Watch, PATCH, kafka-agent readiness) · <tspan fill="#9ece6a">green</tspan> = AdminClient mTLS into brokers · <tspan fill="#e0af68">amber</tspan> = Cruise Control HTTPS</text>
+            <text class="lbl-s" x="160" y="468">Producers / consumers / MirrorMaker / Connect go straight to the brokers — they never traverse the operator pods.</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          The operator's runtime cost is dominated by the informer cache (heap, scales with number of managed clusters) and by transient CPU bursts during CA rotation / rolling restart. The interesting performance picture — page cache, sendfile, ISR replication — lives in the broker pods, not here. The operator never sits on a hot data path.
+        </p>
+
+        <h2 id="source-tree">6. Source Tree (for contributors)</h2>
 
         <p>
           Official source: <a href="https://github.com/strimzi/strimzi-kafka-operator" target="_blank" rel="noopener">github.com/strimzi/strimzi-kafka-operator</a>. Strimzi is a <a href="https://www.cncf.io/projects/strimzi/" target="_blank" rel="noopener">CNCF</a> graduated project. Build is Maven (<code>pom.xml</code> at the root, plus a top-level <code>Makefile</code> that wraps Maven + Docker image builds + system tests); JDK 17+; contribution flow is fork → branch off <code>main</code> → PR with the <a href="https://github.com/strimzi/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md" target="_blank" rel="noopener">shared Strimzi PR template</a>. Governance documents (<code>GOVERNANCE.md</code>, <code>MAINTAINERS</code>, <code>AI_POLICY.md</code>) live in the sibling <a href="https://github.com/strimzi/governance" target="_blank" rel="noopener">strimzi/governance</a> repo.
