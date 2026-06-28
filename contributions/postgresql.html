@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524) | 김빌 (Bill Kim)</title>
-  <meta name="description" content="김빌(Bill Kim)이 PostgreSQL contrib btree_gist의 float4/float8 opclass NaN 처리 버그(BUG #19501, BUG #19524)에 대한 패치를 준비해 pgsql-bugs 메일링리스트에 알린 기록. EXCLUDE 우회 / RLS 누수 / index↔seq 스캔 불일치 세 시나리오 모두 통과." />
-  <meta name="keywords" content="PostgreSQL contribution, btree_gist, NaN, GiST, BUG 19501, BUG 19524, float4, float8, EXCLUDE, RLS, pgsql-bugs, pgsql-hackers, commitfest, 김빌, Bill Kim, BK202503" />
+  <title>PostgreSQL 기여 — 패치 두 건 | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 PostgreSQL에 보낸 두 건의 패치. (1) contrib/btree_gist NaN ordering 버그 (BUG #19501 / #19524) 수정, (2) core docs config.sgml 두 군데 id/xreflabel 정합성 수정. 두 건 모두 pgsql 메일링리스트로 발송 후 모더레이션 대기 중." />
+  <meta name="keywords" content="PostgreSQL contribution, btree_gist, NaN, GiST, BUG 19501, BUG 19524, config.sgml, varlistentry, xreflabel, pgsql-bugs, pgsql-hackers, commitfest, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
@@ -17,14 +17,14 @@
   <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/postgresql.html" />
 
   <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
-  <meta property="og:title" content="PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524)" />
-  <meta property="og:description" content="contrib/btree_gist float4/float8 opclass의 NaN 처리 버그 패치. EXCLUDE / RLS / index-vs-seqscan 세 시나리오 통과." />
+  <meta property="og:title" content="PostgreSQL 기여 — 패치 두 건" />
+  <meta property="og:description" content="contrib/btree_gist NaN ordering 버그 수정 + core docs config.sgml id/xreflabel 정합성 수정." />
   <meta property="og:type" content="article" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:url" content="https://bk202503.github.io/contributions/postgresql.html" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524)" />
-  <meta name="twitter:description" content="contrib/btree_gist float4/float8 opclass의 NaN 처리 버그 패치." />
+  <meta name="twitter:title" content="PostgreSQL 기여 — 패치 두 건" />
+  <meta name="twitter:description" content="contrib/btree_gist NaN ordering + core docs config.sgml id/xreflabel." />
 
   <script type="application/ld+json">
   {
@@ -41,12 +41,12 @@
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524)",
+    "headline": "PostgreSQL 기여 — 패치 두 건",
     "url": "https://bk202503.github.io/contributions/postgresql.html",
     "inLanguage": ["ko", "en"],
     "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
     "author": { "@id": "https://bk202503.github.io/#person" },
-    "about": ["PostgreSQL", "btree_gist", "GiST", "NaN", "Float Comparison"]
+    "about": ["PostgreSQL", "btree_gist", "GiST", "NaN", "Documentation", "config.sgml"]
   }
   </script>
 
@@ -124,17 +124,17 @@
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Contribution · PostgreSQL · RDBMS Core (contrib)</p>
-        <h1 class="title">PostgreSQL — btree_gist NaN ordering (BUG #19501 / #19524)</h1>
+        <p class="eyebrow">Contribution · PostgreSQL · RDBMS Core</p>
+        <h1 class="title">PostgreSQL — 패치 두 건</h1>
         <p class="lede">
-          <code>contrib/btree_gist</code>의 float4/float8 opclass가 raw C <code>==</code>/<code>&lt;</code>/<code>&gt;</code> 연산자를 그대로 써서 IEEE 754 NaN에 대해 false를 돌려주는 바람에, GiST 인덱스가 regular btree opclass와 같은 total order를 따르지 않는 버그. EXCLUDE 제약 우회, RLS 누수, index scan ↔ seq scan 결과 불일치 세 시나리오가 동시에 발생. NaN-aware 헬퍼(<code>float4_*</code> / <code>float8_*</code> from <code>utils/float.h</code>)로 교체하는 패치 준비 완료.
+          PostgreSQL은 GitHub PR을 받지 않고 메일링리스트 워크플로로만 운영. 현재 두 건의 패치가 진행 중 — <a href="#btree-gist-nan"><code>contrib/btree_gist</code> NaN ordering 버그 수정</a>(BUG #19501 / #19524)과 <a href="#config-sgml">core docs <code>config.sgml</code> id/xreflabel 정합성 수정</a>.
         </p>
       </div>
     </section>
 
     <section class="section">
       <div class="container narrow">
-        <h2>문제 — BUG #19501 / #19524</h2>
+        <h2 id="btree-gist-nan">1. btree_gist NaN ordering — BUG #19501 / #19524</h2>
         <p>
           <code>contrib/btree_gist/btree_float4.c</code>·<code>btree_float8.c</code>의 5개 GiST 비교 콜백(<code>gbt_float{4,8}{gt,ge,eq,le,lt}</code>)이 raw C 연산자를 사용. IEEE 754에서 NaN과의 모든 비교는 false를 돌려주므로, GiST가 "NaN ↔ NaN", "NaN > 1.0" 같은 케이스를 잘못 판정. 같은 float에 대해 regular btree opclass는 <code>float4_cmp_internal()</code>(NaN 모두 동등, NaN이 모든 non-NaN 위에 정렬)을 쓰니까 두 인덱스 종류가 같은 데이터에 대해 다른 결과를 돌려주는 상태.
         </p>
@@ -147,27 +147,52 @@
           <li><strong>RLS 누수</strong> — <code>USING (a != 'NaN'::float8)</code> 정책이 index scan 경로에서만 NaN row를 노출. predicate의 <code>!=</code>가 raw 연산자 의미로 인덱스 키에 적용되기 때문.</li>
         </ul>
 
-        <h2>수정</h2>
+        <h3>수정</h3>
         <p>
           5개의 boolean 콜백을 <code>utils/float.h</code>의 NaN-aware <code>float{4,8}_{gt,ge,eq,le,lt}</code> inline 헬퍼로 교체, picksplit 비교(<code>gbt_float{4,8}key_cmp</code>)도 <code>float{4,8}_cmp_internal()</code>로 교체. 이 헬퍼들은 regular btree opclass가 이미 쓰는 total order(NaN 모두 동등, NaN이 모든 non-NaN 위에 정렬)와 같으므로, 두 인덱스 종류의 동작이 일치하게 됨. on-disk 포맷 변경 없음 — 메모리 비교 경로만 수정.
         </p>
         <p>
           회귀 테스트는 <code>contrib/btree_gist/sql/float4.sql</code>·<code>float8.sql</code>에 NaN 섹션을 추가: index scan ↔ seq scan 일치 확인, NaN이 finite 값 뒤로 정렬되는지 확인, EXCLUDE 제약이 NaN 중복을 정확히 거부하는지 확인. 패치 적용 후 <code>make check</code> 결과: core 245/245 + contrib btree_gist 32/32 + 전체 contrib 48 modules 통과.
         </p>
+        <p>
+          <a href="/contributions/postgresql/btree-gist-nan.html">패치 상세 →</a>
+        </p>
+
+        <h2 id="config-sgml">2. config.sgml id / xreflabel 정합성 — core docs</h2>
+        <p>
+          <code>doc/src/sgml/config.sgml</code>의 두 군데 <code>varlistentry</code> attribute가 같은 파일의 다른 모든 항목과 어긋나 있어서 정합성을 맞춤. behaviour 변경 없음, on-disk 영향 없음, callsite churn 없음. <code>git diff --stat</code>: 1 file, +2/-2.
+        </p>
+        <ul>
+          <li><strong><code>enable_group_by_reordering</code></strong> 의 <code>varlistentry</code> id가 <code>guc-enable-groupby-reordering</code>로 단어 경계가 빠져 있음. 같은 파일의 다른 <code>enable_*</code> 파라미터는 모두 <code>guc-enable-X-y-z</code> 형태로 GUC 이름의 underscore 자리에 hyphen을 넣음. <code>guc-enable-group-by-reordering</code>로 수정.</li>
+          <li><strong><code>quote_all_identifiers</code></strong> 의 <code>xreflabel</code>이 <code>"quote-all-identifiers"</code> (hyphen) — 같은 파일의 다른 모든 <code>xreflabel</code>은 GUC 이름 그대로 underscore. <code>"quote_all_identifiers"</code>로 수정.</li>
+        </ul>
+        <p>
+          두 id 모두 incoming <code>linkend</code> 참조 없음 → 순수 정합성 변경.
+        </p>
+        <p>
+          <a href="/contributions/postgresql/config-sgml-id-xreflabel.html">패치 상세 →</a>
+        </p>
 
         <h2>제출 현황</h2>
         <ul>
           <li>
             <a href="https://www.postgresql.org/message-id/19524-9559d302c8455664%40postgresql.org" target="_blank" rel="noopener">
-              <span class="pr-id">BUG #19524 thread</span>
+              <span class="pr-id">[1] BUG #19524 thread</span>
               <span class="pr-title">"I have a patch" reply sent to pgsql-bugs</span>
+            </a>
+            <span class="pr-state state-open">held for moderation</span>
+          </li>
+          <li>
+            <a href="https://www.postgresql.org/list/pgsql-hackers/" target="_blank" rel="noopener">
+              <span class="pr-id">[2] pgsql-hackers thread</span>
+              <span class="pr-title">"doc: fix two id/xreflabel inconsistencies in config.sgml"</span>
             </a>
             <span class="pr-state state-open">held for moderation</span>
           </li>
           <li>
             <a href="https://commitfest.postgresql.org/59/" target="_blank" rel="noopener">
               <span class="pr-id">CF /59/</span>
-              <span class="pr-title">CommitFest registration — pending after pgsql-hackers submission</span>
+              <span class="pr-title">CommitFest registration — pending after threads land in archive</span>
             </a>
             <span class="pr-state state-open">pending</span>
           </li>

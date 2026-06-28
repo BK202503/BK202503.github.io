@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>PostgreSQL config.sgml id / xreflabel 정합성 패치 | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 PostgreSQL core docs (doc/src/sgml/config.sgml)의 두 군데 varlistentry attribute 정합성을 고친 작은 docs 패치. enable_group_by_reordering id가 단어 경계를 빠뜨리고, quote_all_identifiers xreflabel이 hyphen 형식이라 같은 파일의 다른 모든 항목과 어긋났던 부분을 수정." />
+  <meta name="keywords" content="PostgreSQL, doc/src/sgml/config.sgml, enable_group_by_reordering, quote_all_identifiers, varlistentry, xreflabel, docs patch, pgsql-hackers, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/postgresql/config-sgml-id-xreflabel.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/postgresql/config-sgml-id-xreflabel.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/postgresql/config-sgml-id-xreflabel.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/postgresql/config-sgml-id-xreflabel.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="PostgreSQL config.sgml id / xreflabel 정합성 패치" />
+  <meta property="og:description" content="doc/src/sgml/config.sgml의 두 attribute 값을 같은 파일의 다른 항목들과 일관되게 고친 작은 docs 패치 (+2/-2)." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/postgresql/config-sgml-id-xreflabel.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="PostgreSQL config.sgml id / xreflabel 정합성 패치" />
+  <meta name="twitter:description" content="doc/src/sgml/config.sgml 두 attribute 값 정합성 수정 (+2/-2)." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "PostgreSQL", "item": "https://bk202503.github.io/contributions/postgresql.html" },
+      { "@type": "ListItem", "position": 4, "name": "config.sgml id / xreflabel" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "PostgreSQL config.sgml id / xreflabel 정합성 패치",
+    "url": "https://bk202503.github.io/contributions/postgresql/config-sgml-id-xreflabel.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["PostgreSQL", "Documentation", "SGML", "config.sgml"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="../../style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="../../">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <a href="/contributions/spring-kafka-4465.html">Spring Kafka — 무한 재전송 (GH-4465)</a>
+            <a href="/contributions/spring-kafka-4504.html">Spring Kafka — silent 유실 (GH-4504)</a>
+            <a href="/contributions/apache-kafka.html">Apache Kafka</a>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS</a>
+            <a href="/contributions/strimzi.html">Strimzi</a>
+            <a href="/contributions/postgresql.html">PostgreSQL</a>
+            <a href="/contributions/spring-modulith.html">Spring Modulith</a>
+            <a href="/contributions/spring-ai.html">Spring AI</a>
+            <a href="/contributions/infinispan.html">Infinispan</a>
+            <a href="/contributions/mapstruct.html">MapStruct</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <a href="/apache-kafka.html">Apache Kafka</a>
+            <a href="/spring-kafka.html">Spring Kafka</a>
+            <a href="/strimzi.html">Strimzi</a>
+            <a href="/postgresql.html">PostgreSQL</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#confluent">Confluent</a>
+          <div class="dropdown">
+            <a href="/confluent.html">Confluent Platform &amp; Cloud</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="../../">Home</a></li>
+          <li><a href="../../#contributions">Contributions</a></li>
+          <li><a href="../postgresql.html">PostgreSQL</a></li>
+          <li aria-current="page">config.sgml id / xreflabel</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Contribution · PostgreSQL · core docs</p>
+        <h1 class="title">config.sgml id / xreflabel 정합성 — doc-only</h1>
+        <p class="lede">
+          <code>doc/src/sgml/config.sgml</code>의 두 군데 <code>varlistentry</code> attribute가 같은 파일의 다른 모든 항목과 어긋나 있어서 정합성을 맞춤. behaviour 변경 없음, on-disk 영향 없음, callsite churn 없음. <code>git diff --stat</code>: 1 file, +2/-2.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://www.postgresql.org/list/pgsql-hackers/" target="_blank" rel="noopener">
+            <span>pgsql-hackers</span><span class="pill-sub">held for moderation</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+
+        <h2>1. 발견</h2>
+        <p>
+          <a href="/contributions/postgresql/btree-gist-nan.html">btree_gist NaN 패치</a> 작업 중 <code>doc/src/sgml/config.sgml</code>를 훑다가 두 군데 attribute 형식이 같은 파일의 다른 항목들과 어긋나 있는 게 보임. 둘 다 incoming <code>linkend</code> 참조가 없어서 docs 빌드는 통과하지만, 정합성이 깨져 있는 상태.
+        </p>
+
+        <h2>2. 수정</h2>
+
+        <h3>(a) <code>enable_group_by_reordering</code> id 단어 경계</h3>
+        <p>
+          BEFORE:
+        </p>
+        <pre><code>&lt;varlistentry id="guc-enable-groupby-reordering" xreflabel="enable_group_by_reordering"&gt;
+  &lt;term&gt;&lt;varname&gt;enable_group_by_reordering&lt;/varname&gt; (&lt;type&gt;boolean&lt;/type&gt;)</code></pre>
+        <p>
+          AFTER:
+        </p>
+        <pre><code>&lt;varlistentry id="guc-enable-group-by-reordering" xreflabel="enable_group_by_reordering"&gt;
+  &lt;term&gt;&lt;varname&gt;enable_group_by_reordering&lt;/varname&gt; (&lt;type&gt;boolean&lt;/type&gt;)</code></pre>
+        <p>
+          같은 파일의 다른 <code>enable_*</code> 파라미터는 모두 GUC 이름의 underscore 자리를 hyphen으로 바꾸는 <code>guc-enable-X-y-z</code> 형식 — <code>guc-enable-parallel-append</code> (enable_parallel_append), <code>guc-enable-partition-pruning</code> (enable_partition_pruning) 등. <code>enable_group_by_reordering</code>만 <code>group_by</code>가 <code>groupby</code>로 붙어 있었음.
+        </p>
+
+        <h3>(b) <code>quote_all_identifiers</code> xreflabel 형식</h3>
+        <p>
+          BEFORE:
+        </p>
+        <pre><code>&lt;varlistentry id="guc-quote-all-identifiers" xreflabel="quote-all-identifiers"&gt;
+  &lt;term&gt;&lt;varname&gt;quote_all_identifiers&lt;/varname&gt; (&lt;type&gt;boolean&lt;/type&gt;)</code></pre>
+        <p>
+          AFTER:
+        </p>
+        <pre><code>&lt;varlistentry id="guc-quote-all-identifiers" xreflabel="quote_all_identifiers"&gt;
+  &lt;term&gt;&lt;varname&gt;quote_all_identifiers&lt;/varname&gt; (&lt;type&gt;boolean&lt;/type&gt;)</code></pre>
+        <p>
+          같은 파일의 다른 모든 <code>xreflabel</code>은 GUC 이름 그대로 underscore 형식 (<code>xreflabel="archive_command"</code>, <code>xreflabel="autovacuum_freeze_max_age"</code> 등). <code>quote_all_identifiers</code> 항목만 hyphen 형식이었음.
+        </p>
+
+        <h2>3. 영향 범위</h2>
+        <ul>
+          <li><code>grep -rn 'linkend="guc-enable-groupby-reordering"' doc/ src/</code> → 0 hit (broken id로 들어오는 참조 없음)</li>
+          <li><code>grep -rn 'linkend="guc-enable-group-by-reordering"' doc/ src/</code> → 0 hit (corrected id로 들어오는 참조도 없음)</li>
+          <li><code>grep -rn 'linkend="guc-quote-all-identifiers"' doc/ src/</code> → 0 hit</li>
+        </ul>
+        <p>
+          따라서 외부 cross-reference가 깨지거나 새로 생기는 케이스 없음. 순수 attribute 값 정합성만 맞추는 변경.
+        </p>
+
+        <h2>4. 빌드 확인</h2>
+        <p>
+          docs 빌드는 SGML attribute 값 자체에 대해 lint하지 않음(<code>id</code>와 <code>xreflabel</code>는 모두 free-form string으로 인정됨). 따라서 변경 전후 모두 docs 빌드 통과. <code>xmllint --noout doc/src/sgml/config.sgml</code> 도 entity warning 외 syntax error 없음 (변경 전후 동일).
+        </p>
+
+        <h2>제출 현황</h2>
+        <ul>
+          <li>
+            <a href="https://www.postgresql.org/list/pgsql-hackers/" target="_blank" rel="noopener">
+              <span class="pr-id">pgsql-hackers thread</span>
+              <span class="pr-title">"doc: fix two id/xreflabel inconsistencies in config.sgml"</span>
+            </a>
+            <span class="pr-state state-open">held for moderation</span>
+          </li>
+          <li>
+            <a href="https://commitfest.postgresql.org/59/" target="_blank" rel="noopener">
+              <span class="pr-id">CF /59/</span>
+              <span class="pr-title">CommitFest registration — pending after thread lands in archive</span>
+            </a>
+            <span class="pr-state state-open">pending</span>
+          </li>
+        </ul>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">Source</span><a href="https://github.com/postgres/postgres/blob/master/doc/src/sgml/config.sgml" target="_blank" rel="noopener">postgres/postgres : doc/src/sgml/config.sgml</a></li>
+          <li><span class="k">Sibling</span><a href="/contributions/postgresql/btree-gist-nan.html">btree_gist NaN ordering (BUG #19501 / #19524)</a></li>
+          <li><span class="k">Project</span><a href="/contributions/postgresql.html">PostgreSQL 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
