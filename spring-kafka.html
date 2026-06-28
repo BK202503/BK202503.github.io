@@ -474,6 +474,89 @@
           Official source: <a href="https://github.com/spring-projects/spring-kafka" target="_blank" rel="noopener">github.com/spring-projects/spring-kafka</a>. Build system is Gradle (<code>./gradlew build</code>); JDK 17+ for the 3.x line, JDK 17+ for 4.x. Contribution flow is the standard <a href="https://github.com/spring-projects/spring-kafka/blob/main/CONTRIBUTING.adoc" target="_blank" rel="noopener">CONTRIBUTING.adoc</a> — fork → branch off <code>main</code> (next major) or a <code>X.Y.x</code> release branch → PR. CI runs on GitHub Actions.
         </p>
 
+        <div class="diagram">
+          <svg viewBox="0 0 880 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spring Kafka module layout: spring-kafka-bom manages versions of spring-kafka and spring-kafka-test; samples and spring-kafka-docs consume spring-kafka; spring-kafka-test wraps the broker for tests.">
+            <defs>
+              <marker id="sk-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="sk-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-soft { fill:#161b25; stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 3; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.4; fill:none; }
+                .arr-ok { stroke:#9ece6a; stroke-width:1.4; fill:none; stroke-dasharray:5 4; }
+                .arr-l { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .lane-t { fill:#8a96a3; font: bold 10px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+              </style>
+            </defs>
+
+            <!-- Lane labels -->
+            <text class="lane-t" x="20" y="30">CONTRACT</text>
+            <text class="lane-t" x="20" y="160">LIBRARY</text>
+            <text class="lane-t" x="20" y="320">CONSUMERS</text>
+
+            <!-- BOM (top contract) -->
+            <rect class="box-em" x="320" y="40" width="240" height="64"/>
+            <text class="lbl-b" x="440" y="62" text-anchor="middle">spring-kafka-bom/</text>
+            <text class="lbl-s" x="440" y="80" text-anchor="middle">version contract (managed deps)</text>
+            <text class="lbl-s" x="440" y="94" text-anchor="middle">consumed by Boot, Cloud Stream</text>
+
+            <!-- Library tier -->
+            <rect class="box-em" x="140" y="170" width="260" height="80"/>
+            <text class="lbl-b" x="270" y="194" text-anchor="middle">spring-kafka/</text>
+            <text class="lbl-s" x="270" y="212" text-anchor="middle">org.springframework.kafka.*</text>
+            <text class="lbl-s" x="270" y="226" text-anchor="middle">listener · template · errors · retry</text>
+            <text class="lbl-s" x="270" y="240" text-anchor="middle">90% of feature/bugfix PRs land here</text>
+
+            <rect class="box" x="480" y="170" width="260" height="80"/>
+            <text class="lbl-b" x="610" y="194" text-anchor="middle">spring-kafka-test/</text>
+            <text class="lbl-s" x="610" y="212" text-anchor="middle">EmbeddedKafkaBroker</text>
+            <text class="lbl-s" x="610" y="226" text-anchor="middle">KafkaTestUtils · @EmbeddedKafka</text>
+            <text class="lbl-s" x="610" y="240" text-anchor="middle">separately published test artifact</text>
+
+            <!-- Consumer tier -->
+            <rect class="box-soft" x="80" y="330" width="200" height="64"/>
+            <text class="lbl-b" x="180" y="352" text-anchor="middle">samples/</text>
+            <text class="lbl-s" x="180" y="370" text-anchor="middle">runnable examples</text>
+            <text class="lbl-s" x="180" y="384" text-anchor="middle">used as living docs / fixtures</text>
+
+            <rect class="box-soft" x="340" y="330" width="200" height="64"/>
+            <text class="lbl-b" x="440" y="352" text-anchor="middle">spring-kafka-docs/</text>
+            <text class="lbl-s" x="440" y="370" text-anchor="middle">Antora / AsciiDoc</text>
+            <text class="lbl-s" x="440" y="384" text-anchor="middle">→ docs.spring.io/spring-kafka</text>
+
+            <rect class="box-soft" x="600" y="330" width="200" height="64"/>
+            <text class="lbl-b" x="700" y="352" text-anchor="middle">src/ (root)</text>
+            <text class="lbl-s" x="700" y="370" text-anchor="middle">checkstyle · copyright</text>
+            <text class="lbl-s" x="700" y="384" text-anchor="middle">Gradle convention scripts</text>
+
+            <!-- Arrows: BOM manages versions -->
+            <path class="arr" d="M380,104 L290,168" marker-end="url(#sk-a)"/>
+            <path class="arr" d="M500,104 L590,168" marker-end="url(#sk-a)"/>
+            <text class="arr-l" x="305" y="142">manages</text>
+            <text class="arr-l" x="555" y="142">manages</text>
+
+            <!-- Arrows: consumers depend on library -->
+            <path class="arr-ok" d="M210,328 L255,254" marker-end="url(#sk-b)"/>
+            <path class="arr-ok" d="M420,328 L300,254" marker-end="url(#sk-b)"/>
+            <path class="arr-ok" d="M460,328 L580,254" marker-end="url(#sk-b)"/>
+            <text class="arr-l" x="230" y="298">depends on</text>
+
+            <!-- Test artifact used by samples -->
+            <path class="arr-ok" d="M510,254 L210,328" marker-end="url(#sk-b)"/>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Solid arrow = version managed by; dashed arrow = depends on. A typical bugfix PR touches one file under <code>spring-kafka/src/main/java/...</code> and one test under <code>spring-kafka/src/test/java/...</code>. A new test utility goes to <code>spring-kafka-test/</code>; a release bumps <code>spring-kafka-bom/</code>.
+        </p>
+
         <h3>Top-level modules</h3>
         <ul>
           <li><strong><code>spring-kafka/</code></strong> — the main module. Everything in <code>org.springframework.kafka.*</code>: listener containers, <code>KafkaTemplate</code>, error handlers, retry topics, transactions, support classes. Sources under <code>src/main/java</code>, unit tests under <code>src/test/java</code> (JUnit 5 + Mockito), integration tests under <code>src/test/java/...</code> with <code>@EmbeddedKafka</code>.</li>

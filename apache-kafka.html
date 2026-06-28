@@ -825,6 +825,120 @@ kafka-acls.sh --bootstrap-server $BOOTSTRAP \
           Official source: <a href="https://github.com/apache/kafka" target="_blank" rel="noopener">github.com/apache/kafka</a> (read-only GitHub mirror of the Apache Git repository). Apache Kafka is governed by the Apache Software Foundation — changes of any meaningful scope go through a <a href="https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Improvement+Proposals" target="_blank" rel="noopener">KIP (Kafka Improvement Proposal)</a> on the dev mailing list before code lands. Bug fixes and small improvements go directly as GitHub PRs that a committer reviews and pushes. Build is Gradle (<code>./gradlew jar</code>, <code>./gradlew test</code>); JDK 17+; the broker (<code>core/</code>) is still Scala, almost everything else is Java.
         </p>
 
+        <div class="diagram">
+          <svg viewBox="0 0 920 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Apache Kafka module layering: generator regenerates wire protocol code in clients; clients is shared by all higher modules; broker-side libraries (server, server-common, raft, metadata, coordinators, storage) sit above clients and below core; core integrates them into the broker JVM; streams, connect, tools, examples, jmh-benchmarks, tests and trogdor sit on top as runtime users.">
+            <defs>
+              <marker id="ak-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="ak-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#f7768e"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-core { fill:#1a2030; stroke:#e0af68; stroke-width:1.8; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.2; fill:none; }
+                .arr-r { stroke:#f7768e; stroke-width:1.4; fill:none; }
+                .lane-t { fill:#8a96a3; font: bold 10px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+                .lane-d { stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 4; }
+              </style>
+            </defs>
+
+            <text class="lane-t" x="20" y="36">RUNTIME USERS</text>
+            <text class="lane-t" x="20" y="156">BROKER (Scala JVM)</text>
+            <text class="lane-t" x="20" y="266">BROKER-SIDE LIBS</text>
+            <text class="lane-t" x="20" y="436">SHARED CORE</text>
+            <text class="lane-t" x="20" y="516">CODEGEN</text>
+
+            <rect class="box" x="170" y="50" width="110" height="50"/>
+            <text class="lbl-b" x="225" y="72" text-anchor="middle">streams/</text>
+            <text class="lbl-s" x="225" y="88" text-anchor="middle">Streams DSL</text>
+
+            <rect class="box" x="290" y="50" width="110" height="50"/>
+            <text class="lbl-b" x="345" y="72" text-anchor="middle">connect/</text>
+            <text class="lbl-s" x="345" y="88" text-anchor="middle">Connect runtime</text>
+
+            <rect class="box" x="410" y="50" width="100" height="50"/>
+            <text class="lbl-b" x="460" y="72" text-anchor="middle">tools/</text>
+            <text class="lbl-s" x="460" y="88" text-anchor="middle">CLI dispatchers</text>
+
+            <rect class="box" x="520" y="50" width="110" height="50"/>
+            <text class="lbl-b" x="575" y="72" text-anchor="middle">examples/</text>
+            <text class="lbl-s" x="575" y="88" text-anchor="middle">samples</text>
+
+            <rect class="box" x="640" y="50" width="130" height="50"/>
+            <text class="lbl-b" x="705" y="72" text-anchor="middle">jmh-benchmarks/</text>
+            <text class="lbl-s" x="705" y="88" text-anchor="middle">perf</text>
+
+            <rect class="box" x="780" y="50" width="120" height="50"/>
+            <text class="lbl-b" x="840" y="72" text-anchor="middle">tests/ trogdor/</text>
+            <text class="lbl-s" x="840" y="88" text-anchor="middle">system + chaos</text>
+
+            <rect class="box-core" x="170" y="170" width="730" height="70"/>
+            <text class="lbl-b" x="535" y="192" text-anchor="middle">core/  (the broker JVM — Scala)</text>
+            <text class="lbl-s" x="535" y="212" text-anchor="middle">KafkaApis · ReplicaManager · Partition · SocketServer · Processor</text>
+            <text class="lbl-s" x="535" y="228" text-anchor="middle">started by kafka-server-start.sh</text>
+
+            <rect class="box-em" x="170" y="280" width="170" height="50"/>
+            <text class="lbl-b" x="255" y="302" text-anchor="middle">server / server-common</text>
+            <text class="lbl-s" x="255" y="318" text-anchor="middle">Java broker modules</text>
+
+            <rect class="box-em" x="350" y="280" width="120" height="50"/>
+            <text class="lbl-b" x="410" y="302" text-anchor="middle">raft/</text>
+            <text class="lbl-s" x="410" y="318" text-anchor="middle">KRaft consensus</text>
+
+            <rect class="box-em" x="480" y="280" width="130" height="50"/>
+            <text class="lbl-b" x="545" y="302" text-anchor="middle">metadata/</text>
+            <text class="lbl-s" x="545" y="318" text-anchor="middle">controller state</text>
+
+            <rect class="box-em" x="620" y="280" width="120" height="50"/>
+            <text class="lbl-b" x="680" y="302" text-anchor="middle">storage/</text>
+            <text class="lbl-s" x="680" y="318" text-anchor="middle">log + tiered</text>
+
+            <rect class="box-em" x="750" y="280" width="150" height="50"/>
+            <text class="lbl-b" x="825" y="302" text-anchor="middle">shell/ docker/</text>
+            <text class="lbl-s" x="825" y="318" text-anchor="middle">tooling images</text>
+
+            <rect class="box-em" x="170" y="340" width="730" height="50"/>
+            <text class="lbl-b" x="535" y="362" text-anchor="middle">group-coordinator · transaction-coordinator · share-coordinator · coordinator-common</text>
+            <text class="lbl-s" x="535" y="378" text-anchor="middle">extracted out of core/ so they can be unit-tested without a full broker</text>
+
+            <rect class="box-core" x="170" y="450" width="600" height="50"/>
+            <text class="lbl-b" x="470" y="472" text-anchor="middle">clients/  (Java producer · consumer · admin · org.apache.kafka.common.*)</text>
+            <text class="lbl-s" x="470" y="488" text-anchor="middle">also consumed by every external Kafka client (Spring Kafka, kafka-python, ...)</text>
+
+            <rect class="box" x="170" y="510" width="240" height="44"/>
+            <text class="lbl-b" x="290" y="530" text-anchor="middle">generator/</text>
+            <text class="lbl-s" x="290" y="546" text-anchor="middle">codegen from JSON message specs</text>
+
+            <line class="lane-d" x1="160" y1="120" x2="910" y2="120"/>
+            <line class="lane-d" x1="160" y1="252" x2="910" y2="252"/>
+            <line class="lane-d" x1="160" y1="412" x2="910" y2="412"/>
+            <line class="lane-d" x1="160" y1="500" x2="910" y2="500"/>
+
+            <path class="arr-r" d="M410,532 L780,485" marker-end="url(#ak-r)"/>
+            <text class="lbl-s" x="600" y="515">regenerates protocol classes</text>
+
+            <path class="arr" d="M535,240 L535,278" marker-end="url(#ak-a)"/>
+            <path class="arr" d="M535,392 L535,448" marker-end="url(#ak-a)"/>
+            <text class="lbl-s" x="540" y="260">depends on</text>
+            <text class="lbl-s" x="540" y="425">depends on</text>
+
+            <path class="arr" d="M225,100 L255,168" marker-end="url(#ak-a)"/>
+            <path class="arr" d="M345,100 L420,168" marker-end="url(#ak-a)"/>
+            <path class="arr" d="M460,100 L520,168" marker-end="url(#ak-a)"/>
+            <path class="arr" d="M705,100 L660,168" marker-end="url(#ak-a)"/>
+            <path class="arr" d="M840,100 L800,168" marker-end="url(#ak-a)"/>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Vertical layers = dependency depth. <span style="color:#7aa2f7">Blue arrow</span> = "depends on". <span style="color:#f7768e">Red arrow</span> = "regenerates" (touch a JSON message spec → <code>./gradlew :generator:run</code> rewrites <code>clients/src/generated/...</code>). A typical broker bugfix lives in <code>core/</code> or one of the broker-side libs and is verified by a JUnit test in the same module plus a ducktape scenario under <code>tests/</code>. Wire-format changes start in <code>clients/src/main/resources/common/message/*.json</code>, never in the generated Java.
+        </p>
+
         <h3>Top-level modules</h3>
         <ul>
           <li><strong><code>clients/</code></strong> — Java producer, consumer, admin client, and the protocol / serialization layer they share with the broker (<code>org.apache.kafka.common.*</code>). The most-changed module after <code>core/</code>; any change to wire format, partition assignment, or client-side coordinator logic lives here.</li>

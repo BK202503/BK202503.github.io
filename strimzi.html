@@ -545,6 +545,175 @@
           Official source: <a href="https://github.com/strimzi/strimzi-kafka-operator" target="_blank" rel="noopener">github.com/strimzi/strimzi-kafka-operator</a>. Strimzi is a <a href="https://www.cncf.io/projects/strimzi/" target="_blank" rel="noopener">CNCF</a> graduated project. Build is Maven (<code>pom.xml</code> at the root, plus a top-level <code>Makefile</code> that wraps Maven + Docker image builds + system tests); JDK 17+; contribution flow is fork → branch off <code>main</code> → PR with the <a href="https://github.com/strimzi/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md" target="_blank" rel="noopener">shared Strimzi PR template</a>. Governance documents (<code>GOVERNANCE.md</code>, <code>MAINTAINERS</code>, <code>AI_POLICY.md</code>) live in the sibling <a href="https://github.com/strimzi/governance" target="_blank" rel="noopener">strimzi/governance</a> repo.
         </p>
 
+        <div class="diagram">
+          <svg viewBox="0 0 920 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strimzi module flows: build-time codegen turns api + crd-annotations + Kafka config docs into install YAML and JSON schema; runtime operators (cluster, topic, user) depend on api + operator-common + certificate-manager and reconcile CRs against the Kube API; image build packages the operators plus kafka-agent / kafka-init / tracing-agent into docker-images published to quay.io; mockkube and systemtest exercise the operators in tests.">
+            <defs>
+              <marker id="st-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="st-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="st-y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e0af68"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
+                .box-soft { fill:#161b25; stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 3; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.3; fill:none; }
+                .arr-g { stroke:#9ece6a; stroke-width:1.3; fill:none; }
+                .arr-y { stroke:#e0af68; stroke-width:1.3; fill:none; }
+                .lane-t { fill:#8a96a3; font: bold 10px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+                .lane-d { stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 4; }
+              </style>
+            </defs>
+
+            <!-- Lane 1: build-time codegen -->
+            <text class="lane-t" x="20" y="30">BUILD-TIME CODEGEN</text>
+
+            <rect class="box" x="170" y="40" width="120" height="46"/>
+            <text class="lbl-b" x="230" y="60" text-anchor="middle">api/</text>
+            <text class="lbl-s" x="230" y="76" text-anchor="middle">CR POJOs</text>
+
+            <rect class="box" x="300" y="40" width="140" height="46"/>
+            <text class="lbl-b" x="370" y="60" text-anchor="middle">crd-annotations/</text>
+            <text class="lbl-s" x="370" y="76" text-anchor="middle">@Crd / @Required</text>
+
+            <rect class="box-em" x="470" y="40" width="160" height="46"/>
+            <text class="lbl-b" x="550" y="60" text-anchor="middle">crd-generator/</text>
+            <text class="lbl-s" x="550" y="76" text-anchor="middle">annot. processor</text>
+
+            <rect class="box-warm" x="670" y="40" width="220" height="46"/>
+            <text class="lbl-b" x="780" y="60" text-anchor="middle">install/ (CRD YAML + RBAC)</text>
+            <text class="lbl-s" x="780" y="76" text-anchor="middle">kubectl apply target</text>
+
+            <path class="arr-g" d="M290,63 L298,63" marker-end="url(#st-g)"/>
+            <path class="arr-g" d="M440,63 L468,63" marker-end="url(#st-g)"/>
+            <path class="arr-g" d="M630,63 L668,63" marker-end="url(#st-g)"/>
+
+            <rect class="box-soft" x="170" y="100" width="240" height="44"/>
+            <text class="lbl-b" x="290" y="120" text-anchor="middle">Apache Kafka config docs</text>
+            <text class="lbl-s" x="290" y="134" text-anchor="middle">scraped via Maven</text>
+
+            <rect class="box-em" x="430" y="100" width="200" height="44"/>
+            <text class="lbl-b" x="530" y="120" text-anchor="middle">config-model-generator/</text>
+            <text class="lbl-s" x="530" y="134" text-anchor="middle">→ config-model/</text>
+
+            <rect class="box-warm" x="650" y="100" width="240" height="44"/>
+            <text class="lbl-b" x="770" y="120" text-anchor="middle">JSON schema</text>
+            <text class="lbl-s" x="770" y="134" text-anchor="middle">admission validation</text>
+
+            <path class="arr-g" d="M410,122 L428,122" marker-end="url(#st-g)"/>
+            <path class="arr-g" d="M630,122 L648,122" marker-end="url(#st-g)"/>
+
+            <line class="lane-d" x1="160" y1="170" x2="910" y2="170"/>
+
+            <!-- Lane 2: runtime operators -->
+            <text class="lane-t" x="20" y="200">RUNTIME OPERATORS</text>
+
+            <rect class="box" x="80" y="210" width="120" height="44"/>
+            <text class="lbl-b" x="140" y="230" text-anchor="middle">api/</text>
+            <text class="lbl-s" x="140" y="244" text-anchor="middle">CR types</text>
+
+            <rect class="box" x="210" y="210" width="160" height="44"/>
+            <text class="lbl-b" x="290" y="230" text-anchor="middle">operator-common/</text>
+            <text class="lbl-s" x="290" y="244" text-anchor="middle">AbstractOperator</text>
+
+            <rect class="box" x="380" y="210" width="180" height="44"/>
+            <text class="lbl-b" x="470" y="230" text-anchor="middle">certificate-manager/</text>
+            <text class="lbl-s" x="470" y="244" text-anchor="middle">Cluster / Clients CA</text>
+
+            <path class="arr" d="M320,254 L390,290" marker-end="url(#st-a)"/>
+            <path class="arr" d="M470,254 L470,290" marker-end="url(#st-a)"/>
+            <path class="arr" d="M140,254 L380,330" marker-end="url(#st-a)"/>
+
+            <rect class="box-em" x="170" y="300" width="290" height="120"/>
+            <text class="lbl-b" x="315" y="324" text-anchor="middle">cluster-operator/</text>
+            <text class="lbl-s" x="315" y="342" text-anchor="middle">Kafka · KafkaNodePool · Connect</text>
+            <text class="lbl-s" x="315" y="356" text-anchor="middle">MirrorMaker2 · Bridge · Rebalance</text>
+            <text class="lbl-s" x="315" y="380" text-anchor="middle">KafkaRoller (rolling restart)</text>
+            <text class="lbl-s" x="315" y="396" text-anchor="middle">CruiseControlApi client</text>
+            <text class="lbl-s" x="315" y="412" text-anchor="middle">ClusterCa / ClientsCa lifecycle</text>
+
+            <rect class="box-em" x="480" y="300" width="220" height="56"/>
+            <text class="lbl-b" x="590" y="322" text-anchor="middle">topic-operator/</text>
+            <text class="lbl-s" x="590" y="340" text-anchor="middle">KafkaTopic ⇄ AdminClient</text>
+
+            <rect class="box-em" x="480" y="364" width="220" height="56"/>
+            <text class="lbl-b" x="590" y="386" text-anchor="middle">user-operator/</text>
+            <text class="lbl-s" x="590" y="404" text-anchor="middle">KafkaUser ACL + creds</text>
+
+            <rect class="box-warm" x="720" y="300" width="180" height="120"/>
+            <text class="lbl-b" x="810" y="324" text-anchor="middle">Kube API + Kafka</text>
+            <text class="lbl-s" x="810" y="342" text-anchor="middle">target side-effects:</text>
+            <text class="lbl-s" x="810" y="358" text-anchor="middle">StrimziPodSet · Service</text>
+            <text class="lbl-s" x="810" y="372" text-anchor="middle">ConfigMap · Secret</text>
+            <text class="lbl-s" x="810" y="388" text-anchor="middle">AdminClient calls</text>
+            <text class="lbl-s" x="810" y="404" text-anchor="middle">→ topics / users / ACLs</text>
+
+            <path class="arr" d="M460,360 L718,360" marker-end="url(#st-a)"/>
+            <path class="arr" d="M700,328 L718,328" marker-end="url(#st-a)"/>
+            <path class="arr" d="M700,392 L718,392" marker-end="url(#st-a)"/>
+
+            <line class="lane-d" x1="160" y1="450" x2="910" y2="450"/>
+
+            <!-- Lane 3: image build + tests -->
+            <text class="lane-t" x="20" y="480">IMAGE BUILD &amp; TESTS</text>
+
+            <rect class="box" x="170" y="490" width="130" height="46"/>
+            <text class="lbl-b" x="235" y="510" text-anchor="middle">kafka-agent/</text>
+            <text class="lbl-s" x="235" y="526" text-anchor="middle">broker readiness</text>
+
+            <rect class="box" x="310" y="490" width="130" height="46"/>
+            <text class="lbl-b" x="375" y="510" text-anchor="middle">kafka-init/</text>
+            <text class="lbl-s" x="375" y="526" text-anchor="middle">pod identity</text>
+
+            <rect class="box" x="450" y="490" width="140" height="46"/>
+            <text class="lbl-b" x="520" y="510" text-anchor="middle">tracing-agent/</text>
+            <text class="lbl-s" x="520" y="526" text-anchor="middle">OpenTelemetry</text>
+
+            <rect class="box-em" x="610" y="490" width="160" height="46"/>
+            <text class="lbl-b" x="690" y="510" text-anchor="middle">docker-images/</text>
+            <text class="lbl-s" x="690" y="526" text-anchor="middle">per-component Dockerfile</text>
+
+            <rect class="box-warm" x="785" y="490" width="115" height="46"/>
+            <text class="lbl-b" x="842" y="510" text-anchor="middle">quay.io</text>
+            <text class="lbl-s" x="842" y="526" text-anchor="middle">strimzi/*</text>
+
+            <path class="arr-y" d="M300,513 L308,513" marker-end="url(#st-y)"/>
+            <path class="arr-y" d="M440,513 L448,513" marker-end="url(#st-y)"/>
+            <path class="arr-y" d="M590,513 L608,513" marker-end="url(#st-y)"/>
+            <path class="arr-y" d="M770,513 L783,513" marker-end="url(#st-y)"/>
+            <path class="arr-y" d="M610,460 L660,490" marker-end="url(#st-y)"/>
+            <text class="lbl-s" x="540" y="478">+ all 3 operators</text>
+
+            <rect class="box-soft" x="170" y="570" width="260" height="60"/>
+            <text class="lbl-b" x="300" y="592" text-anchor="middle">mockkube/  +  systemtest/</text>
+            <text class="lbl-s" x="300" y="610" text-anchor="middle">in-memory Kube + real-cluster E2E</text>
+            <text class="lbl-s" x="300" y="624" text-anchor="middle">exercise reconcile loop</text>
+
+            <rect class="box-soft" x="460" y="570" width="220" height="60"/>
+            <text class="lbl-b" x="570" y="592" text-anchor="middle">documentation/</text>
+            <text class="lbl-s" x="570" y="610" text-anchor="middle">AsciiDoc</text>
+            <text class="lbl-s" x="570" y="624" text-anchor="middle">→ strimzi.io/documentation</text>
+
+            <rect class="box-soft" x="700" y="570" width="200" height="60"/>
+            <text class="lbl-b" x="800" y="592" text-anchor="middle">helm-charts/ + packaging/</text>
+            <text class="lbl-s" x="800" y="610" text-anchor="middle">release bundle</text>
+            <text class="lbl-s" x="800" y="624" text-anchor="middle">.tar.gz + Helm</text>
+
+            <text class="lbl-s" x="170" y="666">colour: <tspan fill="#9ece6a">green</tspan> = build-time codegen flow · <tspan fill="#7aa2f7">blue</tspan> = runtime depends-on / reconciles · <tspan fill="#e0af68">amber</tspan> = image build / publish</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Three flows, top to bottom. <strong>Codegen</strong> (green) regenerates CRD YAML and the broker-config JSON schema at <code>mvn package</code> time — touching <code>api/</code> means the resulting CRD changes too. <strong>Runtime</strong> (blue) is what runs in the operator pods: the three operators consume the same <code>api/</code> + <code>operator-common/</code> + <code>certificate-manager/</code> trio and emit Kube + Kafka side-effects. <strong>Image build</strong> (amber) bundles the operators with the per-pod Java agents into the published <code>quay.io/strimzi/*</code> images. Tests live alongside (<code>mockkube/</code> for unit, <code>systemtest/</code> for E2E).
+        </p>
+
         <h3>Top-level modules</h3>
         <ul>
           <li><strong><code>cluster-operator/</code></strong> — the main reconciler. Watches <code>Kafka</code>, <code>KafkaNodePool</code>, <code>KafkaConnect</code>, <code>KafkaMirrorMaker2</code>, <code>KafkaBridge</code>, <code>KafkaRebalance</code> CRs. Builds <code>StrimziPodSet</code> + Services + ConfigMaps + Secrets. Owns the cert lifecycle (<code>ClusterCa</code>, <code>ClientsCa</code>), the rolling-restart orchestration (<code>KafkaRoller</code>), and the Cruise Control client. The largest module by far.</li>
