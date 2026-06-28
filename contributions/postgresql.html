@@ -218,19 +218,6 @@
           </li>
         </ul>
 
-        <h2>다음 단계</h2>
-        <ul>
-          <li>모더레이터(보통 Stephen Frost / Magnus Hagander)가 -bugs 답글 통과시킴 → 스레드 아카이브에 등록</li>
-          <li>48시간 대기 — Ayush Tiwari(스레드 유일 응답자)나 다른 사람이 "I'm working on this" 답글 안 달면 진행</li>
-          <li><code>pgsql-hackers@lists.postgresql.org</code>에 패치 첨부 발송 + AI 보조 사용 disclosure 한 줄 cover letter 포함</li>
-          <li>CF /59/ (2026년 7월 1일 시작) 에 등록 — message-id를 입력하면 자동으로 패치 추적</li>
-        </ul>
-
-        <h2>왜 PostgreSQL은 메일링리스트만 쓰는가</h2>
-        <p>
-          PostgreSQL은 1996년 프로젝트 시작 이래 일관되게 메일링리스트 워크플로를 유지. GitHub의 <code>postgres/postgres</code>는 read-only mirror — PR을 열어도 받지 않음. <a href="https://wiki.postgresql.org/wiki/Submitting_a_Patch" target="_blank" rel="noopener">공식 패치 제출 가이드</a>가 이 절차를 정리. 이유 — 비동기 분산 리뷰(커미터가 전세계 시간대에 흩어져 있음), <a href="https://www.postgresql.org/list/" target="_blank" rel="noopener">영구 검색 가능한 메일 아카이브</a>, 패치를 일반 텍스트 diff로 인라인 리뷰, 플랫폼 락인 회피. Linux 커널(LKML), Git, SQLite, GCC도 같은 패턴.
-        </p>
-
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">Source</span><a href="https://github.com/postgres/postgres" target="_blank" rel="noopener">postgres/postgres (read-only mirror)</a></li>

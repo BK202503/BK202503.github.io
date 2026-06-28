@@ -290,15 +290,6 @@ gbt_float8eq(const void *a, const void *b, FmgrInfo *flinfo)
           <li><code>make -C contrib check</code> — <strong>contrib 48 modules 전체 통과</strong>, 실패 0</li>
         </ul>
 
-        <h2>6. 제출 흐름</h2>
-        <ol>
-          <li><strong>1단계 — pgsql-bugs 답글</strong>: BUG #19524 스레드에 "I have a patch — anyone working on this?" 답글 발송 완료 (2026-06-28). 첫 비구독자 메일이라 <strong>모더레이션 큐 대기 중</strong>. 보통 몇 시간 ~ 1~2일 안에 통과.</li>
-          <li><strong>2단계 — pgsql-hackers 패치 발송</strong>: 모더레이션 통과 후 48시간 대기 (다른 사람이 같은 작업 중인지 확인). 응답 없으면 <code>pgsql-hackers@lists.postgresql.org</code>에 <code>git format-patch</code> 첨부 발송. 본문에 AI 보조 사용 disclosure 한 줄 포함 — Strimzi에는 공식 AI 정책이 있지만 PostgreSQL은 명문화된 정책 없음 (커뮤니티 보수적이라 투명성으로 한 줄 명시가 안전).</li>
-          <li><strong>3단계 — CF /59/ 등록</strong>: pgsql-hackers 발송 후 message-id를 commitfest.postgresql.org/59/ 에서 입력. CF는 2026년 7월 1일 시작 ~ 7월 31일 리뷰.</li>
-          <li><strong>4단계 — 리뷰 라운드</strong>: 커미터 / 리뷰어가 코멘트, 본인이 패치 v2로 응답. 머지될 때까지 반복.</li>
-          <li><strong>5단계 — 머지</strong>: 커미터가 <code>master</code> 브랜치에 push. 백포트 가능 여부는 커미터 판단.</li>
-        </ol>
-
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">Source</span><a href="https://github.com/postgres/postgres" target="_blank" rel="noopener">postgres/postgres (read-only mirror)</a></li>
