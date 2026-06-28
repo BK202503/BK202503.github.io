@@ -509,7 +509,7 @@
         </ul>
 
         <div class="diagram diagram--wide">
-          <svg viewBox="0 0 920 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spring Kafka runtime: each ListenerConsumer thread owns one KafkaConsumer that opens long-lived TCP connections to brokers; user listener runs sync on the thread or hands off async; the underlying KafkaProducer of KafkaTemplate has its own sender thread; retry topic scheduler is idle most of the time; FailedRecordTracker holds per-(topic, partition, offset) attempt state.">
+          <svg viewBox="0 0 920 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spring Kafka runtime, layered from app to OS to brokers: Spring Kafka container + listener + KafkaTemplate live in the APP layer; JVM layer holds the threads (N listener threads + producer sender + async scheduler) and the on-heap buffers (poll buffer, RecordAccumulator, FailedRecordTracker) plus off-heap NIO direct buffers; OS / kernel layer holds the CPU cores the threads run on, the page cache + per-socket TCP send/recv buffers, the epoll loop and NIC queues; the NIC reaches the Kafka brokers.">
             <defs>
               <marker id="sr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
                 <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
@@ -525,101 +525,185 @@
                 .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
                 .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
                 .box-soft { fill:#161b25; stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 3; rx:8; ry:8; }
-                .lbl-b { fill:#dde3ec; font: bold 14px/1 ui-monospace, monospace; }
-                .lbl-s { fill:#8a96a3; font: 12px/1 ui-monospace, monospace; }
-                .arr   { stroke:#7aa2f7; stroke-width:1.4; fill:none; }
-                .arr-g { stroke:#9ece6a; stroke-width:1.4; fill:none; }
-                .arr-y { stroke:#e0af68; stroke-width:1.4; fill:none; stroke-dasharray:5 4; }
-                .lane-t { fill:#8a96a3; font: bold 12px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+                .lbl-b { fill:#dde3ec; font: bold 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.2; fill:none; }
+                .arr-g { stroke:#9ece6a; stroke-width:1.2; fill:none; }
+                .arr-y { stroke:#e0af68; stroke-width:1.2; fill:none; stroke-dasharray:5 4; }
+                .lane-t { fill:#8a96a3; font: bold 10px/1 ui-monospace, monospace; letter-spacing:0.08em; }
                 .lane-d { stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 4; }
               </style>
             </defs>
 
-            <text class="lane-t" x="20" y="30">APP JVM</text>
+            <!-- ─────────── LANE 1: APP / SPRING KAFKA ─────────── -->
+            <text class="lane-t" x="20" y="26">APP · SPRING KAFKA</text>
 
-            <!-- Listener concurrency cluster -->
-            <rect class="box-soft" x="160" y="50" width="380" height="180"/>
-            <text class="lane-t" x="170" y="68">ConcurrentMessageListenerContainer (concurrency = N)</text>
+            <rect class="box-soft" x="160" y="40" width="380" height="160"/>
+            <text class="lane-t" x="170" y="58">ConcurrentMessageListenerContainer (concurrency = N)</text>
 
-            <rect class="box-em" x="180" y="80" width="160" height="60"/>
-            <text class="lbl-b" x="260" y="102" text-anchor="middle">ListenerConsumer #1</text>
-            <text class="lbl-s" x="260" y="120" text-anchor="middle">poll → dispatch → commit</text>
-            <text class="lbl-s" x="260" y="134" text-anchor="middle">owns 1 KafkaConsumer</text>
+            <rect class="box-em" x="180" y="70" width="160" height="56"/>
+            <text class="lbl-b" x="260" y="90" text-anchor="middle">ListenerConsumer #1</text>
+            <text class="lbl-s" x="260" y="106" text-anchor="middle">poll → dispatch → commit</text>
+            <text class="lbl-s" x="260" y="118" text-anchor="middle">owns 1 KafkaConsumer</text>
 
-            <rect class="box-em" x="360" y="80" width="160" height="60"/>
-            <text class="lbl-b" x="440" y="102" text-anchor="middle">ListenerConsumer #N</text>
-            <text class="lbl-s" x="440" y="120" text-anchor="middle">poll → dispatch → commit</text>
-            <text class="lbl-s" x="440" y="134" text-anchor="middle">owns 1 KafkaConsumer</text>
+            <rect class="box-em" x="360" y="70" width="160" height="56"/>
+            <text class="lbl-b" x="440" y="90" text-anchor="middle">ListenerConsumer #N</text>
+            <text class="lbl-s" x="440" y="106" text-anchor="middle">poll → dispatch → commit</text>
+            <text class="lbl-s" x="440" y="118" text-anchor="middle">owns 1 KafkaConsumer</text>
 
-            <!-- User listener + error handler -->
-            <rect class="box" x="180" y="160" width="340" height="60"/>
-            <text class="lbl-b" x="350" y="182" text-anchor="middle">User @KafkaListener method</text>
-            <text class="lbl-s" x="350" y="200" text-anchor="middle">sync: runs on listener thread (CPU here)</text>
-            <text class="lbl-s" x="350" y="214" text-anchor="middle">async: hands off, listener returns to poll</text>
+            <rect class="box" x="180" y="140" width="340" height="50"/>
+            <text class="lbl-b" x="350" y="158" text-anchor="middle">User @KafkaListener method</text>
+            <text class="lbl-s" x="350" y="174" text-anchor="middle">sync: CPU on listener thread</text>
+            <text class="lbl-s" x="350" y="186" text-anchor="middle">async: hands off, listener returns to poll</text>
 
-            <!-- KafkaTemplate / Producer -->
-            <rect class="box" x="580" y="80" width="170" height="80"/>
-            <text class="lbl-b" x="665" y="102" text-anchor="middle">KafkaTemplate</text>
-            <text class="lbl-s" x="665" y="120" text-anchor="middle">→ KafkaProducer</text>
-            <text class="lbl-s" x="665" y="136" text-anchor="middle">RecordAccumulator (32 MB)</text>
-            <text class="lbl-s" x="665" y="152" text-anchor="middle">sender thread (batched I/O)</text>
+            <rect class="box" x="570" y="40" width="170" height="70"/>
+            <text class="lbl-b" x="655" y="58" text-anchor="middle">KafkaTemplate</text>
+            <text class="lbl-s" x="655" y="74" text-anchor="middle">→ KafkaProducer</text>
+            <text class="lbl-s" x="655" y="86" text-anchor="middle">RecordAccumulator 32 MB</text>
+            <text class="lbl-s" x="655" y="98" text-anchor="middle">1 sender thread (batched I/O)</text>
 
-            <!-- Retry topic scheduler -->
-            <rect class="box-warm" x="580" y="170" width="170" height="60"/>
-            <text class="lbl-b" x="665" y="192" text-anchor="middle">RetryTopic scheduler</text>
-            <text class="lbl-s" x="665" y="208" text-anchor="middle">backoff buckets · idle mostly</text>
-            <text class="lbl-s" x="665" y="222" text-anchor="middle">wakes only on retry traffic</text>
+            <rect class="box-warm" x="570" y="120" width="170" height="60"/>
+            <text class="lbl-b" x="655" y="138" text-anchor="middle">RetryTopic scheduler</text>
+            <text class="lbl-s" x="655" y="154" text-anchor="middle">backoff buckets · idle mostly</text>
+            <text class="lbl-s" x="655" y="168" text-anchor="middle">wakes on retry traffic only</text>
 
-            <!-- FailedRecordTracker (memory) -->
-            <rect class="box-soft" x="760" y="80" width="140" height="80"/>
-            <text class="lbl-b" x="830" y="102" text-anchor="middle">FailedRecord</text>
-            <text class="lbl-b" x="830" y="120" text-anchor="middle">Tracker</text>
-            <text class="lbl-s" x="830" y="138" text-anchor="middle">per (t, p, off)</text>
-            <text class="lbl-s" x="830" y="152" text-anchor="middle">attempt + backoff</text>
+            <rect class="box-soft" x="760" y="40" width="140" height="140"/>
+            <text class="lbl-b" x="830" y="60" text-anchor="middle">FailedRecord</text>
+            <text class="lbl-b" x="830" y="74" text-anchor="middle">Tracker</text>
+            <text class="lbl-s" x="830" y="92" text-anchor="middle">per (topic,</text>
+            <text class="lbl-s" x="830" y="104" text-anchor="middle">partition, offset)</text>
+            <text class="lbl-s" x="830" y="120" text-anchor="middle">attempt count</text>
+            <text class="lbl-s" x="830" y="132" text-anchor="middle">+ next backoff</text>
+            <text class="lbl-s" x="830" y="156" text-anchor="middle">bounded by # of</text>
+            <text class="lbl-s" x="830" y="168" text-anchor="middle">in-flight failures</text>
 
-            <!-- Brokers (outside JVM) -->
-            <line class="lane-d" x1="160" y1="270" x2="910" y2="270"/>
-            <text class="lane-t" x="20" y="300">KAFKA CLUSTER (brokers)</text>
+            <line class="lane-d" x1="160" y1="216" x2="910" y2="216"/>
 
-            <rect class="box" x="180" y="310" width="160" height="60"/>
-            <text class="lbl-b" x="260" y="332" text-anchor="middle">Broker A</text>
-            <text class="lbl-s" x="260" y="350" text-anchor="middle">partition leader</text>
-            <text class="lbl-s" x="260" y="364" text-anchor="middle">group coordinator</text>
+            <!-- ─────────── LANE 2: JVM ─────────── -->
+            <text class="lane-t" x="20" y="240">JVM · threads + heap + direct buffers</text>
 
-            <rect class="box" x="360" y="310" width="160" height="60"/>
-            <text class="lbl-b" x="440" y="332" text-anchor="middle">Broker B</text>
-            <text class="lbl-s" x="440" y="350" text-anchor="middle">partition leader</text>
-            <text class="lbl-s" x="440" y="364" text-anchor="middle">tx coordinator</text>
+            <!-- Threads sub-cluster (left) -->
+            <rect class="box-soft" x="160" y="252" width="240" height="160"/>
+            <text class="lane-t" x="170" y="270">THREADS</text>
+            <text class="lbl-s" x="180" y="290">• N × ListenerConsumer (poll loop)</text>
+            <text class="lbl-s" x="180" y="306">• 1 × Producer Sender (per KafkaTemplate)</text>
+            <text class="lbl-s" x="180" y="322">• Async scheduler if return type is</text>
+            <text class="lbl-s" x="180" y="334">    Mono / suspend / CompletableFuture</text>
+            <text class="lbl-s" x="180" y="350">• ScheduledExecutor for RetryTopic</text>
+            <text class="lbl-s" x="180" y="366">• Consumer heartbeat thread (internal)</text>
+            <text class="lbl-s" x="180" y="386">stack frames + thread-locals = ~MB / thread,</text>
+            <text class="lbl-s" x="180" y="398">tiny compared to record / accumulator buffers.</text>
 
-            <rect class="box" x="580" y="310" width="170" height="60"/>
-            <text class="lbl-b" x="665" y="332" text-anchor="middle">Broker C</text>
-            <text class="lbl-s" x="665" y="350" text-anchor="middle">retry / DLT topics</text>
-            <text class="lbl-s" x="665" y="364" text-anchor="middle">reply topic</text>
+            <!-- Heap sub-cluster (mid) -->
+            <rect class="box-soft" x="420" y="252" width="280" height="160"/>
+            <text class="lane-t" x="430" y="270">HEAP (young + old gen)</text>
+            <text class="lbl-s" x="440" y="290">• Per-poll batch of ConsumerRecord</text>
+            <text class="lbl-s" x="440" y="302">    max.poll.records × avg record size</text>
+            <text class="lbl-s" x="440" y="320">• RecordAccumulator (default 32 MB)</text>
+            <text class="lbl-s" x="440" y="332">    grows when broker is slow</text>
+            <text class="lbl-s" x="440" y="350">• FailedRecordTracker entries</text>
+            <text class="lbl-s" x="440" y="368">• Retry backoff buckets (record lists)</text>
+            <text class="lbl-s" x="440" y="386">GC pressure dominated by per-poll ConsumerRecord</text>
+            <text class="lbl-s" x="440" y="398">churn; retained heap usually small.</text>
 
-            <!-- Arrows: consumer connections (blue) -->
-            <path class="arr" d="M260,140 L260,308" marker-end="url(#sr-a)"/>
-            <path class="arr" d="M440,140 L440,308" marker-end="url(#sr-a)"/>
-            <text class="lbl-s" x="290" y="230">FetchRequest · OffsetCommit · Heartbeat</text>
+            <!-- Off-heap (right) -->
+            <rect class="box-soft" x="720" y="252" width="180" height="160"/>
+            <text class="lane-t" x="730" y="270">DIRECT (off-heap)</text>
+            <text class="lbl-s" x="730" y="290">Java NIO ByteBuffers</text>
+            <text class="lbl-s" x="730" y="306">used by socket reads/writes.</text>
+            <text class="lbl-s" x="730" y="324">Sized by</text>
+            <text class="lbl-s" x="730" y="336">-XX:MaxDirectMemorySize</text>
+            <text class="lbl-s" x="730" y="356">Bytes copied here from</text>
+            <text class="lbl-s" x="730" y="368">kernel TCP recv buffer,</text>
+            <text class="lbl-s" x="730" y="380">then into heap as records.</text>
+            <text class="lbl-s" x="730" y="402">Released after consume.</text>
 
-            <!-- Arrow: producer sender → broker (green) -->
-            <path class="arr-g" d="M665,160 L665,308" marker-end="url(#sr-g)"/>
-            <text class="lbl-s" x="540" y="290">ProduceRequest (batched)</text>
+            <line class="lane-d" x1="160" y1="430" x2="910" y2="430"/>
 
-            <!-- Arrow: retry scheduler republishes (amber, dashed) -->
-            <path class="arr-y" d="M665,230 C570,260 540,210 540,165" marker-end="url(#sr-y)"/>
-            <text class="lbl-s" x="540" y="252">republish on backoff</text>
+            <!-- ─────────── LANE 3: OS / KERNEL ─────────── -->
+            <text class="lane-t" x="20" y="454">OS · Linux kernel</text>
 
-            <!-- Listener -> user method handoff -->
-            <path class="arr" d="M260,140 L260,158" marker-end="url(#sr-a)"/>
-            <path class="arr" d="M440,140 L440,158" marker-end="url(#sr-a)"/>
+            <rect class="box" x="160" y="466" width="240" height="100"/>
+            <text class="lbl-b" x="280" y="486" text-anchor="middle">CPU cores</text>
+            <text class="lbl-s" x="280" y="504" text-anchor="middle">kernel scheduler timeshares</text>
+            <text class="lbl-s" x="280" y="516" text-anchor="middle">every JVM thread onto cores</text>
+            <text class="lbl-s" x="280" y="534" text-anchor="middle">poll loop = run-when-data,</text>
+            <text class="lbl-s" x="280" y="546" text-anchor="middle">otherwise blocks on epoll</text>
+            <text class="lbl-s" x="280" y="558" text-anchor="middle">(no busy-wait)</text>
+
+            <rect class="box-warm" x="420" y="466" width="280" height="100"/>
+            <text class="lbl-b" x="560" y="486" text-anchor="middle">Kernel RAM</text>
+            <text class="lbl-s" x="560" y="504" text-anchor="middle">page cache (file-backed, unused here)</text>
+            <text class="lbl-s" x="560" y="520" text-anchor="middle">+ per-socket TCP send / recv buffers</text>
+            <text class="lbl-s" x="560" y="532" text-anchor="middle">(net.ipv4.tcp_wmem / tcp_rmem, KB–MB each)</text>
+            <text class="lbl-s" x="560" y="548" text-anchor="middle">producer batches drain JVM → TCP send buf;</text>
+            <text class="lbl-s" x="560" y="560" text-anchor="middle">fetch responses fill TCP recv buf → JVM direct</text>
+
+            <rect class="box" x="720" y="466" width="180" height="100"/>
+            <text class="lbl-b" x="810" y="486" text-anchor="middle">Net stack + NIC</text>
+            <text class="lbl-s" x="810" y="504" text-anchor="middle">epoll wakes JVM I/O thread</text>
+            <text class="lbl-s" x="810" y="516" text-anchor="middle">when a socket is readable</text>
+            <text class="lbl-s" x="810" y="534" text-anchor="middle">NIC TX / RX queues</text>
+            <text class="lbl-s" x="810" y="546" text-anchor="middle">no Spring Kafka tuning</text>
+            <text class="lbl-s" x="810" y="558" text-anchor="middle">— pure OS / NIC throughput</text>
+
+            <line class="lane-d" x1="160" y1="586" x2="910" y2="586"/>
+
+            <!-- ─────────── LANE 4: KAFKA BROKERS ─────────── -->
+            <text class="lane-t" x="20" y="610">KAFKA CLUSTER (brokers, across the NIC)</text>
+
+            <rect class="box" x="160" y="624" width="170" height="60"/>
+            <text class="lbl-b" x="245" y="644" text-anchor="middle">Broker A</text>
+            <text class="lbl-s" x="245" y="660" text-anchor="middle">partition leader</text>
+            <text class="lbl-s" x="245" y="672" text-anchor="middle">group coordinator</text>
+
+            <rect class="box" x="350" y="624" width="170" height="60"/>
+            <text class="lbl-b" x="435" y="644" text-anchor="middle">Broker B</text>
+            <text class="lbl-s" x="435" y="660" text-anchor="middle">partition leader</text>
+            <text class="lbl-s" x="435" y="672" text-anchor="middle">tx coordinator</text>
+
+            <rect class="box" x="540" y="624" width="180" height="60"/>
+            <text class="lbl-b" x="630" y="644" text-anchor="middle">Broker C</text>
+            <text class="lbl-s" x="630" y="660" text-anchor="middle">retry / DLT topics</text>
+            <text class="lbl-s" x="630" y="672" text-anchor="middle">reply topic</text>
+
+            <rect class="box-soft" x="740" y="624" width="160" height="60"/>
+            <text class="lbl-s" x="820" y="644" text-anchor="middle">see also:</text>
+            <text class="lbl-s" x="820" y="658" text-anchor="middle">apache-kafka.html</text>
+            <text class="lbl-s" x="820" y="672" text-anchor="middle">#runtime</text>
+
+            <!-- ─────────── ARROWS ─────────── -->
+            <!-- App listener threads → JVM thread inventory (vertical down) -->
+            <path class="arr" d="M260,196 L260,250" marker-end="url(#sr-a)"/>
+            <path class="arr" d="M440,196 L260,250" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="270" y="232">scheduled on</text>
+
+            <!-- KafkaTemplate sender → JVM threads + heap -->
+            <path class="arr-g" d="M655,110 L320,250" marker-end="url(#sr-g)"/>
+            <path class="arr-g" d="M655,110 L500,250" marker-end="url(#sr-g)"/>
+
+            <!-- JVM threads → OS cores -->
+            <path class="arr" d="M280,412 L280,464" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="290" y="448">run on</text>
+
+            <!-- JVM heap allocs (informational link, no arrow into kernel — heap stays in JVM) -->
+            <!-- JVM direct buffers → kernel TCP buffer -->
+            <path class="arr-g" d="M810,412 L560,464" marker-end="url(#sr-g)"/>
+            <text class="lbl-s" x="700" y="448">copy via NIO socket</text>
+
+            <!-- Kernel net stack → NIC → broker -->
+            <path class="arr" d="M810,566 L810,622" marker-end="url(#sr-a)"/>
+            <path class="arr" d="M560,566 L245,622" marker-end="url(#sr-a)"/>
+            <path class="arr-g" d="M560,566 L435,622" marker-end="url(#sr-g)"/>
+            <path class="arr-y" d="M560,566 L630,622" marker-end="url(#sr-y)"/>
 
             <!-- Legend -->
-            <text class="lbl-s" x="160" y="430"><tspan fill="#7aa2f7">blue</tspan> = consumer side (FetchRequest, commits, heartbeat) · <tspan fill="#9ece6a">green</tspan> = producer side (ProduceRequest, batched) · <tspan fill="#e0af68">amber</tspan> = retry scheduler republish</text>
-            <text class="lbl-s" x="160" y="452">N × consumer connections per broker; 1 producer connection per broker; one shared reply consumer for sendAndReceive.</text>
+            <text class="lbl-s" x="160" y="720"><tspan fill="#7aa2f7">blue</tspan> = consumer side (FetchRequest, OffsetCommit, Heartbeat) · <tspan fill="#9ece6a">green</tspan> = producer side (ProduceRequest, batched) · <tspan fill="#e0af68">amber</tspan> = retry / DLT republish</text>
+            <text class="lbl-s" x="160" y="738">Bytes never enter the JVM heap on the consume hot path until the record is materialised — they live in the kernel TCP buffer, then in a direct ByteBuffer, then in heap-allocated ConsumerRecord objects.</text>
           </svg>
         </div>
         <p class="diagram-caption">
-          The expensive runtime axis for Spring Kafka is <em>user listener CPU</em> on the sync path, or <em>scheduler choice</em> on the async path. Memory growth surprises almost always come from a backed-up producer (slow broker), not from Spring Kafka structures. Network is a function of <code>concurrency</code>, retry-topic depth, and whether transactions are on.
+          Four layers stacked. <strong>APP</strong> = Spring Kafka structures. <strong>JVM</strong> = the threads those structures run on plus the heap / off-heap buffers they allocate. <strong>OS</strong> = the cores, kernel RAM (page cache + TCP socket buffers) and NIC the JVM lives on top of. <strong>BROKERS</strong> sit across the NIC. The expensive runtime axis for Spring Kafka is <em>user listener CPU</em> on the sync path or <em>scheduler choice</em> on the async path; memory surprises usually come from a backed-up producer's <code>RecordAccumulator</code>; network is bounded by NIC + per-socket TCP buffer size, not by Spring Kafka itself.
         </p>
 
         <h2 id="source-tree">Source Tree (for contributors)</h2>
