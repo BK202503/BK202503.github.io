@@ -176,7 +176,7 @@
         <h2 id="architecture">1. Architecture</h2>
 
         <p>
-          A Strimzi deployment is three operator processes plus a set of CRDs they watch. The <strong>Cluster Operator</strong> is the central one: it watches every <code>Kafka</code> and <code>KafkaNodePool</code> in its scoped namespaces and, on each change, reconciles the cluster into a set of <code>StrimziPodSet</code> resources (one per node role — controllers, brokers, mixed) plus <code>Service</code>s, <code>ConfigMap</code>s, and TLS <code>Secret</code>s. The <strong>Topic Operator</strong> watches <code>KafkaTopic</code> CRs and creates / updates / deletes topics inside the target cluster via Kafka's Admin API. The <strong>User Operator</strong> does the same for <code>KafkaUser</code> — credentials and ACLs. <code>CruiseControl</code> is optional; when enabled by the Cluster Operator, it ships as a sidecar deployment that the operator queries when a <code>KafkaRebalance</code> CR is created.
+          A Strimzi deployment is three operator processes plus a set of CRDs they watch. The <strong>Cluster Operator</strong> is the central one: it watches every <code>Kafka</code> and <code>KafkaNodePool</code> in its scoped namespaces and, on each change, reconciles the cluster into a set of <code>StrimziPodSet</code> resources (one per node role — controllers, brokers, mixed) plus <code>Service</code>s, <code>ConfigMap</code>s, and TLS <code>Secret</code>s. The <strong>Topic Operator</strong> watches <code>KafkaTopic</code> CRs and creates / updates / deletes topics inside the target cluster via Kafka's Admin API. The <strong>User Operator</strong> does the same for <code>KafkaUser</code> — credentials and ACLs. <code>CruiseControl</code> is optional; when enabled by the Cluster Operator, it is reconciled as its own <code>Deployment</code> + <code>Service</code> (not a sidecar on the broker pods) that the operator calls when a <code>KafkaRebalance</code> CR is created.
         </p>
 
         <div class="diagram">
@@ -424,7 +424,7 @@
             <!-- 14 user sees Ready -->
             <path class="step-ok" d="M240,540 L82,540" marker-end="url(#srcn-ok)"/>
             <text class="step-n" x="240" y="532" text-anchor="end">14</text>
-            <text class="step-t" x="160" y="532" text-anchor="middle">kubectl get kafka shows READY=True</text>
+            <text class="step-t" x="160" y="532" text-anchor="middle">Kafka.status.conditions Ready=True (kubectl shows READY=True)</text>
           </svg>
         </div>
         <p class="diagram-caption">
@@ -436,7 +436,7 @@
         <ul>
           <li><strong><code>Kafka</code></strong> — top-level cluster CR. Declares the listeners (plain, TLS, external load balancer / nodeport / ingress / route), authentication / authorization, EntityOperator, CruiseControl, JMX exporter, and (legacy) ZooKeeper or KRaft topology. In modern Strimzi, the node topology lives in <code>KafkaNodePool</code>s referenced from this CR.</li>
           <li><strong><code>KafkaNodePool</code></strong> — one per role group. Holds replicas, storage class / size, JVM options, resources, tolerations / affinity, and the role flag (<code>controller</code>, <code>broker</code>, or mixed). The Cluster Operator turns each pool into one <code>StrimziPodSet</code> and one <code>StatefulSet</code>-equivalent set of pods.</li>
-          <li><strong><code>KafkaTopic</code></strong> — managed by the Topic Operator. Declares partitions, replicas, and topic configs. Status reports the corresponding Kafka topic state. Strimzi keeps the CR and the actual topic in sync in both directions (CR change → AlterTopic, broker-side topic change → CR status).</li>
+          <li><strong><code>KafkaTopic</code></strong> — managed by the Topic Operator. Declares partitions, replicas, and topic configs. Modern Strimzi uses the <strong>Unidirectional Topic Operator</strong>: the CR is the source of truth (CR change → <code>CreateTopics</code> / <code>AlterConfigs</code>) and the CR's <code>status</code> reflects the actual topic state; broker-side topic mutations are not propagated back into <code>spec</code>.</li>
           <li><strong><code>KafkaUser</code></strong> — managed by the User Operator. Declares authentication type (TLS, SCRAM-SHA-512) and ACLs / quotas. The operator creates a <code>Secret</code> with the user's credentials and registers ACLs via AdminClient.</li>
           <li><strong><code>KafkaConnect</code> / <code>KafkaConnector</code></strong> — a Kafka Connect cluster Deployment with a REST API. Connector instances can be created either declaratively via <code>KafkaConnector</code> CRs or through the Connect REST API directly.</li>
           <li><strong><code>KafkaMirrorMaker2</code></strong> — a managed MirrorMaker 2.0 Deployment for cross-cluster replication. Source / target cluster aliases, replication policies, and connector configs go here.</li>
@@ -492,7 +492,7 @@
             <tr>
               <td>Topics</td>
               <td><code>kafka-topics.sh</code> or AdminClient, managed manually.</td>
-              <td><code>KafkaTopic</code> CR. Topic Operator keeps the CR and the actual topic in sync in both directions.</td>
+              <td><code>KafkaTopic</code> CR. The Unidirectional Topic Operator drives the topic from the CR; <code>status</code> reflects the actual topic state.</td>
             </tr>
             <tr>
               <td>Metrics / observability</td>
@@ -534,16 +534,16 @@
 
         <h3>CPU / threading model (operator pods)</h3>
         <ul>
-          <li><strong>Vert.x event loop</strong> — each operator (cluster, topic, user) is a Vert.x application. Reconciliation runs on Vert.x event-loop threads; long blocking work (cert generation, Kafka AdminClient calls) is dispatched onto the worker pool. The event loop itself is rarely the bottleneck.</li>
+          <li><strong>Vert.x event loop + worker executor</strong> — each operator (cluster, topic, user) is a Vert.x application. The event loop handles watch events and scheduling; the actual reconcile work — cert generation, Kafka AdminClient calls, the bulk of the cluster reconcile — runs on the Vert.x worker executor via <code>executeBlocking</code>. The event loop itself is rarely the bottleneck.</li>
           <li><strong>Reconcile is mostly waiting</strong> — a reconcile loop wakes on a Kube Watch event (CR change, pod status change, Secret change), diffs desired vs actual, and emits Kube API calls. Most of the wall-clock time is spent waiting on those Kube API responses, not on CPU. A namespace with 5 Kafka clusters and no churn typically shows the cluster-operator CPU well under 5%.</li>
           <li><strong>Burst: certificate generation</strong> — every Cluster CA rotation, every Clients CA rotation, every new broker join is an RSA/ECDSA signing operation. <code>certificate-manager/</code> uses Bouncy Castle on the worker pool; this is the most CPU-heavy operator activity and shows up as short spikes around CA renewal windows.</li>
-          <li><strong>Burst: rolling restart orchestration</strong> — <code>KafkaRoller</code> serialises pod restarts (controllers first, then brokers, then mixed nodes), waits for each pod to reach Ready and rejoin the ISR, and only then moves on. Wall-clock for a full roll is dominated by Kafka startup time per broker, not by operator CPU; but the operator does hold the orchestration thread for the duration.</li>
+          <li><strong>Burst: rolling restart orchestration</strong> — <code>KafkaRoller</code> serialises pod restarts in a KRaft-aware order (unready controllers, then ready controllers with the active controller last, then unready brokers, then ready brokers), guarded by quorum and ISR safety checks (<code>canRoll</code>), and only moves on after each pod reaches Ready and rejoins the ISR. Wall-clock for a full roll is dominated by Kafka startup time per node, not by operator CPU; but the operator does hold the orchestration thread for the duration.</li>
           <li><strong>Concurrency knob</strong> — <code>STRIMZI_FULL_RECONCILIATION_INTERVAL_MS</code> sets the periodic full-resync floor (default 120 s). Event-driven reconciles run as soon as a Watch event arrives; the periodic full resync exists only as a safety net for missed events.</li>
         </ul>
 
         <h3>Memory layout (operator pods)</h3>
         <ul>
-          <li><strong>JVM heap (~512 MB typical)</strong> — default Cluster Operator deployment sets <code>-Xmx</code> in the hundreds of MB. Big customers running dozens of <code>Kafka</code> CRs bump it up; a single-cluster install rarely needs more than 256 MB.</li>
+          <li><strong>JVM heap (several hundred MB typical)</strong> — the default Cluster Operator deployment sets <code>-Xmx</code> in the hundreds of MB; installations range from ~256 MB on a single-cluster deploy up to roughly 1 GB on operators managing many <code>Kafka</code> CRs.</li>
           <li><strong>Informer cache (fabric8 client)</strong> — the operator opens one Watch per CR kind (<code>Kafka</code>, <code>KafkaNodePool</code>, <code>KafkaTopic</code>, <code>KafkaUser</code>, <code>KafkaConnect</code>, <code>KafkaMirrorMaker2</code>, <code>KafkaBridge</code>, <code>KafkaRebalance</code>, plus the secondary resources it owns: <code>StrimziPodSet</code>, <code>Service</code>, <code>ConfigMap</code>, <code>Secret</code>, <code>Pod</code>). Each Watch backs a local cache of every object the operator cares about. This is the single largest heap consumer and scales linearly with the number of managed clusters.</li>
           <li><strong>Per-reconcile working set</strong> — during a reconcile, the operator materialises the full desired state for that one cluster (the generated <code>StrimziPodSet</code>, <code>ConfigMap</code>s, Secrets, RBAC). Allocated, diffed, applied, dropped. Visible as periodic young-gen activity, not as long-lived heap growth.</li>
           <li><strong>Topic / User Operator</strong> — even smaller. Topic Operator's main state is a local <code>(KafkaTopic CR ↔ topic-in-cluster)</code> map sized by topic count. User Operator's main state is a <code>(KafkaUser CR ↔ secret + ACLs)</code> map sized by user count.</li>
@@ -555,8 +555,8 @@
           <li><strong>Watch streams to kube-apiserver</strong> — one long-lived HTTPS connection (server-sent stream) per CR kind being watched. Quiet most of the time; emits an event whenever a watched object changes. This is how the operator hears about new CRs, pod status flips, Secret rotations.</li>
           <li><strong>Kube API writes</strong> — every reconcile result is a burst of <code>PATCH</code> / <code>UPDATE</code> / <code>CREATE</code> / <code>DELETE</code> calls back to <code>kube-apiserver</code> over the same TLS connection. Counts and sizes are dominated by Secret writes (CA rotation) and StrimziPodSet diffs (rolling restart).</li>
           <li><strong>Kafka AdminClient</strong> — Topic Operator and User Operator each keep one AdminClient per managed cluster, talking mTLS to the brokers (certs come from the cluster's Clients CA). Used to <code>CreateTopics</code> / <code>DeleteTopics</code> / <code>AlterConfigs</code> on topic-operator side and to <code>DescribeAcls</code> / <code>CreateAcls</code> on user-operator side. Idle connection pool; reuses TCP.</li>
-          <li><strong>Cluster Operator → broker readiness (<code>kafka-agent</code>)</strong> — each broker pod runs <code>kafka-agent</code> (small Java agent baked into the image) that exposes broker readiness / KRaft quorum state on a localhost endpoint. The operator queries it via <code>kubectl exec</code>-style readiness probes; this is what <code>KafkaRoller</code> waits on between pod restarts.</li>
-          <li><strong>Cluster Operator → Cruise Control</strong> — when Cruise Control is enabled, the operator opens HTTPS calls to the Cruise Control sidecar service for every <code>KafkaRebalance</code> CR (proposal request, status polling, approval, abort). Trust is established from the Cluster CA cert Secret (see <a href="/contributions/strimzi/12885.html">PR #12885</a>).</li>
+          <li><strong>Cluster Operator → broker readiness (<code>kafka-agent</code>)</strong> — each broker pod runs <code>kafka-agent</code> (small Java agent baked into the image) that serves broker-state / KRaft quorum state on an HTTPS endpoint (port 8443, <code>/v1/broker-state</code>, mTLS with the Cluster CA). The operator calls it directly via <code>java.net.http.HttpClient</code>; this is one of the signals — alongside Kube Pod readiness and probes — that <code>KafkaRoller</code> uses between pod restarts.</li>
+          <li><strong>Cluster Operator → Cruise Control</strong> — when Cruise Control is enabled, the operator opens HTTPS calls to the Cruise Control <code>Service</code> (a separate <code>Deployment</code>) for every <code>KafkaRebalance</code> CR (proposal request, status polling, approval, abort). Trust is established from the Cluster CA cert Secret (see <a href="/contributions/strimzi/12885.html">PR #12885</a>).</li>
           <li><strong>What the operator does <em>not</em> touch</strong> — it never proxies client traffic. Producers, consumers, MirrorMaker2 instances, Connect workers all talk to the Kafka cluster directly; the operator sits beside them, not in front of them.</li>
         </ul>
 
@@ -587,11 +587,11 @@
               </style>
             </defs>
 
-            <text class="lane-t" x="20" y="30">OPERATOR PODS (small JVMs, ~512MB heap)</text>
+            <text class="lane-t" x="20" y="30">OPERATOR PODS (small JVMs, several hundred MB heap)</text>
 
             <rect class="box-em" x="160" y="50" width="200" height="80"/>
             <text class="lbl-b" x="260" y="74" text-anchor="middle">cluster-operator</text>
-            <text class="lbl-s" x="260" y="92" text-anchor="middle">Vert.x event loop</text>
+            <text class="lbl-s" x="260" y="92" text-anchor="middle">Vert.x event loop + worker pool</text>
             <text class="lbl-s" x="260" y="108" text-anchor="middle">CA + rolling restart bursts</text>
             <text class="lbl-s" x="260" y="124" text-anchor="middle">informer cache (biggest heap)</text>
 
@@ -617,7 +617,7 @@
 
             <rect class="box-warm" x="460" y="200" width="200" height="70"/>
             <text class="lbl-b" x="560" y="222" text-anchor="middle">Cruise Control</text>
-            <text class="lbl-s" x="560" y="240" text-anchor="middle">sidecar (optional)</text>
+            <text class="lbl-s" x="560" y="240" text-anchor="middle">Deployment (optional)</text>
             <text class="lbl-s" x="560" y="256" text-anchor="middle">HTTPS, ClusterCa trust</text>
 
             <line class="lane-d" x1="160" y1="290" x2="910" y2="290"/>
@@ -870,7 +870,7 @@
           <li><strong>0.41 – 0.46</strong> (2024) — KRaft becomes the default for new clusters; ZooKeeper migration tooling matures. <code>StrimziPodSet</code> replaces <code>StatefulSet</code> as the underlying primitive for finer rolling-update control.</li>
           <li><strong>0.47 – 0.51</strong> (late 2024 – early 2025) — ZooKeeper removed in lockstep with Apache Kafka 4.0. Cluster Operator strictly KRaft-only.</li>
           <li><strong>1.0.0</strong> (May 2025) — API stability promise. CRDs promoted to <code>v1</code>. Strimzi commits to N-1 minor compatibility for CRs from this point on.</li>
-          <li><strong>1.1.0</strong> (current) — continued polish on the 1.x API: tighter Cruise Control integration, faster rolling restarts on large clusters, improved observability defaults.</li>
+          <li><strong>1.1.0</strong> (latest at the time of writing) — continued polish on the 1.x API: tighter Cruise Control integration, faster rolling restarts on large clusters, improved observability defaults.</li>
         </ul>
 
         <h3>Branching &amp; release model</h3>
