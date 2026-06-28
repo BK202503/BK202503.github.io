@@ -126,14 +126,6 @@
   </url>
 
   <url>
-    <loc>https://bk202503.github.io/kafka-integration.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/kafka-integration.html"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/kafka-integration.html"/>
-  </url>
-
-  <url>
     <loc>https://bk202503.github.io/contributions/spring-kafka-4465.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
