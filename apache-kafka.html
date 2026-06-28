@@ -166,7 +166,7 @@
         <h2 id="architecture">1. Architecture</h2>
 
         <p>
-          A Kafka cluster is a set of <strong>brokers</strong> that store messages in append-only logs. Each log is a <strong>partition</strong>, and partitions are grouped into named <strong>topics</strong>. Every partition has one <strong>leader</strong> broker and zero or more <strong>follower</strong> replicas; producers and consumers always talk to the leader for a given partition. The set of replicas that are caught up with the leader is the <strong>in-sync replica</strong> set (ISR). Cluster metadata (which broker leads which partition, which replicas are in-sync, topic configs, ACLs) is managed by the <strong>controller</strong> — in modern Kafka, this is a KRaft quorum running inside the broker JVMs; in older deployments, it is an external ZooKeeper ensemble.
+          A Kafka cluster is a set of <strong>brokers</strong> that store messages in append-only logs. Each log is a <strong>partition</strong>, and partitions are grouped into named <strong>topics</strong>. Every partition has one <strong>leader</strong> broker and zero or more <strong>follower</strong> replicas; producers always send to the leader for a given partition, and consumers normally fetch from the leader (follower fetching via KIP-392 / rack-aware reads can serve fetches from in-sync replicas when enabled). The set of replicas that are caught up with the leader is the <strong>in-sync replica</strong> set (ISR). Cluster metadata (which broker leads which partition, which replicas are in-sync, topic configs, ACLs) is managed by the <strong>controller</strong> — in modern Kafka, this is a KRaft quorum running on co-located or dedicated controller nodes; in older deployments, it is an external ZooKeeper ensemble.
         </p>
 
         <div class="diagram">
@@ -269,7 +269,7 @@
           <li><strong>Partition</strong> — the unit of parallelism, ordering, and replication. Order is guaranteed within a partition, never across partitions.</li>
           <li><strong>Leader / Follower</strong> — one replica per partition is the leader; followers replicate from it. Reads and writes go to the leader by default.</li>
           <li><strong>ISR (in-sync replicas)</strong> — replicas that have caught up to the leader. <code>acks=all</code> + <code>min.insync.replicas</code> defines the durability contract.</li>
-          <li><strong>Producer</strong> — picks a partition (by key hash, sticky partitioner, or explicit), batches records, and waits for the configured acks before considering a send successful.</li>
+          <li><strong>Producer</strong> — picks a partition (by key hash, sticky partitioner, explicit assignment, or a custom partitioner), batches records, and waits for the configured acks before considering a send successful.</li>
           <li><strong>Consumer group</strong> — a set of consumers that share partition assignments via the group coordinator. Each partition is consumed by exactly one member of a group at a time.</li>
           <li><strong>Offset</strong> — the monotonically increasing position within a partition. Consumers commit progress to the <code>__consumer_offsets</code> internal topic.</li>
           <li><strong>Controller</strong> — broker(s) that own cluster metadata. In KRaft mode this is a Raft quorum of dedicated or co-located controllers; in legacy mode it lives in ZooKeeper.</li>
@@ -327,15 +327,15 @@
             <text class="step-n" x="272" y="108">2</text>
             <text class="step-t" x="318" y="132">append to log, assign offset</text>
 
-            <!-- Step 3: replicate to follower -->
-            <path class="step" d="M270,170 L458,170" marker-end="url(#arr2)"/>
-            <text class="step-n" x="272" y="162">3</text>
-            <text class="step-t" x="365" y="162" text-anchor="middle">FetchRequest (followers pull)</text>
+            <!-- Step 3: follower pulls from leader -->
+            <path class="step" d="M460,170 L272,170" marker-end="url(#arr2)"/>
+            <text class="step-n" x="458" y="162" text-anchor="end">3</text>
+            <text class="step-t" x="365" y="162" text-anchor="middle">FetchRequest (follower pulls from leader)</text>
 
-            <!-- Step 4: follower appends, acks leader -->
-            <path class="step-ok" d="M460,200 L272,200" marker-end="url(#arr2-back)"/>
-            <text class="step-n" x="458" y="192" text-anchor="end">4</text>
-            <text class="step-t" x="365" y="192" text-anchor="middle">FetchResponse + LEO advanced</text>
+            <!-- Step 4: leader sends records, follower appends -->
+            <path class="step-ok" d="M270,200 L458,200" marker-end="url(#arr2-back)"/>
+            <text class="step-n" x="272" y="192">4</text>
+            <text class="step-t" x="365" y="192" text-anchor="middle">FetchResponse(records) → follower LEO advances</text>
 
             <!-- Step 5: high-water mark advances on leader -->
             <path class="step" d="M270,225 C310,225 310,250 270,250" marker-end="url(#arr2)"/>
@@ -369,7 +369,7 @@
           </svg>
         </div>
         <p class="diagram-caption">
-          Blue arrows: requests. Green arrows: successful responses / acks. <code>HW</code> (high-water mark) is the highest offset that has been replicated to all in-sync replicas — consumers can only read up to it.
+          Blue arrows: requests. Green arrows: successful responses / acks. <code>HW</code> (high-water mark) is the minimum log-end offset across the in-sync replicas — i.e., <code>HW = min(LEO of ISR)</code> — and consumers can only read up to it.
         </p>
 
         <h3>What the steps guarantee</h3>
@@ -383,7 +383,7 @@
         <h2 id="exactly-once">3. Exactly-Once Semantics</h2>
 
         <p>
-          Kafka's exactly-once story is built out of two independent mechanisms layered on top of each other: an <strong>idempotent producer</strong> that eliminates duplicates from producer retries within a single partition, and a <strong>transactional API</strong> that ties multiple partition writes and a consumer-offset commit into a single atomic unit. The transactional API enables the canonical <em>consume → process → produce</em> pattern (the basis of Kafka Streams' EOS guarantee) where the input offset commit and the output records become visible to downstream consumers together or not at all.
+          Kafka's exactly-once story is built out of two independent mechanisms layered on top of each other: an <strong>idempotent producer</strong> that eliminates duplicates from producer retries within a single partition, and a <strong>transactional API</strong> that ties multiple partition writes and a consumer-offset commit into a single atomic unit. The transactional API enables the canonical <em>consume → process → produce</em> pattern (the basis of Kafka Streams' EOS guarantee) where the input offset commit and the output records become visible to downstream consumers together or not at all. Note that this guarantee applies inside Kafka — Kafka transactions do not provide exactly-once guarantees for external systems such as relational databases.
         </p>
 
         <h3>Idempotent producer</h3>
@@ -522,10 +522,10 @@
 
         <h3>Memory layout of a broker process</h3>
         <ul>
-          <li><strong>JVM heap (often 6–8 GB)</strong> — controller / metadata cache, request queues, in-flight produce buffers, request-handler local state, index entries cached in heap. Intentionally kept small relative to RAM so the kernel can use the rest as page cache.</li>
+          <li><strong>JVM heap (commonly configured between several GB and tens of GB depending on workload)</strong> — controller / metadata cache, request queues, in-flight produce buffers, request-handler local state, index entries cached in heap. Intentionally kept small relative to RAM so the kernel can use the rest as page cache.</li>
           <li><strong>Off-heap (direct buffers)</strong> — Java NIO buffers used by the network layer and by <code>FileChannel</code> reads/writes. Sized by <code>-XX:MaxDirectMemorySize</code>.</li>
           <li><strong>Page cache (all remaining RAM)</strong> — OS-owned, holds recently written log segments. Both producers and consumers hit this rather than going to disk. A reader at the tail of the log (lag ≈ 0) almost never touches a spinning platter; it reads the same page the producer just wrote.</li>
-          <li><strong>Disk</strong> — log segments stored as flat append-only files under <code>log.dirs</code>. The OS flushes dirty pages on its own schedule (controlled by <code>vm.dirty_*</code> sysctls). Kafka deliberately does <em>not</em> call <code>fsync</code> per record; durability comes from ISR replication, not from waiting for disk.</li>
+          <li><strong>Disk</strong> — log segments stored as flat append-only files under <code>log.dirs</code>. The OS flushes dirty pages on its own schedule (controlled by <code>vm.dirty_*</code> sysctls). By default Kafka does not <code>fsync</code> every record (broker-driven flushing can be opted into via <code>log.flush.interval.*</code>, but the path is rarely used in practice); durability comes from ISR replication, not from waiting for disk.</li>
         </ul>
 
         <h3>CPU / threading model</h3>
@@ -541,7 +541,7 @@
           <li><strong>Client ↔ broker</strong> — long-lived TCP connections, one per broker the client talks to. Producer sends <code>ProduceRequest</code> per batch; consumer sends <code>FetchRequest</code> per partition-set per poll; both multiplex over the same connection. <code>OffsetCommitRequest</code> and group coordination (<code>JoinGroup</code>, <code>SyncGroup</code>, <code>Heartbeat</code> in the classic protocol; <code>ConsumerGroupHeartbeat</code> in the KIP-848 protocol) travel on the connection to the group's coordinator broker.</li>
           <li><strong>Inter-broker replication</strong> — follower brokers open a separate connection to each leader they replicate from, used by their replica-fetcher thread. The same fetch API serves both consumers and followers, but inter-broker fetch uses a dedicated replication listener (<code>inter.broker.listener.name</code>) so it can be ACL'd / SASL'd independently from client traffic.</li>
           <li><strong>Controller plane (KRaft)</strong> — controllers form a Raft quorum on a dedicated listener (<code>controller.listener.names</code>). Brokers register with the controller quorum and receive metadata updates via <code>BrokerRegistrationRequest</code> / <code>BrokerHeartbeatRequest</code> / <code>FetchRequest</code> against the metadata log. This traffic is small compared to data traffic but is what every cluster decision rides on.</li>
-          <li><strong>Zero-copy on the consume hot path</strong> — for the response to a <code>FetchRequest</code>, the broker calls <code>FileChannel.transferTo()</code>, which translates to <code>sendfile()</code> at the kernel level. Bytes go from page cache straight to the socket buffer — never copied into JVM user space. This is the single biggest reason a broker can saturate a 10 Gbps NIC with a tiny CPU footprint on a tail-following consumer.</li>
+          <li><strong>Zero-copy on the consume hot path</strong> — for the response to a <code>FetchRequest</code>, the broker calls <code>FileChannel.transferTo()</code>, which typically maps to <code>sendfile()</code> at the kernel level (the JDK uses the syscall when the OS supports it). Bytes go from page cache straight to the socket buffer — never copied into JVM user space. This is the single biggest reason a broker can saturate a 10 Gbps NIC with a tiny CPU footprint on a tail-following consumer.</li>
           <li><strong>Connection density</strong> — Kafka is built for fewer, longer connections rather than many short ones. The network thread pool is sized assuming each socket is mostly idle waiting on the next request, not assuming connection storms; OS-level <code>net.core.somaxconn</code> and <code>fs.file-max</code> tuning matters more on the OS side than JVM tuning.</li>
         </ul>
 
@@ -788,12 +788,12 @@ kafka-console-producer.sh --bootstrap-server $BOOTSTRAP \
   --property "parse.key=true" --property "key.separator=:"
 # > order-42:{"id":42,"amount":1990}
 
-# Consume from the beginning of the topic, printing key, value, offset
+# Consume from the beginning of the topic, printing key, partition, offset, timestamp
 kafka-console-consumer.sh --bootstrap-server $BOOTSTRAP \
   --topic orders \
   --from-beginning \
-  --property print.key=true --property print.offset=true \
-  --property print.timestamp=true
+  --property print.key=true --property print.partition=true \
+  --property print.offset=true --property print.timestamp=true
 
 # Consume as part of a consumer group, with manual commit disabled
 kafka-console-consumer.sh --bootstrap-server $BOOTSTRAP \
@@ -1012,7 +1012,7 @@ kafka-acls.sh --bootstrap-server $BOOTSTRAP \
           <li><strong>3.3</strong> (Oct 2022) — KRaft GA for new clusters; ZooKeeper still supported for upgrades.</li>
           <li><strong>3.5 – 3.9</strong> (2023 – 2024) — ZooKeeper-to-KRaft migration path stabilises; tiered storage (KIP-405) ships.</li>
           <li><strong>4.0</strong> (2025) — ZooKeeper removed entirely; KRaft is the only metadata mode. New consumer rebalance protocol (KIP-848) becomes the default.</li>
-          <li><strong>4.1 – 4.3</strong> (current line) — share groups (KIP-932) queue-style consumption, further coordinator splits, ongoing tiered-storage polish.</li>
+          <li><strong>4.1 – 4.3</strong> (current line) — ongoing development of share groups (KIP-932) queue-style consumption, further coordinator splits, ongoing tiered-storage polish.</li>
         </ul>
 
         <h3>Branching &amp; release model</h3>
