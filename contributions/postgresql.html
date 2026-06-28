@@ -4,28 +4,27 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Spring Cloud AWS 기여 — SQS IGNORE QueueNotFoundStrategy | 김빌 (Bill Kim)</title>
-  <meta name="description" content="김빌(Bill Kim)이 Spring Cloud AWS에 보낸 업스트림 패치. SQS 컨테이너에 IGNORE QueueNotFoundStrategy를 추가해 큐가 없을 때 application context 부팅을 차단하지 않고 listener를 조용히 skip하도록 복원 (2.x 동작)." />
-  <meta name="keywords" content="Spring Cloud AWS contribution, awspring contribution, SQS QueueNotFoundStrategy, IGNORE strategy, QueueAttributesResolver, AbstractSqsMessageSource, Spring Cloud AWS 3.x migration, AWS SDK v2, GH-1143, GH-1220, 김빌, Bill Kim, BK202503, Spring Cloud AWS contributor" />
+  <title>PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 PostgreSQL contrib btree_gist의 float4/float8 opclass NaN 처리 버그(BUG #19501, BUG #19524)에 대한 패치를 준비해 pgsql-bugs 메일링리스트에 알린 기록. EXCLUDE 우회 / RLS 누수 / index↔seq 스캔 불일치 세 시나리오 모두 통과." />
+  <meta name="keywords" content="PostgreSQL contribution, btree_gist, NaN, GiST, BUG 19501, BUG 19524, float4, float8, EXCLUDE, RLS, pgsql-bugs, pgsql-hackers, commitfest, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
 
-  <link rel="canonical" href="https://bk202503.github.io/contributions/spring-cloud-aws.html" />
-  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-cloud-aws.html" />
-  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-cloud-aws.html?lang=en" />
-  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-cloud-aws.html" />
+  <link rel="canonical" href="https://bk202503.github.io/contributions/postgresql.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/postgresql.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/postgresql.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/postgresql.html" />
 
   <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
-  <meta property="og:title" content="Spring Cloud AWS 기여 — SQS IGNORE QueueNotFoundStrategy" />
-  <meta property="og:description" content="김빌(Bill Kim)이 Spring Cloud AWS에 보낸 업스트림 패치. SQS 컨테이너에 IGNORE QueueNotFoundStrategy 추가." />
+  <meta property="og:title" content="PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524)" />
+  <meta property="og:description" content="contrib/btree_gist float4/float8 opclass의 NaN 처리 버그 패치. EXCLUDE / RLS / index-vs-seqscan 세 시나리오 통과." />
   <meta property="og:type" content="article" />
   <meta property="og:locale" content="ko_KR" />
-  <meta property="og:locale:alternate" content="en_US" />
-  <meta property="og:url" content="https://bk202503.github.io/contributions/spring-cloud-aws.html" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/postgresql.html" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Spring Cloud AWS 기여 — SQS IGNORE QueueNotFoundStrategy" />
-  <meta name="twitter:description" content="김빌(Bill Kim)이 Spring Cloud AWS에 보낸 업스트림 패치." />
+  <meta name="twitter:title" content="PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524)" />
+  <meta name="twitter:description" content="contrib/btree_gist float4/float8 opclass의 NaN 처리 버그 패치." />
 
   <script type="application/ld+json">
   {
@@ -34,7 +33,7 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
       { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
-      { "@type": "ListItem", "position": 3, "name": "Spring Cloud AWS" }
+      { "@type": "ListItem", "position": 3, "name": "PostgreSQL" }
     ]
   }
   </script>
@@ -42,13 +41,12 @@
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "Spring Cloud AWS 기여 — SQS IGNORE QueueNotFoundStrategy",
-    "url": "https://bk202503.github.io/contributions/spring-cloud-aws.html",
+    "headline": "PostgreSQL 기여 — btree_gist NaN ordering (BUG #19501 / #19524)",
+    "url": "https://bk202503.github.io/contributions/postgresql.html",
     "inLanguage": ["ko", "en"],
     "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
     "author": { "@id": "https://bk202503.github.io/#person" },
-    "about": ["Spring Cloud AWS", "AWS SDK v2", "SQS", "QueueNotFoundStrategy"],
-    "keywords": "Spring Cloud AWS, awspring, SQS, QueueNotFoundStrategy, IGNORE, GH-1143"
+    "about": ["PostgreSQL", "btree_gist", "GiST", "NaN", "Float Comparison"]
   }
   </script>
 
@@ -156,59 +154,83 @@
         <ol>
           <li><a href="../">Home</a></li>
           <li><a href="../#contributions">Contributions</a></li>
-          <li aria-current="page">Spring Cloud AWS</li>
+          <li aria-current="page">PostgreSQL</li>
         </ol>
       </div>
     </nav>
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Contribution · Spring Cloud AWS · AWS SDK v2</p>
-        <h1 class="title">Spring Cloud AWS — SQS IGNORE QueueNotFoundStrategy</h1>
+        <p class="eyebrow">Contribution · PostgreSQL · RDBMS Core (contrib)</p>
+        <h1 class="title">PostgreSQL — btree_gist NaN ordering (BUG #19501 / #19524)</h1>
         <p class="lede">
-          Spring Cloud AWS 3.x의 SQS 컨테이너에 <code>IGNORE</code> QueueNotFoundStrategy를 추가해, 큐가 없을 때 listener를 조용히 skip하고 application context 부팅을 차단하지 않도록 복원했습니다. <code>spring-cloud-starter-aws-messaging</code> (2.x) 의 기본 동작이었으나 3.x로 넘어오면서 사라져 다수의 사용자가 v2→v3 migration pain으로 보고한 항목입니다.
+          <code>contrib/btree_gist</code>의 float4/float8 opclass가 raw C <code>==</code>/<code>&lt;</code>/<code>&gt;</code> 연산자를 그대로 써서 IEEE 754 NaN에 대해 false를 돌려주는 바람에, GiST 인덱스가 regular btree opclass와 같은 total order를 따르지 않는 버그. EXCLUDE 제약 우회, RLS 누수, index scan ↔ seq scan 결과 불일치 세 시나리오가 동시에 발생. NaN-aware 헬퍼(<code>float4_*</code> / <code>float8_*</code> from <code>utils/float.h</code>)로 교체하는 패치 준비 완료.
         </p>
       </div>
     </section>
 
     <section class="section">
       <div class="container narrow">
-        <h2>문제 — GH-1143</h2>
+        <h2>문제 — BUG #19501 / #19524</h2>
         <p>
-          3.x의 기존 두 전략은 <code>FAIL</code> (큐 없으면 throw, application startup 차단)과 <code>CREATE</code> (큐 없으면 <code>CreateQueue</code> 호출, <code>sqs:CreateQueue</code> IAM 필요 + 외부 관리 큐 설정과 충돌 가능). 둘 다 안 맞는 케이스가 흔함 — optional feature queue, multi-region rollout에서 일부 region에만 queue가 만들어진 상태, deployment마다 queue 존재 여부가 다른 케이스. 이 때 listener는 그냥 skip하고 앱은 정상 부팅돼야 함. 2.x의 <code>spring-cloud-starter-aws-messaging</code>는 이게 기본 동작이었음.
+          <code>contrib/btree_gist/btree_float4.c</code>·<code>btree_float8.c</code>의 5개 GiST 비교 콜백(<code>gbt_float{4,8}{gt,ge,eq,le,lt}</code>)이 raw C 연산자를 사용. IEEE 754에서 NaN과의 모든 비교는 false를 돌려주므로, GiST가 "NaN ↔ NaN", "NaN > 1.0" 같은 케이스를 잘못 판정. 같은 float에 대해 regular btree opclass는 <code>float4_cmp_internal()</code>(NaN 모두 동등, NaN이 모든 non-NaN 위에 정렬)을 쓰니까 두 인덱스 종류가 같은 데이터에 대해 다른 결과를 돌려주는 상태.
         </p>
-
-        <h2>수정 — typed signal 도입</h2>
         <p>
-          메인테이너(@tomazfernandes)가 명시한 우려: <em>"graciously handle the error thrown by the <code>QueueAttributesResolver</code> and interrupting container startup"</em>. 해결은 새 exception 타입을 신호로 사용해 source가 distinguish할 수 있게 하는 방향:
+          SQL로 재현 가능한 세 시나리오:
         </p>
         <ul>
-          <li>새 <code>QueueNotFoundException</code> 클래스 (<code>QueueAttributesResolvingException</code>의 subtype) 도입. 기존 catch 사이트는 parent 타입으로 그대로 잡힘.</li>
-          <li><code>QueueAttributesResolver.handleException</code>: <code>QueueDoesNotExistException</code> + IGNORE일 때만 새 exception으로 failed future. CREATE / FAIL 경로 unchanged.</li>
-          <li><code>QueueAttributesResolver.wrapException</code>: 새 exception만 unwrap 통과 (generic 재포장 방지).</li>
-          <li><code>AbstractSqsMessageSource.doStart</code>: <code>CompletionException</code> cause가 새 exception이면 <code>skipped</code> 플래그 + warning + early return.</li>
-          <li><code>AbstractSqsMessageSource.doPollForMessages</code>: <code>skipped</code>면 empty future 즉시 반환.</li>
+          <li><strong>Index/seq scan 불일치</strong> — float GiST 인덱스에 <code>WHERE v = 'NaN'::float8</code>이 index scan에선 0 row, seq scan에선 NaN row를 정상 반환.</li>
+          <li><strong>EXCLUDE 우회</strong> — <code>EXCLUDE USING gist (a WITH =)</code>가 NaN 중복을 허용. <code>gbt_float8eq(NaN, NaN)</code>이 false로 평가되어 충돌 감지가 안 됨.</li>
+          <li><strong>RLS 누수</strong> — <code>USING (a != 'NaN'::float8)</code> 정책이 index scan 경로에서만 NaN row를 노출. predicate의 <code>!=</code>가 raw 연산자 의미로 인덱스 키에 적용되기 때문.</li>
         </ul>
 
-        <h2>회귀 테스트</h2>
+        <h2>수정</h2>
         <p>
-          <code>QueueAttributesResolverIntegrationTests#shouldIgnoreQueueWhenStrategyIsIgnore</code> 추가. LocalStack에 존재하지 않는 큐 + IGNORE 전략 → <code>QueueNotFoundException</code> (cause = <code>QueueDoesNotExistException</code>) surface 검증. 같은 클래스의 FAIL/CREATE 기존 6개 테스트 모두 그대로 통과 — RetryableTopic 시나리오 무영향.
+          5개의 boolean 콜백을 <code>utils/float.h</code>의 NaN-aware <code>float{4,8}_{gt,ge,eq,le,lt}</code> inline 헬퍼로 교체, picksplit 비교(<code>gbt_float{4,8}key_cmp</code>)도 <code>float{4,8}_cmp_internal()</code>로 교체. 이 헬퍼들은 regular btree opclass가 이미 쓰는 total order(NaN 모두 동등, NaN이 모든 non-NaN 위에 정렬)와 같으므로, 두 인덱스 종류의 동작이 일치하게 됨. on-disk 포맷 변경 없음 — 메모리 비교 경로만 수정.
+        </p>
+        <p>
+          회귀 테스트는 <code>contrib/btree_gist/sql/float4.sql</code>·<code>float8.sql</code>에 NaN 섹션을 추가: index scan ↔ seq scan 일치 확인, NaN이 finite 값 뒤로 정렬되는지 확인, EXCLUDE 제약이 NaN 중복을 정확히 거부하는지 확인. 패치 적용 후 <code>make check</code> 결과: core 245/245 + contrib btree_gist 32/32 + 전체 contrib 48 modules 통과.
         </p>
 
-        <h2>PR 목록</h2>
-        <ul class="pr-list">
+        <h2>제출 현황</h2>
+        <ul>
           <li>
-            <a href="https://github.com/awspring/spring-cloud-aws/pull/1640" target="_blank" rel="noopener">
-              <span class="pr-id">PR #1640</span>
-              <span class="pr-title">GH-1143 Add IGNORE QueueNotFoundStrategy option for SQS</span>
+            <a href="https://www.postgresql.org/message-id/19524-9559d302c8455664%40postgresql.org" target="_blank" rel="noopener">
+              <span class="pr-id">BUG #19524 thread</span>
+              <span class="pr-title">"I have a patch" reply sent to pgsql-bugs</span>
             </a>
-            <span class="pr-state state-open">open</span>
+            <span class="pr-state state-open">held for moderation</span>
+          </li>
+          <li>
+            <a href="https://commitfest.postgresql.org/59/" target="_blank" rel="noopener">
+              <span class="pr-id">CF /59/</span>
+              <span class="pr-title">CommitFest registration — pending after pgsql-hackers submission</span>
+            </a>
+            <span class="pr-state state-open">pending</span>
           </li>
         </ul>
 
+        <h2>다음 단계</h2>
+        <ul>
+          <li>모더레이터(보통 Stephen Frost / Magnus Hagander)가 -bugs 답글 통과시킴 → 스레드 아카이브에 등록</li>
+          <li>48시간 대기 — Ayush Tiwari(스레드 유일 응답자)나 다른 사람이 "I'm working on this" 답글 안 달면 진행</li>
+          <li><code>pgsql-hackers@lists.postgresql.org</code>에 패치 첨부 발송 + AI 보조 사용 disclosure 한 줄 cover letter 포함</li>
+          <li>CF /59/ (2026년 7월 1일 시작) 에 등록 — message-id를 입력하면 자동으로 패치 추적</li>
+        </ul>
+
+        <h2>왜 PostgreSQL은 메일링리스트만 쓰는가</h2>
+        <p>
+          PostgreSQL은 1996년 프로젝트 시작 이래 일관되게 메일링리스트 워크플로를 유지. GitHub의 <code>postgres/postgres</code>는 read-only mirror — PR을 열어도 받지 않음. <a href="https://wiki.postgresql.org/wiki/Submitting_a_Patch" target="_blank" rel="noopener">공식 패치 제출 가이드</a>가 이 절차를 정리. 이유 — 비동기 분산 리뷰(커미터가 전세계 시간대에 흩어져 있음), <a href="https://www.postgresql.org/list/" target="_blank" rel="noopener">영구 검색 가능한 메일 아카이브</a>, 패치를 일반 텍스트 diff로 인라인 리뷰, 플랫폼 락인 회피. Linux 커널(LKML), Git, SQLite, GCC도 같은 패턴.
+        </p>
+
         <h2>관련 자료</h2>
         <ul class="contact-list">
-          <li><span class="k">Project</span><a href="https://github.com/awspring/spring-cloud-aws" target="_blank" rel="noopener">awspring/spring-cloud-aws</a></li>
+          <li><span class="k">Source</span><a href="https://github.com/postgres/postgres" target="_blank" rel="noopener">postgres/postgres (read-only mirror)</a></li>
+          <li><span class="k">Upstream</span><a href="https://git.postgresql.org/gitweb/?p=postgresql.git" target="_blank" rel="noopener">git.postgresql.org/postgresql.git</a></li>
+          <li><span class="k">BUG #1</span><a href="https://www.postgresql.org/message-id/19501-3bff3bbc97f1e7c9%40postgresql.org" target="_blank" rel="noopener">BUG #19501 (Man Zeng, 2026-05-29)</a></li>
+          <li><span class="k">BUG #2</span><a href="https://www.postgresql.org/message-id/19524-9559d302c8455664%40postgresql.org" target="_blank" rel="noopener">BUG #19524 (Yuelin Wang, 2026-06-18)</a></li>
+          <li><span class="k">CommitFest</span><a href="https://commitfest.postgresql.org/59/" target="_blank" rel="noopener">commitfest.postgresql.org/59/</a></li>
+          <li><span class="k">Patch guide</span><a href="https://wiki.postgresql.org/wiki/Submitting_a_Patch" target="_blank" rel="noopener">wiki.postgresql.org/Submitting_a_Patch</a></li>
           <li><span class="k">Author</span><a href="https://github.com/BK202503" target="_blank" rel="noopener">github.com/BK202503</a></li>
           <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
         </ul>

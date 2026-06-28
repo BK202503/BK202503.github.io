@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>PostgreSQL btree_gist NaN ordering 패치 — BUG #19501 / #19524 | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 PostgreSQL contrib btree_gist의 float4/float8 opclass에서 raw C 연산자가 NaN을 잘못 처리하는 버그를 NaN-aware 헬퍼로 교체한 패치. EXCLUDE 우회 / RLS 누수 / index↔seq 스캔 불일치 세 시나리오를 회귀 테스트로 커버, core + contrib 전체 make check 통과." />
+  <meta name="keywords" content="PostgreSQL, btree_gist, BUG 19501, BUG 19524, GiST, NaN, float4, float8, btree_float4.c, btree_float8.c, EXCLUDE, RLS, contribution, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/postgresql/btree-gist-nan.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/postgresql/btree-gist-nan.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/postgresql/btree-gist-nan.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/postgresql/btree-gist-nan.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="PostgreSQL btree_gist NaN ordering 패치 — BUG #19501 / #19524" />
+  <meta property="og:description" content="raw C 연산자가 NaN을 잘못 처리하는 GiST opclass를 NaN-aware 헬퍼로 교체. EXCLUDE / RLS / index 스캔 불일치 세 시나리오 회귀 커버, make check 전체 통과." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/postgresql/btree-gist-nan.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="PostgreSQL btree_gist NaN ordering 패치 — BUG #19501 / #19524" />
+  <meta name="twitter:description" content="raw C 연산자 → NaN-aware 헬퍼 교체. EXCLUDE / RLS / index 스캔 회귀 커버." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "PostgreSQL", "item": "https://bk202503.github.io/contributions/postgresql.html" },
+      { "@type": "ListItem", "position": 4, "name": "btree_gist NaN · BUG #19501 / #19524" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "PostgreSQL btree_gist NaN ordering 패치 — BUG #19501 / #19524",
+    "url": "https://bk202503.github.io/contributions/postgresql/btree-gist-nan.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["PostgreSQL", "btree_gist", "GiST", "NaN", "Float Comparison"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="../../style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="../../">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
+            <a href="/contributions/spring-kafka-4465.html">overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
+            <div class="dropdown-section">Spring Kafka — silent 유실 (GH-4504)</div>
+            <a href="/contributions/spring-kafka-4504.html">overview</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix, merged)</a>
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Cloud AWS</div>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
+            <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/contributions/strimzi.html">Strimzi — overview</a>
+            <a href="/contributions/strimzi/12884.html">PR #12884 · GH-12847</a>
+            <a href="/contributions/strimzi/12885.html">PR #12885 · GH-12442</a>
+            <div class="dropdown-section">PostgreSQL</div>
+            <a href="/contributions/postgresql.html">PostgreSQL — overview</a>
+            <a href="/contributions/postgresql/btree-gist-nan.html">btree_gist NaN · BUG #19501 / #19524</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/apache-kafka.html">Overview</a>
+            <a href="/apache-kafka.html#architecture">Architecture</a>
+            <a href="/apache-kafka.html#message-flow">Message Flow</a>
+            <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
+            <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
+            <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <a href="/apache-kafka.html#source-tree">Source Tree</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/spring-kafka.html">Overview</a>
+            <a href="/spring-kafka.html#architecture">Architecture</a>
+            <a href="/spring-kafka.html#message-flow">Message Flow</a>
+            <a href="/spring-kafka.html#features">Features</a>
+            <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#runtime">Runtime</a>
+            <a href="/spring-kafka.html#source-tree">Source Tree</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/strimzi.html">Overview</a>
+            <a href="/strimzi.html#architecture">Architecture</a>
+            <a href="/strimzi.html#reconciliation">Reconciliation</a>
+            <a href="/strimzi.html#crds">CRD Landscape</a>
+            <a href="/strimzi.html#vs-apache-kafka">vs Apache Kafka</a>
+            <a href="/strimzi.html#runtime">Runtime</a>
+            <a href="/strimzi.html#source-tree">Source Tree</a>
+            <div class="dropdown-section">Appendix</div>
+            <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="../../">Home</a></li>
+          <li><a href="../../#contributions">Contributions</a></li>
+          <li><a href="../postgresql.html">PostgreSQL</a></li>
+          <li aria-current="page">btree_gist NaN · BUG #19501 / #19524</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Contribution · PostgreSQL · contrib/btree_gist</p>
+        <h1 class="title">btree_gist NaN ordering — float4/float8 opclass</h1>
+        <p class="lede">
+          <code>contrib/btree_gist</code>의 float opclass가 raw C <code>==</code>/<code>&lt;</code>/<code>&gt;</code> 를 직접 써서 IEEE 754 NaN을 잘못 처리. EXCLUDE 우회 / RLS 누수 / index ↔ seq scan 결과 불일치 세 시나리오 동시 발생. NaN-aware <code>float{4,8}_*</code> 헬퍼 + <code>float{4,8}_cmp_internal()</code>로 교체해 regular btree opclass와 같은 total order로 맞춘 패치.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://www.postgresql.org/message-id/19524-9559d302c8455664%40postgresql.org" target="_blank" rel="noopener">
+            <span>BUG #19524 thread</span><span class="pill-sub">pgsql-bugs (held for moderation)</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>1. 버그 정의</h2>
+        <p>
+          <code>contrib/btree_gist/btree_float4.c</code>·<code>btree_float8.c</code>의 GiST 콜백 5개 (<code>gbt_float{4,8}gt</code>, <code>ge</code>, <code>eq</code>, <code>le</code>, <code>lt</code>) 가 raw C 연산자를 직접 사용:
+        </p>
+        <pre><code>static bool
+gbt_float8eq(const void *a, const void *b, FmgrInfo *flinfo)
+{
+    return (*((const float8 *) a) == *((const float8 *) b));
+}</code></pre>
+        <p>
+          IEEE 754에서 NaN과의 모든 비교는 false. 결과 — <code>gbt_float8eq(NaN, NaN)</code>이 false, <code>gbt_float8lt(NaN, 1.0)</code>도 false, <code>gbt_float8gt(NaN, 1.0)</code>도 false. GiST <code>gbt_num_consistent</code>가 이 콜백들을 통해 NaN을 판단하니까, "NaN을 못 찾음" / "NaN 중복을 허용함" / "NaN을 누락함" 식의 불일치가 발생.
+        </p>
+        <p>
+          반면 regular btree opclass는 <code>float{4,8}_cmp_internal()</code>를 통해 일관된 total order를 갖고 있음 — "NaN은 모두 동등, NaN이 모든 non-NaN 위에 정렬". 따라서 같은 float 컬럼에 대해 두 인덱스 종류가 다른 결과를 돌려주는 상태.
+        </p>
+
+        <h2>2. 재현 (BUG #19524에서 인용)</h2>
+        <p>EXCLUDE 우회:</p>
+        <pre><code>CREATE EXTENSION btree_gist;
+CREATE TABLE reservations (
+  room float4,
+  during tsrange,
+  EXCLUDE USING gist (room WITH =, during WITH &amp;&amp;)
+);
+INSERT INTO reservations VALUES ('NaN'::float4, '[2025-01-01,2025-01-02)');
+INSERT INTO reservations VALUES ('NaN'::float4, '[2025-01-01,2025-01-02)');
+-- 기대: 두 번째 INSERT가 EXCLUDE 위반으로 거부 (count = 1)
+-- 실제: 둘 다 통과 (count = 2)
+SELECT COUNT(*) FROM reservations;</code></pre>
+
+        <p>Index ↔ seq scan 불일치:</p>
+        <pre><code>CREATE TABLE t (val float8);
+CREATE INDEX ON t USING gist (val);
+INSERT INTO t SELECT 'NaN'::float8 FROM generate_series(1, 2000);
+
+SET enable_indexscan = off; SET enable_bitmapscan = off;
+SELECT COUNT(*) FROM t WHERE val = 'NaN';   -- 기대: 2000, 실제: 2000 (정상)
+
+RESET ALL;
+SET enable_seqscan = off; SET enable_bitmapscan = off;
+SELECT COUNT(*) FROM t WHERE val = 'NaN';   -- 기대: 2000, 실제: 0 (버그)</code></pre>
+
+        <p>RLS 누수:</p>
+        <pre><code>CREATE TABLE measurements (id int, val float8);
+CREATE INDEX ON measurements USING gist (val);
+INSERT INTO measurements VALUES (1, 'NaN'), (2, 1.5);
+ALTER TABLE measurements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE measurements FORCE ROW LEVEL SECURITY;
+CREATE POLICY hide_nan ON measurements FOR SELECT USING (val != 'NaN'::float8);
+
+CREATE ROLE lowpriv LOGIN;
+GRANT SELECT ON measurements TO lowpriv;
+SET ROLE lowpriv;
+SET enable_seqscan = off;
+SELECT * FROM measurements ORDER BY id;
+-- 기대: (2, 1.5) 한 행만
+-- 실제: (1, NaN) + (2, 1.5) 두 행 모두 노출</code></pre>
+
+        <h2>3. 수정</h2>
+        <p>
+          5개 boolean 콜백을 <code>utils/float.h</code>의 NaN-aware 헬퍼 inline 함수로 교체. picksplit 비교(<code>gbt_float{4,8}key_cmp</code>)는 <code>float{4,8}_cmp_internal()</code>로:
+        </p>
+        <pre><code>// BEFORE
+static bool
+gbt_float8eq(const void *a, const void *b, FmgrInfo *flinfo)
+{
+    return (*((const float8 *) a) == *((const float8 *) b));
+}
+
+// AFTER
+static bool
+gbt_float8eq(const void *a, const void *b, FmgrInfo *flinfo)
+{
+    return float8_eq(*((const float8 *) a), *((const float8 *) b));
+}</code></pre>
+        <p>
+          <code>float8_eq</code>는 <code>utils/float.h</code>에 inline으로 정의 — <code>isnan(val1) ? isnan(val2) : !isnan(val2) &amp;&amp; val1 == val2</code>. 즉 NaN ↔ NaN을 true로 처리. 이 헬퍼들이 그대로 regular btree opclass의 비교 함수에 쓰이고 있어, 패치 후 두 인덱스 종류가 같은 동작.
+        </p>
+        <p>
+          <strong>on-disk 포맷 변경 없음</strong> — GiST 트리 구조나 키 레이아웃은 그대로, 메모리 내 비교 로직만 NaN-aware. 따라서 기존 인덱스를 <code>REINDEX</code>할 필요도 없음.
+        </p>
+
+        <h2>4. 회귀 테스트</h2>
+        <p>
+          <code>contrib/btree_gist/sql/float4.sql</code> · <code>float8.sql</code>에 NaN 섹션 추가 — 세 가지 검증:
+        </p>
+        <ul>
+          <li>Index scan과 seq scan이 <code>WHERE v = 'NaN'</code>에 대해 같은 row count 반환</li>
+          <li>NaN이 finite 값 뒤로 정렬됨 (NaN &gt; 1.0)</li>
+          <li>EXCLUDE 제약이 NaN 중복을 거부 (두 번째 INSERT가 충돌 에러)</li>
+        </ul>
+        <p>
+          기대 출력은 <code>contrib/btree_gist/expected/float4.out</code> · <code>float8.out</code>에 추가.
+        </p>
+
+        <h2>5. 빌드 / 테스트 결과</h2>
+        <ul>
+          <li>ARM macOS (Apple clang 15, system bison 2.3, brew openssl@3 / readline / icu4c@77) 환경에서 <code>./configure --with-icu --with-openssl --with-readline --enable-cassert --enable-debug CFLAGS="-O0 -g"</code> 통과</li>
+          <li><code>make -j8</code> 빌드 통과</li>
+          <li><code>make check</code> (core) — <strong>245/245 통과</strong></li>
+          <li><code>make -C contrib/btree_gist check</code> — <strong>32/32 통과</strong> (신규 NaN 케이스 포함)</li>
+          <li><code>make -C contrib check</code> — <strong>contrib 48 modules 전체 통과</strong>, 실패 0</li>
+        </ul>
+
+        <h2>6. 제출 흐름</h2>
+        <ol>
+          <li><strong>1단계 — pgsql-bugs 답글</strong>: BUG #19524 스레드에 "I have a patch — anyone working on this?" 답글 발송 완료 (2026-06-28). 첫 비구독자 메일이라 <strong>모더레이션 큐 대기 중</strong>. 보통 몇 시간 ~ 1~2일 안에 통과.</li>
+          <li><strong>2단계 — pgsql-hackers 패치 발송</strong>: 모더레이션 통과 후 48시간 대기 (다른 사람이 같은 작업 중인지 확인). 응답 없으면 <code>pgsql-hackers@lists.postgresql.org</code>에 <code>git format-patch</code> 첨부 발송. 본문에 AI 보조 사용 disclosure 한 줄 포함 — Strimzi에는 공식 AI 정책이 있지만 PostgreSQL은 명문화된 정책 없음 (커뮤니티 보수적이라 투명성으로 한 줄 명시가 안전).</li>
+          <li><strong>3단계 — CF /59/ 등록</strong>: pgsql-hackers 발송 후 message-id를 commitfest.postgresql.org/59/ 에서 입력. CF는 2026년 7월 1일 시작 ~ 7월 31일 리뷰.</li>
+          <li><strong>4단계 — 리뷰 라운드</strong>: 커미터 / 리뷰어가 코멘트, 본인이 패치 v2로 응답. 머지될 때까지 반복.</li>
+          <li><strong>5단계 — 머지</strong>: 커미터가 <code>master</code> 브랜치에 push. 백포트 가능 여부는 커미터 판단.</li>
+        </ol>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">Source</span><a href="https://github.com/postgres/postgres" target="_blank" rel="noopener">postgres/postgres (read-only mirror)</a></li>
+          <li><span class="k">Upstream</span><a href="https://git.postgresql.org/gitweb/?p=postgresql.git" target="_blank" rel="noopener">git.postgresql.org/postgresql.git</a></li>
+          <li><span class="k">BUG #1</span><a href="https://www.postgresql.org/message-id/19501-3bff3bbc97f1e7c9%40postgresql.org" target="_blank" rel="noopener">BUG #19501 (Man Zeng)</a></li>
+          <li><span class="k">BUG #2</span><a href="https://www.postgresql.org/message-id/19524-9559d302c8455664%40postgresql.org" target="_blank" rel="noopener">BUG #19524 (Yuelin Wang)</a></li>
+          <li><span class="k">CF</span><a href="https://commitfest.postgresql.org/59/" target="_blank" rel="noopener">commitfest.postgresql.org/59/</a></li>
+          <li><span class="k">Project</span><a href="../postgresql.html">PostgreSQL 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
