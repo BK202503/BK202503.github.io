@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>PostgreSQL — Architecture, Query Lifecycle, Storage &amp; WAL, Runtime, Source Tree | 김빌 (Bill Kim)</title>
+  <meta name="description" content="A compact reference to PostgreSQL: the multi-process architecture (postmaster, per-connection backends, walwriter, bgwriter, checkpointer, autovacuum, archiver, walsender), the query lifecycle (parse → analyze → rewrite → plan → execute), the storage / WAL pipeline (page → shared_buffers → page cache → WAL → disk), how PostgreSQL compares to other RDBMS, CPU / Memory / Network at runtime, and the source tree contributors edit." />
+  <meta name="keywords" content="PostgreSQL, postmaster, backend process, MVCC, planner, executor, shared_buffers, WAL, checkpointer, autovacuum, walsender, logical replication, contrib, btree_gist, GiST, pgsql-hackers, commitfest, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/postgresql.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/postgresql.html" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/postgresql.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="PostgreSQL — Architecture, Query Lifecycle, Storage &amp; WAL, Runtime, Source Tree" />
+  <meta property="og:description" content="Process model, query lifecycle, storage + WAL pipeline, comparison to other RDBMS, runtime resource profile, and source-tree layout for PostgreSQL." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://bk202503.github.io/postgresql.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="PostgreSQL — Architecture, Query Lifecycle, Storage &amp; WAL, Runtime, Source Tree" />
+  <meta name="twitter:description" content="Process model, query lifecycle, storage + WAL pipeline, RDBMS comparison, runtime, source tree." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "OSS", "item": "https://bk202503.github.io/#oss" },
+      { "@type": "ListItem", "position": 3, "name": "PostgreSQL" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "PostgreSQL — Architecture, Query Lifecycle, Storage &amp; WAL, Runtime, Source Tree",
+    "url": "https://bk202503.github.io/postgresql.html",
+    "inLanguage": "en",
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["PostgreSQL", "RDBMS", "MVCC", "WAL", "Buffer Pool", "Query Planner"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .diagram { margin: 0 0 28px; padding: 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 10px; overflow-x: auto; }
+    .diagram svg { display: block; max-width: 100%; height: auto; }
+    .diagram-caption { margin: -12px 0 24px; font-size: 13px; color: var(--muted, #8a96a3); font-style: italic; }
+    .toc { margin: 0 0 28px; padding: 14px 18px; background: var(--bg-card, #11151c); border: 1px solid var(--border, #1f2630); border-radius: 8px; }
+    .toc ol { margin: 0; padding-left: 22px; }
+    .toc li { margin: 4px 0; }
+    table.comparison { width: 100%; margin: 0 0 24px; border-collapse: collapse; font-size: 14px; }
+    table.comparison th, table.comparison td { border: 1px solid var(--border, #1f2630); padding: 10px 12px; vertical-align: top; text-align: left; }
+    table.comparison thead th { background: var(--bg-card, #11151c); font-weight: 600; }
+    table.comparison tbody td:first-child { font-weight: 600; white-space: nowrap; color: var(--accent, #7aa2f7); }
+    .diagram--wide { max-width: none; margin-left: -180px; margin-right: -180px; }
+    @media (max-width: 1100px) {
+      .diagram--wide { margin-left: 0; margin-right: 0; }
+    }
+  </style>
+</head>
+<body data-lang="en">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Spring Kafka — 무한 재전송 (GH-4465)</div>
+            <a href="/contributions/spring-kafka-4465.html">overview</a>
+            <a href="/contributions/spring-kafka/4469.html">PR #4469 (merged)</a>
+            <div class="dropdown-section">Spring Kafka — silent 유실 (GH-4504)</div>
+            <a href="/contributions/spring-kafka-4504.html">overview</a>
+            <a href="/contributions/spring-kafka/4505.html">PR #4505 (merged)</a>
+            <a href="/contributions/spring-kafka/4512.html">PR #4512 (amplification)</a>
+            <a href="/contributions/spring-kafka/4517.html">PR #4517 (4.0.x backport fix, merged)</a>
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/contributions/apache-kafka.html">Apache Kafka — overview</a>
+            <a href="/contributions/apache-kafka/22536.html">PR #22536 · KAFKA-20656</a>
+            <a href="/contributions/apache-kafka/22535.html">PR #22535 · KAFKA-20666</a>
+            <a href="/contributions/apache-kafka/22534.html">PR #22534 · KAFKA-20658</a>
+            <a href="/contributions/apache-kafka/22533.html">PR #22533 · KAFKA-20657</a>
+            <div class="dropdown-section">Spring Cloud AWS</div>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS — overview</a>
+            <a href="/contributions/spring-cloud-aws/1640.html">PR #1640 · GH-1143</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/contributions/strimzi.html">Strimzi — overview</a>
+            <a href="/contributions/strimzi/12884.html">PR #12884 · GH-12847</a>
+            <a href="/contributions/strimzi/12885.html">PR #12885 · GH-12442</a>
+            <div class="dropdown-section">PostgreSQL</div>
+            <a href="/contributions/postgresql.html">PostgreSQL — overview</a>
+            <a href="/contributions/postgresql/btree-gist-nan.html">btree_gist NaN · BUG #19501 / #19524</a>
+            <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
+            <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
+            <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
+            <a href="/contributions/infinispan.html">Infinispan — PR #17624</a>
+            <div class="dropdown-section">MapStruct</div>
+            <a href="/contributions/mapstruct.html">MapStruct — overview</a>
+            <a href="/contributions/mapstruct/4074.html">PR #4074 · GH-4000</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <div class="dropdown-section">Apache Kafka</div>
+            <a href="/apache-kafka.html">Overview</a>
+            <a href="/apache-kafka.html#architecture">Architecture</a>
+            <a href="/apache-kafka.html#message-flow">Message Flow</a>
+            <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
+            <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
+            <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <a href="/apache-kafka.html#source-tree">Source Tree</a>
+            <div class="dropdown-section">Spring Kafka</div>
+            <a href="/spring-kafka.html">Overview</a>
+            <a href="/spring-kafka.html#architecture">Architecture</a>
+            <a href="/spring-kafka.html#message-flow">Message Flow</a>
+            <a href="/spring-kafka.html#features">Features</a>
+            <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#runtime">Runtime</a>
+            <a href="/spring-kafka.html#source-tree">Source Tree</a>
+            <div class="dropdown-section">Strimzi</div>
+            <a href="/strimzi.html">Overview</a>
+            <a href="/strimzi.html#architecture">Architecture</a>
+            <a href="/strimzi.html#reconciliation">Reconciliation</a>
+            <a href="/strimzi.html#crds">CRD Landscape</a>
+            <a href="/strimzi.html#vs-apache-kafka">vs Apache Kafka</a>
+            <a href="/strimzi.html#runtime">Runtime</a>
+            <a href="/strimzi.html#source-tree">Source Tree</a>
+            <div class="dropdown-section">PostgreSQL</div>
+            <a href="/postgresql.html">Overview</a>
+            <a href="/postgresql.html#architecture">Architecture</a>
+            <a href="/postgresql.html#lifecycle">Query Lifecycle</a>
+            <a href="/postgresql.html#storage">Storage &amp; WAL</a>
+            <a href="/postgresql.html#vs-others">vs Other RDBMS</a>
+            <a href="/postgresql.html#runtime">Runtime</a>
+            <a href="/postgresql.html#source-tree">Source Tree</a>
+            <div class="dropdown-section">Appendix</div>
+            <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#oss">OSS</a></li>
+          <li aria-current="page">PostgreSQL</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">OSS reference · PostgreSQL · RDBMS Core</p>
+        <h1 class="title">PostgreSQL — Architecture, Query Lifecycle, Storage &amp; WAL, Runtime, Source Tree</h1>
+        <p class="lede">
+          PostgreSQL is a multi-process relational database whose defining choices — <strong>process-per-connection</strong> rather than thread-per-connection, <strong>MVCC visibility</strong> rather than locking readers, <strong>WAL-based durability</strong> rather than direct fsync, and a <strong>mailing-list contribution workflow</strong> rather than GitHub PRs — propagate through every part of the design. This page is a compact engineer-facing reference to those choices: how the processes are laid out, how a SQL statement moves through them, where bytes live at runtime, how PostgreSQL compares to other RDBMS, and where the source code is.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+
+        <div class="toc">
+          <ol>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#lifecycle">Query Lifecycle</a></li>
+            <li><a href="#storage">Storage &amp; WAL</a></li>
+            <li><a href="#vs-others">PostgreSQL vs Other RDBMS</a></li>
+            <li><a href="#runtime">CPU / Memory / Network at Runtime</a></li>
+            <li><a href="#source-tree">Source Tree (for contributors)</a></li>
+          </ol>
+        </div>
+
+        <h2 id="architecture">1. Architecture</h2>
+
+        <p>
+          A PostgreSQL cluster is one <strong>postmaster</strong> process plus a fixed set of <strong>auxiliary processes</strong> plus one <strong>backend process per client connection</strong>. The postmaster never serves SQL itself — it owns the listening socket, accepts new connections, and <code>fork()</code>s a child backend for each one. Backends share state through a fixed-size <strong>shared memory segment</strong> (allocated at startup) that holds the buffer pool, the WAL buffers, the lock tables, and the catalog cache invalidation queues. Everything else — the planner, the executor, the per-statement memory contexts — lives in the backend's private address space.
+        </p>
+        <p>
+          The auxiliary processes are durable for the lifetime of the cluster: <strong>walwriter</strong> flushes WAL pages out of the WAL buffer ring, <strong>bgwriter</strong> writes dirty shared-buffer pages back to OS so backends don't stall on victim search, <strong>checkpointer</strong> drives the periodic checkpoint that bounds recovery time, <strong>autovacuum launcher</strong> + <strong>autovacuum workers</strong> reclaim space and update planner statistics, <strong>archiver</strong> copies completed WAL segments to off-cluster storage, <strong>walsender</strong> serves WAL to physical replicas + logical subscribers (one per peer), and on each replica a <strong>walreceiver</strong> consumes from the corresponding walsender.
+        </p>
+
+        <div class="diagram diagram--wide">
+          <svg viewBox="0 0 1000 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PostgreSQL process architecture: postmaster forks a backend per client connection; auxiliary processes (walwriter, bgwriter, checkpointer, autovacuum, archiver, walsender) all share the postmaster's shared memory segment; replicas run a walreceiver consuming from a walsender on the primary.">
+            <defs>
+              <marker id="pg-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="pg-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="pg-y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e0af68"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
+                .box-soft { fill:#161b25; stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 3; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.3; fill:none; }
+                .arr-g { stroke:#9ece6a; stroke-width:1.3; fill:none; }
+                .arr-y { stroke:#e0af68; stroke-width:1.3; fill:none; }
+                .lane-t { fill:#8a96a3; font: bold 10px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+              </style>
+            </defs>
+
+            <text class="lane-t" x="20" y="28">CLIENTS</text>
+            <rect class="box" x="160" y="40" width="200" height="46"/>
+            <text class="lbl-b" x="260" y="60" text-anchor="middle">libpq / JDBC / psql</text>
+            <text class="lbl-s" x="260" y="76" text-anchor="middle">one TCP per connection</text>
+
+            <rect class="box" x="400" y="40" width="200" height="46"/>
+            <text class="lbl-b" x="500" y="60" text-anchor="middle">replica walreceiver</text>
+            <text class="lbl-s" x="500" y="76" text-anchor="middle">streaming replication</text>
+
+            <rect class="box" x="640" y="40" width="200" height="46"/>
+            <text class="lbl-b" x="740" y="60" text-anchor="middle">logical subscriber</text>
+            <text class="lbl-s" x="740" y="76" text-anchor="middle">CDC / pub-sub</text>
+
+            <text class="lane-t" x="20" y="118">POSTMASTER + BACKENDS</text>
+
+            <rect class="box-em" x="160" y="130" width="200" height="60"/>
+            <text class="lbl-b" x="260" y="150" text-anchor="middle">postmaster</text>
+            <text class="lbl-s" x="260" y="166" text-anchor="middle">listens on the socket</text>
+            <text class="lbl-s" x="260" y="178" text-anchor="middle">fork() backend per connect</text>
+
+            <rect class="box-em" x="400" y="130" width="200" height="60"/>
+            <text class="lbl-b" x="500" y="150" text-anchor="middle">backend (per session)</text>
+            <text class="lbl-s" x="500" y="166" text-anchor="middle">parse · plan · execute</text>
+            <text class="lbl-s" x="500" y="178" text-anchor="middle">per-statement mem context</text>
+
+            <rect class="box-em" x="640" y="130" width="200" height="60"/>
+            <text class="lbl-b" x="740" y="150" text-anchor="middle">walsender (per peer)</text>
+            <text class="lbl-s" x="740" y="166" text-anchor="middle">tails WAL, streams to replica</text>
+            <text class="lbl-s" x="740" y="178" text-anchor="middle">forked by postmaster</text>
+
+            <text class="lane-t" x="20" y="218">SHARED MEMORY (single segment, fixed size at start)</text>
+            <rect class="box-warm" x="160" y="230" width="680" height="80"/>
+            <text class="lbl-b" x="500" y="252" text-anchor="middle">shared_buffers · WAL buffers · lock tables · proc array · catalog cache invalidation queue</text>
+            <text class="lbl-s" x="500" y="270" text-anchor="middle">backends + auxiliary processes attach here at fork time</text>
+            <text class="lbl-s" x="500" y="286" text-anchor="middle">no copy-on-write surprise — shared memory is genuinely shared, only private heap is COW</text>
+
+            <text class="lane-t" x="20" y="338">AUXILIARY PROCESSES</text>
+
+            <rect class="box" x="160" y="350" width="160" height="56"/>
+            <text class="lbl-b" x="240" y="370" text-anchor="middle">walwriter</text>
+            <text class="lbl-s" x="240" y="386" text-anchor="middle">flushes WAL buffers</text>
+            <text class="lbl-s" x="240" y="398" text-anchor="middle">to pg_wal/</text>
+
+            <rect class="box" x="340" y="350" width="160" height="56"/>
+            <text class="lbl-b" x="420" y="370" text-anchor="middle">bgwriter</text>
+            <text class="lbl-s" x="420" y="386" text-anchor="middle">writes dirty buffers</text>
+            <text class="lbl-s" x="420" y="398" text-anchor="middle">to ease backend stalls</text>
+
+            <rect class="box" x="520" y="350" width="160" height="56"/>
+            <text class="lbl-b" x="600" y="370" text-anchor="middle">checkpointer</text>
+            <text class="lbl-s" x="600" y="386" text-anchor="middle">periodic checkpoint</text>
+            <text class="lbl-s" x="600" y="398" text-anchor="middle">bounds recovery time</text>
+
+            <rect class="box" x="700" y="350" width="160" height="56"/>
+            <text class="lbl-b" x="780" y="370" text-anchor="middle">autovacuum launcher</text>
+            <text class="lbl-s" x="780" y="386" text-anchor="middle">+ N workers</text>
+            <text class="lbl-s" x="780" y="398" text-anchor="middle">reclaim + ANALYZE</text>
+
+            <rect class="box" x="240" y="420" width="200" height="56"/>
+            <text class="lbl-b" x="340" y="440" text-anchor="middle">archiver</text>
+            <text class="lbl-s" x="340" y="456" text-anchor="middle">archive_command per</text>
+            <text class="lbl-s" x="340" y="468" text-anchor="middle">complete WAL segment</text>
+
+            <rect class="box" x="460" y="420" width="240" height="56"/>
+            <text class="lbl-b" x="580" y="440" text-anchor="middle">logical replication workers</text>
+            <text class="lbl-s" x="580" y="456" text-anchor="middle">apply worker on subscriber</text>
+            <text class="lbl-s" x="580" y="468" text-anchor="middle">spawned per subscription</text>
+
+            <!-- Arrows -->
+            <path class="arr" d="M260,86 L260,128" marker-end="url(#pg-a)"/>
+            <text class="lbl-s" x="270" y="115">connect</text>
+            <path class="arr" d="M260,188 L420,128" marker-end="url(#pg-a)"/>
+            <text class="lbl-s" x="330" y="115">fork</text>
+
+            <path class="arr-g" d="M500,86 L740,128" marker-end="url(#pg-g)"/>
+            <text class="lbl-s" x="600" y="115">connect (replication slot)</text>
+
+            <path class="arr-y" d="M740,86 L740,128" marker-end="url(#pg-y)"/>
+
+            <path class="arr" d="M500,190 L500,228" marker-end="url(#pg-a)"/>
+            <path class="arr" d="M740,190 L740,228" marker-end="url(#pg-a)"/>
+
+            <path class="arr" d="M240,348 L240,310" marker-end="url(#pg-a)"/>
+            <path class="arr" d="M420,348 L420,310" marker-end="url(#pg-a)"/>
+            <path class="arr" d="M600,348 L600,310" marker-end="url(#pg-a)"/>
+            <path class="arr" d="M780,348 L780,310" marker-end="url(#pg-a)"/>
+
+            <text class="lbl-s" x="160" y="500"><tspan fill="#7aa2f7">blue</tspan> = client / replication TCP · <tspan fill="#9ece6a">green</tspan> = replication slot connect · <tspan fill="#e0af68">amber</tspan> = logical pub/sub</text>
+            <text class="lbl-s" x="160" y="518">No threads — every box above is a separate OS process. Costs in this model live mostly in fork() + per-process page tables, not in lock contention.</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Process-per-connection (vs. MySQL's thread-per-connection) is the single biggest architectural decision. It gives PostgreSQL strong isolation between sessions and lets the OS handle scheduling for free, at the cost of higher per-connection RAM and slower connection turnover. Connection poolers (PgBouncer / pgpool) exist precisely to amortise this cost over many short-lived client connections.
+        </p>
+
+        <h2 id="lifecycle">2. Query Lifecycle</h2>
+
+        <p>
+          A single SQL statement travels through five stages inside the backend that runs it. The boundary between stages is intentional — every stage has its own data structure that can be inspected (and is, by <code>EXPLAIN</code> + the <code>auto_explain</code> contrib module), and replaced (the rewriter is how rules + RLS predicates fold into the query, the planner is what extensions like <code>pg_hint_plan</code> hook into).
+        </p>
+        <ol>
+          <li><strong>Parse</strong> — <code>raw_parser()</code> turns the SQL string into a list of raw parse trees using the <code>gram.y</code> bison grammar.</li>
+          <li><strong>Analyze</strong> — <code>parse_analyze()</code> resolves names against the catalog (tables, columns, types, functions) and produces a <code>Query</code> tree with semantic info attached.</li>
+          <li><strong>Rewrite</strong> — <code>QueryRewrite()</code> applies rules: view substitution, RLS predicates, <code>UPDATE</code>/<code>DELETE</code> → <code>SELECT</code> for cursor planning. Output is still a <code>Query</code> tree (possibly several, if a rule expands one statement into many).</li>
+          <li><strong>Plan</strong> — <code>pg_plan_query()</code> picks join orders, access methods (Seq Scan / Index Scan / Bitmap Heap Scan / ...), and sort / aggregation strategies. Output is a <code>PlannedStmt</code> tree of executor nodes. Cost-based; uses statistics gathered by ANALYZE.</li>
+          <li><strong>Execute</strong> — <code>ExecutorRun()</code> walks the plan tree using a Volcano-style iterator (<code>ExecProcNode</code> → child <code>ExecProcNode</code>). Tuples flow up one at a time (or in batches under <code>VECTOR</code> mode in 17+). The executor talks to the buffer manager for pages, the lock manager for row locks, and the WAL machinery for any modifications.</li>
+        </ol>
+
+        <h2 id="storage">3. Storage &amp; WAL</h2>
+
+        <p>
+          Every PostgreSQL table is a flat sequence of <strong>8 KB pages</strong> on disk (the page size is compile-time, default 8K). A page holds a header, a line-pointer array, and tuples packed from the end backwards. Each tuple carries an <strong>xmin / xmax</strong> pair — the transaction that created it and the transaction that deleted it. This is MVCC: an <code>UPDATE</code> never overwrites; it writes a new tuple version with <code>xmin = current</code> and sets the old tuple's <code>xmax = current</code>. Readers consult their snapshot to decide which version is "visible to me". Dead tuples are reclaimed by <strong>vacuum</strong>.
+        </p>
+        <p>
+          Backends never touch disk pages directly. They go through <strong>shared_buffers</strong>, a fixed-size pool of 8 KB slots in shared memory (typical sizing: 25% of RAM). When a backend needs a page, it asks the buffer manager; the buffer manager either returns a pinned slot or evicts a victim (clock-sweep) and reads the page from disk. The page underneath is in the OS page cache, so a "miss" in shared_buffers is usually a hit in page cache — only the worst case is real disk I/O.
+        </p>
+        <p>
+          Durability is provided by the <strong>WAL (Write-Ahead Log)</strong>, not by writing data pages on every change. Every modification first appends a WAL record describing it; only the WAL is <code>fsync</code>ed on <code>COMMIT</code> (controlled by <code>synchronous_commit</code>). Data pages get written back asynchronously — by <strong>bgwriter</strong> as part of buffer eviction, and by <strong>checkpointer</strong> at <code>checkpoint_timeout</code> / <code>max_wal_size</code> boundaries. If the cluster crashes, recovery replays WAL from the last checkpoint to bring the data pages back to a consistent state.
+        </p>
+
+        <div class="diagram diagram--wide">
+          <svg viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PostgreSQL storage and WAL pipeline: backend mutates a tuple in a shared_buffers page, appends a WAL record into the WAL buffer ring; walwriter flushes the WAL buffers to pg_wal/, fsync on commit; checkpointer flushes dirty shared-buffer pages to base/ data files asynchronously; archiver copies completed WAL segments off-cluster.">
+            <defs>
+              <marker id="st-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="st-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="st-y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e0af68"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 11px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.3; fill:none; }
+                .arr-g { stroke:#9ece6a; stroke-width:1.3; fill:none; }
+                .arr-y { stroke:#e0af68; stroke-width:1.3; fill:none; stroke-dasharray:5 4; }
+                .lane-t { fill:#8a96a3; font: bold 10px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+                .lane-d { stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 4; }
+              </style>
+            </defs>
+
+            <text class="lane-t" x="20" y="28">BACKEND (one process per session)</text>
+            <rect class="box-em" x="160" y="40" width="240" height="70"/>
+            <text class="lbl-b" x="280" y="60" text-anchor="middle">backend</text>
+            <text class="lbl-s" x="280" y="78" text-anchor="middle">INSERT / UPDATE / DELETE</text>
+            <text class="lbl-s" x="280" y="92" text-anchor="middle">mutate page in shared_buffers</text>
+            <text class="lbl-s" x="280" y="104" text-anchor="middle">append WAL record</text>
+
+            <line class="lane-d" x1="140" y1="130" x2="990" y2="130"/>
+
+            <text class="lane-t" x="20" y="156">SHARED MEMORY</text>
+            <rect class="box-warm" x="160" y="170" width="380" height="80"/>
+            <text class="lbl-b" x="350" y="190" text-anchor="middle">shared_buffers (≈25% of RAM)</text>
+            <text class="lbl-s" x="350" y="208" text-anchor="middle">8 KB slots · clock-sweep eviction</text>
+            <text class="lbl-s" x="350" y="222" text-anchor="middle">pinned by current users · dirty bit</text>
+            <text class="lbl-s" x="350" y="236" text-anchor="middle">backed by OS page cache underneath</text>
+
+            <rect class="box-warm" x="560" y="170" width="340" height="80"/>
+            <text class="lbl-b" x="730" y="190" text-anchor="middle">WAL buffers (ring)</text>
+            <text class="lbl-s" x="730" y="208" text-anchor="middle">wal_buffers (default 16 MB)</text>
+            <text class="lbl-s" x="730" y="222" text-anchor="middle">every change → record here first</text>
+            <text class="lbl-s" x="730" y="236" text-anchor="middle">walwriter / commit drain → disk</text>
+
+            <line class="lane-d" x1="140" y1="270" x2="990" y2="270"/>
+
+            <text class="lane-t" x="20" y="296">AUXILIARY PROCESSES</text>
+            <rect class="box" x="160" y="310" width="160" height="56"/>
+            <text class="lbl-b" x="240" y="330" text-anchor="middle">checkpointer</text>
+            <text class="lbl-s" x="240" y="346" text-anchor="middle">flush dirty buffers</text>
+            <text class="lbl-s" x="240" y="358" text-anchor="middle">on timeout / WAL size</text>
+
+            <rect class="box" x="340" y="310" width="160" height="56"/>
+            <text class="lbl-b" x="420" y="330" text-anchor="middle">bgwriter</text>
+            <text class="lbl-s" x="420" y="346" text-anchor="middle">trickle write of dirties</text>
+            <text class="lbl-s" x="420" y="358" text-anchor="middle">to ease backend stalls</text>
+
+            <rect class="box" x="520" y="310" width="160" height="56"/>
+            <text class="lbl-b" x="600" y="330" text-anchor="middle">walwriter</text>
+            <text class="lbl-s" x="600" y="346" text-anchor="middle">flush WAL buffers</text>
+            <text class="lbl-s" x="600" y="358" text-anchor="middle">commit fsync()</text>
+
+            <rect class="box" x="700" y="310" width="200" height="56"/>
+            <text class="lbl-b" x="800" y="330" text-anchor="middle">archiver / walsender</text>
+            <text class="lbl-s" x="800" y="346" text-anchor="middle">archive_command</text>
+            <text class="lbl-s" x="800" y="358" text-anchor="middle">+ stream WAL to replicas</text>
+
+            <line class="lane-d" x1="140" y1="386" x2="990" y2="386"/>
+
+            <text class="lane-t" x="20" y="412">DISK ($PGDATA)</text>
+            <rect class="box" x="160" y="424" width="340" height="30"/>
+            <text class="lbl-b" x="330" y="444" text-anchor="middle">base/ — data files (8 KB pages, per relation)</text>
+
+            <rect class="box" x="520" y="424" width="380" height="30"/>
+            <text class="lbl-b" x="710" y="444" text-anchor="middle">pg_wal/ — WAL segments (16 MB each, sequential)</text>
+
+            <!-- Arrows -->
+            <path class="arr" d="M280,110 L280,168" marker-end="url(#st-a)"/>
+            <text class="lbl-s" x="290" y="148">mutate</text>
+            <path class="arr-g" d="M380,110 L730,168" marker-end="url(#st-g)"/>
+            <text class="lbl-s" x="500" y="148">append WAL record</text>
+
+            <path class="arr-y" d="M350,250 L240,308" marker-end="url(#st-y)"/>
+            <text class="lbl-s" x="240" y="300">async</text>
+            <path class="arr-y" d="M350,250 L420,308" marker-end="url(#st-y)"/>
+            <path class="arr" d="M730,250 L600,308" marker-end="url(#st-a)"/>
+            <text class="lbl-s" x="610" y="290">commit fsync</text>
+            <path class="arr-y" d="M730,250 L800,308" marker-end="url(#st-y)"/>
+
+            <path class="arr-y" d="M240,366 L300,422" marker-end="url(#st-y)"/>
+            <path class="arr-y" d="M420,366 L380,422" marker-end="url(#st-y)"/>
+            <path class="arr" d="M600,366 L710,422" marker-end="url(#st-a)"/>
+            <path class="arr-y" d="M800,366 L820,422" marker-end="url(#st-y)"/>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          The hot path on a write is <em>tuple → shared_buffer → WAL buffer → fsync(WAL) → return</em>. Data files (<code>base/</code>) are only updated asynchronously by <code>checkpointer</code> and <code>bgwriter</code>. The reason <code>synchronous_commit = off</code> is so much faster is that it skips the <code>fsync(WAL)</code> at commit — durability falls back to the next WAL flush boundary, which is the trade-off you accept.
+        </p>
+
+        <h2 id="vs-others">4. PostgreSQL vs Other RDBMS</h2>
+
+        <p>
+          Four open / source-available OLTP databases that come up in the same room as PostgreSQL. The differences are real and shape what a workload feels like — connection pooling needs, index design, replication options, on-call playbook — even when the SQL surface looks the same.
+        </p>
+
+        <table class="comparison">
+          <thead>
+            <tr>
+              <th></th>
+              <th>PostgreSQL</th>
+              <th>MySQL (InnoDB)</th>
+              <th>SQLite</th>
+              <th>DuckDB</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Process model</td>
+              <td>Process per connection (postmaster <code>fork()</code>s a backend)</td>
+              <td>Thread per connection (one server process, N threads)</td>
+              <td>In-process library (no server)</td>
+              <td>In-process library (no server)</td>
+            </tr>
+            <tr>
+              <td>Storage layout</td>
+              <td>Heap (row store) · secondary indexes hold ctid</td>
+              <td>Clustered index on primary key · secondary indexes hold PK</td>
+              <td>Single-file row store · B-tree</td>
+              <td>Column store (vectorised)</td>
+            </tr>
+            <tr>
+              <td>Concurrency</td>
+              <td>MVCC · readers never block writers · UPDATE creates a new tuple version</td>
+              <td>MVCC via UNDO log · UPDATE writes in-place + UNDO entry</td>
+              <td>Database-level write lock (WAL mode allows readers during writer)</td>
+              <td>Single-writer multi-reader inside one process</td>
+            </tr>
+            <tr>
+              <td>Durability</td>
+              <td>WAL (write-ahead log) · fsync on commit</td>
+              <td>InnoDB redo log · doublewrite buffer for page tearing</td>
+              <td>WAL or rollback journal mode</td>
+              <td>WAL (since 0.9) · optimised for bulk OLAP</td>
+            </tr>
+            <tr>
+              <td>Replication</td>
+              <td>Physical (streaming WAL) + logical (decoded WAL → publisher/subscriber)</td>
+              <td>Statement / row binlog · semi-sync / async</td>
+              <td>External (litestream, rqlite) — not first-class</td>
+              <td>Not built-in (single-node analytical engine)</td>
+            </tr>
+            <tr>
+              <td>Extensibility</td>
+              <td>Procedural languages (PL/pgSQL, PL/Python, PL/V8), C extensions, custom data types / index access methods (GIN, GiST, BRIN, SP-GiST)</td>
+              <td>UDFs, stored procedures · pluggable storage engines (InnoDB, MyISAM, NDB)</td>
+              <td>Loadable extensions (FTS5, JSON1, R*Tree)</td>
+              <td>Loadable extensions (httpfs, parquet, json) · UDFs in Python / R</td>
+            </tr>
+            <tr>
+              <td>Use-case sweet spot</td>
+              <td>General-purpose OLTP · mixed workloads · "default SQL database when in doubt"</td>
+              <td>Web-tier OLTP at scale · clustered-index heavy reads</td>
+              <td>Embedded / on-device / single-writer apps</td>
+              <td>Single-node analytics on columnar files</td>
+            </tr>
+            <tr>
+              <td>License</td>
+              <td>PostgreSQL License (BSD-style, permissive)</td>
+              <td>GPLv2 (server) · proprietary (Oracle)</td>
+              <td>Public Domain</td>
+              <td>MIT</td>
+            </tr>
+            <tr>
+              <td>Governance</td>
+              <td>PostgreSQL Global Development Group (PGDG) · mailing-list driven · no single vendor</td>
+              <td>Oracle (since 2010) · pluggable storage engines from other vendors (Percona, MariaDB fork)</td>
+              <td>One maintainer (Hwaci) · external contributions not accepted</td>
+              <td>DuckDB Labs (Mark Raasveldt, Hannes Mühleisen) + CWI Amsterdam</td>
+            </tr>
+            <tr>
+              <td>Contribution workflow</td>
+              <td>Patches → pgsql-hackers mailing list → CommitFest review → committer pushes</td>
+              <td>GitHub PR to mysql/mysql-server · MySQL Worklog (WL) for design</td>
+              <td>Not accepting external contributions</td>
+              <td>GitHub PR to duckdb/duckdb · very fast turnaround</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="runtime">5. CPU / Memory / Network at Runtime</h2>
+
+        <p>
+          A running PostgreSQL cluster's resource profile is dominated by three things: <strong>connection count</strong> (because each is a real OS process), <strong>shared_buffers + work_mem × concurrency</strong> (RAM), and <strong>WAL throughput</strong> (the fsync hot path). Almost every tuning conversation reduces to a knob in one of these three categories.
+        </p>
+
+        <h3>CPU / process model</h3>
+        <ul>
+          <li><strong>One OS process per connection.</strong> The cost of an idle backend is small (a few MB of private heap + page tables), the cost of a busy backend is whatever its query is doing. There is no thread pool to size — concurrency is sized by <code>max_connections</code> and by the OS limit on processes.</li>
+          <li><strong>No internal thread pool.</strong> A single query uses one backend; parallel query (<code>parallel_workers</code>) lets a backend spawn worker backends for that one query but they exit when it finishes.</li>
+          <li><strong>Auxiliary processes</strong> (walwriter, bgwriter, checkpointer, autovacuum workers) are mostly idle, with periodic CPU spikes — checkpointer's spike is the most visible, controlled by <code>checkpoint_completion_target</code> which spreads writes across the interval.</li>
+          <li><strong>Connection poolers</strong> (PgBouncer, pgpool-II) sit between clients and PostgreSQL to amortise the fork() + per-process RAM cost when applications open and close many short-lived connections. Almost every real deployment uses one.</li>
+        </ul>
+
+        <h3>Memory layout</h3>
+        <ul>
+          <li><strong>shared_buffers</strong> — one fixed segment allocated at startup; sized to ~25% of RAM is the usual starting point. Holds 8 KB pages of all relations being touched + the dictionary that maps page-id → slot. Backed by OS page cache underneath, which is why "more shared_buffers" past a certain point gives diminishing returns.</li>
+          <li><strong>WAL buffers</strong> — small (16 MB default) ring of WAL pages waiting for walwriter or commit-driven flush. Almost never the bottleneck.</li>
+          <li><strong>Per-backend private memory</strong> — <code>work_mem</code> per sort / hash operator (not per connection — a single query with 3 sorts can use 3× <code>work_mem</code>), plus relcache / catcache caches (typically a few MB per backend), plus <code>temp_buffers</code> for temp tables. Scaling formula: peak RAM ≈ shared_buffers + (avg per-backend × max_connections).</li>
+          <li><strong>OS page cache</strong> — everything not in shared_buffers lives here. PostgreSQL deliberately keeps shared_buffers small relative to RAM so the OS can do its job.</li>
+        </ul>
+
+        <h3>Network traffic</h3>
+        <ul>
+          <li><strong>Client ↔ backend</strong> — one TCP per client connection, long-lived if the application reuses the connection, otherwise <code>fork()</code> per request. PostgreSQL's wire protocol is a simple length-prefixed message format; libpq / JDBC / pgx all speak it directly.</li>
+          <li><strong>Replication</strong> — physical replicas open one TCP per replica to the primary's <strong>walsender</strong>, which streams WAL records as they're flushed. Backpressure is the replica's <code>recovery_min_apply_delay</code> + how fast it can apply.</li>
+          <li><strong>Logical replication / CDC</strong> — same walsender mechanism, but the WAL is decoded into row-level changes that match the subscriber's interest (table / publication filter). Used by every modern CDC tool (Debezium, pgoutput, wal2json).</li>
+          <li><strong>Archive shipping</strong> — <code>archive_command</code> runs per completed 16 MB WAL segment, copies to off-cluster storage (S3 / GCS / NFS). PITR + base backup + archive = the standard backup recipe.</li>
+        </ul>
+
+        <h2 id="source-tree">6. Source Tree (for contributors)</h2>
+
+        <p>
+          Official source: read-only GitHub mirror at <a href="https://github.com/postgres/postgres" target="_blank" rel="noopener">github.com/postgres/postgres</a>; the canonical git repository is <a href="https://git.postgresql.org/gitweb/?p=postgresql.git" target="_blank" rel="noopener">git.postgresql.org/postgresql.git</a>. PostgreSQL <strong>does not accept GitHub pull requests</strong> — every contribution goes through the <code>pgsql-hackers@lists.postgresql.org</code> mailing list and is tracked in the per-cycle <a href="https://commitfest.postgresql.org/" target="_blank" rel="noopener">CommitFest</a>. The <a href="https://wiki.postgresql.org/wiki/Submitting_a_Patch" target="_blank" rel="noopener">patch submission guide</a> walks the workflow end-to-end. Build is <code>./configure &amp;&amp; make</code> (a parallel Meson build also lives in the tree); JDK is not relevant — most of the codebase is C, with bison + flex for the grammar.
+        </p>
+
+        <h3>Top-level modules</h3>
+        <ul>
+          <li><strong><code>src/backend/</code></strong> — the server. By far the largest tree. Sub-directories track the query lifecycle: <code>parser/</code> (gram.y), <code>analyzer/</code> + <code>rewrite/</code>, <code>optimizer/</code> (planner), <code>executor/</code>. Plus <code>storage/</code> (buffer manager, lock manager, smgr), <code>access/</code> (heap, btree, gist, gin, brin, hash — the access methods), <code>commands/</code> (DDL implementations), <code>catalog/</code> (system tables + catalog cache), <code>libpq/</code> (the wire protocol server-side), <code>replication/</code> (walsender, walreceiver, logical decoding), <code>tcop/</code> (the postmaster main loop), <code>utils/</code> (date/time, hash, sort, memory contexts, the float comparison helpers used by every numeric opclass).</li>
+          <li><strong><code>src/include/</code></strong> — public + internal headers. Mirrors <code>src/backend/</code>'s tree. Touching a header here is how cross-module changes start.</li>
+          <li><strong><code>src/bin/</code></strong> — client-side tools (<code>psql</code>, <code>pg_dump</code>, <code>pg_restore</code>, <code>pg_basebackup</code>, <code>initdb</code>, <code>pg_rewind</code>, <code>pg_upgrade</code>, <code>vacuumdb</code>). Most contributors land their first patches here — small, well-bounded surface.</li>
+          <li><strong><code>src/interfaces/libpq/</code></strong> — the C client library that everything else (JDBC, psycopg, pgx) wraps or re-implements. The protocol contract lives here.</li>
+          <li><strong><code>src/pl/</code></strong> — procedural languages (<code>plpgsql/</code>, <code>plpython/</code>, <code>plperl/</code>, <code>pltcl/</code>). Each is its own loadable module.</li>
+          <li><strong><code>src/test/</code></strong> — regression infrastructure. <code>regress/</code> is the main suite (SQL + expected output diffs, run via <code>pg_regress</code>), <code>isolation/</code> covers concurrency, <code>recovery/</code> exercises crash recovery, <code>subscription/</code> covers logical replication, plus TAP tests under <code>perl/</code>.</li>
+          <li><strong><code>contrib/</code></strong> — bundled extensions that ship with the server tarball but are loaded explicitly via <code>CREATE EXTENSION</code>. <code>postgres_fdw</code> (PostgreSQL foreign data wrapper), <code>pg_stat_statements</code>, <code>pgcrypto</code>, <code>btree_gin</code> / <code>btree_gist</code>, <code>hstore</code>, <code>ltree</code>, <code>pgbench</code>, <code>pageinspect</code>, <code>amcheck</code>, <code>dblink</code>, <code>fuzzystrmatch</code>, <code>isn</code>, <code>dict_int</code>, ... Each has its own <code>.c</code> sources, SQL extension scripts, and a <code>sql/</code> + <code>expected/</code> regression test pair. Reviewers are more tolerant of contrib changes than core changes — this is the recommended on-ramp for a first contribution.</li>
+          <li><strong><code>doc/src/sgml/</code></strong> — the user-facing documentation in DocBook XML. Doc-only patches are a real entry path; many committers got their first commit by improving a confusing paragraph.</li>
+          <li><strong><code>config/</code>, <code>configure</code>, <code>meson.build</code></strong> — autoconf + meson build systems. Rarely touched.</li>
+        </ul>
+
+        <h3>Version history</h3>
+        <ul>
+          <li><strong>0.01 → 6.x</strong> (1995 – 1997) — derived from POSTGRES at Berkeley by Andrew Yu and Jolly Chen. SQL added (replacing the original QUEL).</li>
+          <li><strong>7.x</strong> (2000 – 2004) — WAL (7.1), foreign keys (7.0), schemas (7.3), prepared statements (7.4). The era when PostgreSQL stopped being a research project.</li>
+          <li><strong>8.x</strong> (2005 – 2009) — point-in-time recovery, native Windows port (8.0), two-phase commit, table partitioning via inheritance, common table expressions (8.4).</li>
+          <li><strong>9.x</strong> (2010 – 2016) — streaming replication (9.0), JSON / JSONB (9.2 / 9.4), materialized views (9.3), foreign data wrappers, logical decoding (9.4), <code>UPSERT</code> (9.5), parallel query (9.6).</li>
+          <li><strong>10 – 13</strong> (2017 – 2020) — logical replication (publisher / subscriber), declarative partitioning (10 / 11), JIT (11), incremental sorts (13).</li>
+          <li><strong>14 – 17</strong> (2021 – 2024) — pipeline mode for libpq (14), SQL/JSON path (12 → 17 polish), MERGE (15), logical replication on standby (16), incremental backup (17), bgwriter / WAL improvements every cycle.</li>
+          <li><strong>18 (current stable)</strong> — released 2025-09. Asynchronous I/O for many sequential paths, OAuth in libpq, more SQL/JSON, virtual columns.</li>
+          <li><strong>19 (next, in development)</strong> — open CF /59/ window; my <a href="/contributions/postgresql/btree-gist-nan.html">btree_gist NaN patch</a> targets this cycle.</li>
+        </ul>
+
+        <h3>Branching &amp; release model</h3>
+        <p>
+          The tree's main branch is <code>master</code>; each released major (<code>REL_17_STABLE</code>, <code>REL_18_STABLE</code>, ...) is a long-lived branch. Bug fixes are committed to <code>master</code> first and back-patched by the committer to every still-supported branch (typically the last five majors). Major releases ship roughly once a year in autumn (September / October). Minor releases ship four times a year (Feb / May / Aug / Nov) and contain bug fixes + security fixes only — no features. The release manager for each cycle is rotated; the release process is run on the <code>pgsql-release@lists.postgresql.org</code> internal list.
+        </p>
+
+        <h2>Related</h2>
+        <ul class="contact-list">
+          <li><span class="k">Source</span><a href="https://github.com/postgres/postgres" target="_blank" rel="noopener">postgres/postgres (read-only mirror)</a></li>
+          <li><span class="k">Upstream git</span><a href="https://git.postgresql.org/gitweb/?p=postgresql.git" target="_blank" rel="noopener">git.postgresql.org/postgresql.git</a></li>
+          <li><span class="k">Docs</span><a href="https://www.postgresql.org/docs/" target="_blank" rel="noopener">postgresql.org/docs</a></li>
+          <li><span class="k">Submit a patch</span><a href="https://wiki.postgresql.org/wiki/Submitting_a_Patch" target="_blank" rel="noopener">wiki.postgresql.org/Submitting_a_Patch</a></li>
+          <li><span class="k">CommitFest</span><a href="https://commitfest.postgresql.org/" target="_blank" rel="noopener">commitfest.postgresql.org</a></li>
+          <li><span class="k">My PRs</span><a href="/contributions/postgresql.html">PostgreSQL contributions</a></li>
+          <li><span class="k">Sibling</span><a href="/apache-kafka.html">Apache Kafka — Architecture, Message Flow, CLI</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
