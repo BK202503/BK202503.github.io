@@ -617,53 +617,31 @@
             <text class="lbl-s" x="810" y="378">then into heap as records.</text>
             <text class="lbl-s" x="810" y="400">Released after consume.</text>
 
-            <!-- JVM lane internal divider between row 1 (threads/heap/direct) and row 2 (NETWORK) -->
+            <!-- JVM lane internal divider between row 1 (threads/heap/direct) and row 2 (NETWORK band) -->
             <line class="lane-d" x1="140" y1="420" x2="990" y2="420"/>
 
-            <!-- JVM row 2: NETWORK sub-cluster (JVM-side socket state) -->
+            <!-- JVM row 2: NETWORK as a single containing band (matches the THREADS / HEAP / DIRECT box style) -->
             <text class="lane-t" x="20" y="438">NETWORK · JVM-side socket state</text>
 
-            <rect class="box-soft" x="140" y="450" width="200" height="124"/>
-            <text class="lane-t" x="150" y="468">SELECTOR</text>
-            <text class="lbl-s" x="150" y="486">Java NIO multiplexer</text>
-            <text class="lbl-s" x="150" y="500">— one per KafkaConsumer</text>
-            <text class="lbl-s" x="150" y="512">— one per KafkaProducer</text>
-            <text class="lbl-s" x="150" y="530">poll() blocks until any</text>
-            <text class="lbl-s" x="150" y="542">socket has data ready</text>
-            <text class="lbl-s" x="150" y="556">(fetch + commit + heartbeat</text>
-            <text class="lbl-s" x="150" y="568">all share the same Selector)</text>
+            <rect class="box-em" x="140" y="446" width="850" height="138"/>
+            <text class="lane-t" x="150" y="464">NETWORK band</text>
 
-            <rect class="box-soft" x="360" y="450" width="240" height="124"/>
-            <text class="lane-t" x="370" y="468">PER-BROKER TCP</text>
-            <text class="lbl-s" x="370" y="486">long-lived TCP per broker</text>
-            <text class="lbl-s" x="370" y="500">opened lazily on first request</text>
-            <text class="lbl-s" x="370" y="512">to that broker, then reused</text>
-            <text class="lbl-s" x="370" y="530">closed only on idle reap or</text>
-            <text class="lbl-s" x="370" y="542">broker disconnect</text>
-            <text class="lbl-s" x="370" y="560">N × ListenerConsumer × #leaders</text>
-            <text class="lbl-s" x="370" y="572">+ 1 producer × #leaders</text>
+            <text class="lbl-b" x="160" y="484">• SELECTOR</text>
+            <text class="lbl-s" x="270" y="484">Java NIO multiplexer · one per KafkaConsumer / KafkaProducer</text>
+            <text class="lbl-s" x="270" y="496">poll() blocks until any socket has data — fetch + commit + heartbeat share the same Selector</text>
 
-            <rect class="box-soft" x="620" y="450" width="180" height="124"/>
-            <text class="lane-t" x="630" y="468">IN-FLIGHT PIPELINING</text>
-            <text class="lbl-s" x="630" y="486">max.in.flight.requests</text>
-            <text class="lbl-s" x="630" y="498">.per.connection (default 5)</text>
-            <text class="lbl-s" x="630" y="516">producer / consumer can</text>
-            <text class="lbl-s" x="630" y="528">have N requests outstanding</text>
-            <text class="lbl-s" x="630" y="540">on one connection at once</text>
-            <text class="lbl-s" x="630" y="558">(idempotent producer forces</text>
-            <text class="lbl-s" x="630" y="570">this to ≤ 5 for ordering)</text>
+            <text class="lbl-b" x="160" y="514">• PER-BROKER TCP</text>
+            <text class="lbl-s" x="270" y="514">long-lived TCP per broker · opened lazily on first request, then reused</text>
+            <text class="lbl-s" x="270" y="526">count = N × ListenerConsumer × #leaders + 1 producer × #leaders + 1 reply consumer (sendAndReceive)</text>
 
-            <rect class="box-soft" x="820" y="450" width="180" height="124"/>
-            <text class="lane-t" x="830" y="468">TLS + IDLE REAP</text>
-            <text class="lbl-s" x="830" y="486">SSLEngine + session cache</text>
-            <text class="lbl-s" x="830" y="498">(when SSL listener used)</text>
-            <text class="lbl-s" x="830" y="510">TLS handshake at connect,</text>
-            <text class="lbl-s" x="830" y="522">resumed via session ID</text>
-            <text class="lbl-s" x="830" y="540">connections.max.idle.ms</text>
-            <text class="lbl-s" x="830" y="552">(default 9 min) closes</text>
-            <text class="lbl-s" x="830" y="564">idle sockets to free FDs</text>
+            <text class="lbl-b" x="160" y="544">• IN-FLIGHT PIPELINING</text>
+            <text class="lbl-s" x="270" y="544">max.in.flight.requests.per.connection (default 5)</text>
+            <text class="lbl-s" x="270" y="556">idempotent producer caps this at ≤ 5 to preserve per-partition ordering</text>
 
-            <line class="lane-d" x1="140" y1="590" x2="990" y2="590"/>
+            <text class="lbl-b" x="160" y="574">• TLS + IDLE REAP</text>
+            <text class="lbl-s" x="270" y="574">SSLEngine + session cache (when SSL listener used) · TLS handshake at connect</text>
+
+            <line class="lane-d" x1="140" y1="598" x2="990" y2="598"/>
 
             <!-- ─────────── LANE 3: OS / KERNEL ─────────── -->
             <text class="lane-t" x="20" y="614">OS · Linux kernel</text>
@@ -727,27 +705,22 @@
             <path class="arr-g" d="M660,110 L320,250" marker-end="url(#sr-g)"/>
             <path class="arr-g" d="M660,110 L520,250" marker-end="url(#sr-g)"/>
 
-            <!-- JVM threads → NETWORK selector (within JVM lane, vertical) -->
-            <path class="arr" d="M290,412 L240,448" marker-end="url(#sr-a)"/>
-            <text class="lbl-s" x="240" y="440">drive</text>
+            <!-- JVM row 1 → NETWORK band (within JVM lane, vertical) -->
+            <path class="arr" d="M290,412 L290,444" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="300" y="436">drive sockets</text>
 
-            <!-- JVM direct buffers → PER-BROKER TCP (within JVM lane) -->
-            <path class="arr-g" d="M900,412 L480,448" marker-end="url(#sr-g)"/>
-            <text class="lbl-s" x="640" y="440">supply socket bytes</text>
+            <path class="arr-g" d="M900,412 L780,444" marker-end="url(#sr-g)"/>
+            <text class="lbl-s" x="700" y="436">supply socket bytes</text>
 
-            <!-- NETWORK SELECTOR → OS Net stack (cross-lane down) -->
-            <path class="arr" d="M240,574 L600,624" marker-end="url(#sr-a)"/>
-            <text class="lbl-s" x="320" y="608">epoll registered fds</text>
+            <!-- NETWORK band → OS (cross-lane down) -->
+            <path class="arr" d="M280,584 L270,624" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="290" y="614">scheduled on</text>
 
-            <!-- PER-BROKER TCP → OS Kernel RAM (TCP socket buffers) -->
-            <path class="arr-g" d="M480,574 L600,624" marker-end="url(#sr-g)"/>
+            <path class="arr-g" d="M560,584 L600,624" marker-end="url(#sr-g)"/>
+            <text class="lbl-s" x="500" y="614">copy via NIO socket</text>
 
-            <!-- TLS box → kernel network (cross-lane down) -->
-            <path class="arr" d="M910,574 L900,624" marker-end="url(#sr-a)"/>
-
-            <!-- JVM threads → OS cores -->
-            <path class="arr" d="M270,574 L270,624" marker-end="url(#sr-a)"/>
-            <text class="lbl-s" x="280" y="608">run on</text>
+            <path class="arr" d="M880,584 L900,624" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="800" y="614">epoll registered fds</text>
 
             <!-- Kernel net stack → NIC → broker -->
             <path class="arr" d="M900,726 L880,782" marker-end="url(#sr-a)"/>
