@@ -135,6 +135,7 @@
             <a href="/spring-kafka.html#message-flow">Message Flow</a>
             <a href="/spring-kafka.html#features">Features</a>
             <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#runtime">Runtime</a>
             <a href="/spring-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Strimzi</div>
             <a href="/strimzi.html">Overview</a>
@@ -142,6 +143,7 @@
             <a href="/strimzi.html#reconciliation">Reconciliation</a>
             <a href="/strimzi.html#crds">CRD Landscape</a>
             <a href="/strimzi.html#vs-apache-kafka">vs Apache Kafka</a>
+            <a href="/strimzi.html#runtime">Runtime</a>
             <a href="/strimzi.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Appendix</div>
             <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
@@ -572,6 +574,15 @@
           <li><strong>Request handler / IO threads (<code>num.io.threads</code>, default 8)</strong> — pull from the request channel and execute the actual work against <code>ReplicaManager</code> / <code>LogManager</code> / <code>GroupCoordinator</code> / <code>TransactionCoordinator</code>. This is where the CPU spends most of its time on the produce path (CRC, compression, log append) and on the consume path (offset lookup, fetch session bookkeeping).</li>
           <li><strong>Replica fetcher threads</strong> — follower brokers run dedicated fetcher threads that issue <code>FetchRequest</code> against partition leaders to replicate. ISR membership is driven by how fresh each follower's fetch position is relative to the leader's log-end offset.</li>
           <li><strong>Background threads</strong> — log cleaner (compaction), log retention deleter, group coordinator heartbeat, transaction coordinator expiration, controller event thread (in KRaft mode the controllers run a separate Raft event loop).</li>
+        </ul>
+
+        <h3>Network traffic</h3>
+        <ul>
+          <li><strong>Client ↔ broker</strong> — long-lived TCP connections, one per broker the client talks to. Producer sends <code>ProduceRequest</code> per batch; consumer sends <code>FetchRequest</code> per partition-set per poll; both multiplex over the same connection. <code>OffsetCommitRequest</code> and group coordination (<code>JoinGroup</code>, <code>SyncGroup</code>, <code>Heartbeat</code> in the classic protocol; <code>ConsumerGroupHeartbeat</code> in the KIP-848 protocol) travel on the connection to the group's coordinator broker.</li>
+          <li><strong>Inter-broker replication</strong> — follower brokers open a separate connection to each leader they replicate from, used by their replica-fetcher thread. The same fetch API serves both consumers and followers, but inter-broker fetch uses a dedicated replication listener (<code>inter.broker.listener.name</code>) so it can be ACL'd / SASL'd independently from client traffic.</li>
+          <li><strong>Controller plane (KRaft)</strong> — controllers form a Raft quorum on a dedicated listener (<code>controller.listener.names</code>). Brokers register with the controller quorum and receive metadata updates via <code>BrokerRegistrationRequest</code> / <code>BrokerHeartbeatRequest</code> / <code>FetchRequest</code> against the metadata log. This traffic is small compared to data traffic but is what every cluster decision rides on.</li>
+          <li><strong>Zero-copy on the consume hot path</strong> — for the response to a <code>FetchRequest</code>, the broker calls <code>FileChannel.transferTo()</code>, which translates to <code>sendfile()</code> at the kernel level. Bytes go from page cache straight to the socket buffer — never copied into JVM user space. This is the single biggest reason a broker can saturate a 10 Gbps NIC with a tiny CPU footprint on a tail-following consumer.</li>
+          <li><strong>Connection density</strong> — Kafka is built for fewer, longer connections rather than many short ones. The network thread pool is sized assuming each socket is mostly idle waiting on the next request, not assuming connection storms; OS-level <code>net.core.somaxconn</code> and <code>fs.file-max</code> tuning matters more on the OS side than JVM tuning.</li>
         </ul>
 
         <div class="diagram">

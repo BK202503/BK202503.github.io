@@ -122,6 +122,7 @@
             <a href="/spring-kafka.html#message-flow">Message Flow</a>
             <a href="/spring-kafka.html#features">Features</a>
             <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#runtime">Runtime</a>
             <a href="/spring-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Strimzi</div>
             <a href="/strimzi.html">Overview</a>
@@ -129,6 +130,7 @@
             <a href="/strimzi.html#reconciliation">Reconciliation</a>
             <a href="/strimzi.html#crds">CRD Landscape</a>
             <a href="/strimzi.html#vs-apache-kafka">vs Apache Kafka</a>
+            <a href="/strimzi.html#runtime">Runtime</a>
             <a href="/strimzi.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Appendix</div>
             <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
@@ -184,6 +186,7 @@
             <li><a href="#message-flow">Message Flow</a></li>
             <li><a href="#features">Features</a></li>
             <li><a href="#internals">Internals — key source files</a></li>
+            <li><a href="#runtime">CPU / Memory / Network at Runtime</a></li>
             <li><a href="#source-tree">Source Tree (for contributors)</a></li>
           </ol>
         </div>
@@ -471,6 +474,153 @@
           <li><strong><code>ConsumerFactory</code> / <code>ProducerFactory</code></strong> — pluggable client factories. <code>DefaultKafkaConsumerFactory</code> / <code>DefaultKafkaProducerFactory</code> are the standard implementations; both are aware of per-instance config overrides.</li>
           <li><strong><code>KafkaListenerAnnotationBeanPostProcessor</code></strong> — discovers <code>@KafkaListener</code> methods at startup and asks the chosen <code>KafkaListenerContainerFactory</code> to create the matching container.</li>
         </ul>
+
+        <h2 id="runtime">CPU / Memory / Network at Runtime</h2>
+
+        <p>
+          A Spring Kafka application is an ordinary Spring Boot process. Spring Kafka adds three runtime cost centres on top of whatever the application code itself does: <strong>listener-container threads</strong> driving polls, <strong>retry / DLT infrastructure</strong> holding state for in-flight failures, and the <strong>underlying Apache Kafka client connections</strong> to the brokers. Almost nothing else is allocated unless you opt in (transactions, retry topics, request-reply replies).
+        </p>
+
+        <h3>CPU / threading model</h3>
+        <ul>
+          <li><strong>Listener threads</strong> — <code>ConcurrentMessageListenerContainer</code> creates <code>concurrency</code> child <code>KafkaMessageListenerContainer</code>s. Each child runs one <code>ListenerConsumer</code> thread that owns one <code>KafkaConsumer</code> instance and loops <code>poll → dispatch → commit</code>. CPU on this thread is dominated by user listener code; record deserialization and the Spring conversion to <code>Message&lt;?&gt;</code> are usually noise.</li>
+          <li><strong>Synchronous vs async dispatch</strong> — with a <code>void</code> / blocking return type, the user method runs on the listener thread itself, so CPU and throughput are bound by what the user code does. With async return types (<code>CompletableFuture</code>, <code>Mono</code>, Kotlin <code>suspend</code>), the listener thread hands off and returns to <code>poll</code> immediately; CPU moves to the scheduler the user picked.</li>
+          <li><strong>Producer sender thread</strong> — <code>KafkaTemplate</code> wraps a single Apache Kafka <code>KafkaProducer</code>, which runs its own internal sender thread for batching and flushing. Most apps do not see this thread directly; it is the producer's network I/O thread.</li>
+          <li><strong>Retry-topic scheduler</strong> — when <code>@RetryableTopic</code> is enabled, Spring Kafka starts a small scheduled-executor pool (<code>RetryTopicSchedulerLifecycle</code>) that wakes records out of their backoff bucket and republishes them. Idle most of the time; spikes only with retry traffic.</li>
+          <li><strong>Background hooks</strong> — Micrometer observation timers, transaction synchronizations, error handlers (<code>DefaultErrorHandler</code>) all run on the listener thread between polls. No extra threads spun up per record.</li>
+        </ul>
+
+        <h3>Memory layout</h3>
+        <ul>
+          <li><strong>Poll buffer per container</strong> — each <code>KafkaConsumer</code> can hold up to <code>max.poll.records × max(record-size)</code> bytes worth of <code>ConsumerRecord</code>s between polls. The Spring conversion path (record → <code>Message&lt;?&gt;</code>) allocates per record; the GC pressure here is usually the dominant Spring Kafka cost, not heap retention.</li>
+          <li><strong><code>FailedRecordTracker</code></strong> — one map entry per in-flight failing <code>(topic, partition, offset)</code> tracking attempt count + next backoff. Bounded by how many distinct records are currently failing across all partitions of all listener containers — typically dozens, not thousands.</li>
+          <li><strong>Retry topic state</strong> — when <code>@RetryableTopic</code> generates the retry topic chain, the in-memory structures are small (one record-list per backoff bucket while waiting). The records themselves live in Kafka, not in heap.</li>
+          <li><strong><code>KafkaTemplate</code> / producer batches</strong> — the underlying <code>KafkaProducer</code> keeps a <code>RecordAccumulator</code> sized by <code>buffer.memory</code> (default 32 MB). A backed-up producer (slow broker) is the most common heap-growth surprise; it surfaces as <code>RecordTooLargeException</code> or <code>TimeoutException</code> rather than OOM, but the buffer is real.</li>
+          <li><strong>Transactional state</strong> — with <code>transactional.id</code> set, the producer maintains an in-flight transaction state object and one open producer per transactional ID; the consumer side holds a small offset map for the active transaction window. Negligible.</li>
+        </ul>
+
+        <h3>Network traffic</h3>
+        <ul>
+          <li><strong>One TCP connection per broker per client</strong> — each <code>ListenerConsumer</code>'s <code>KafkaConsumer</code> opens persistent connections to every broker it currently fetches from. Same for the <code>KafkaTemplate</code>'s producer. With <code>concurrency=N</code> the consumer connection count is roughly <code>N × brokers_with_assigned_partitions</code>.</li>
+          <li><strong>Poll frequency</strong> — each listener thread sends a <code>FetchRequest</code> roughly every <code>fetch.max.wait.ms</code> (or sooner if data is available), and an <code>OffsetCommit</code> every <code>auto.commit.interval.ms</code> (or on every successful record when using <code>MANUAL</code> ack mode). Heartbeats to the group coordinator run on a separate background thread inside the consumer at <code>heartbeat.interval.ms</code>.</li>
+          <li><strong>Retry / DLT republishes</strong> — every retry attempt or DLT publication is an extra <code>ProduceRequest</code>. With <code>@RetryableTopic</code> and N retry levels, a failing record turns into N+1 produces (original failure → retry-1 → retry-2 → ... → DLT). Visible in producer-side metrics; usually small unless failure rates spike.</li>
+          <li><strong>Request-reply (<code>sendAndReceive</code>)</strong> — adds one outbound <code>ProduceRequest</code> on the request topic + one inbound <code>FetchRequest</code> on the reply topic for every call. Spring Kafka correlates by header, so the reply consumer is shared.</li>
+          <li><strong>Transactions</strong> — adds <code>InitProducerId</code> at startup and <code>AddPartitionsToTxn</code> / <code>EndTxn</code> round trips per transaction boundary. One transactional commit = a handful of extra small requests, not per record.</li>
+        </ul>
+
+        <div class="diagram diagram--wide">
+          <svg viewBox="0 0 920 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spring Kafka runtime: each ListenerConsumer thread owns one KafkaConsumer that opens long-lived TCP connections to brokers; user listener runs sync on the thread or hands off async; the underlying KafkaProducer of KafkaTemplate has its own sender thread; retry topic scheduler is idle most of the time; FailedRecordTracker holds per-(topic, partition, offset) attempt state.">
+            <defs>
+              <marker id="sr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="sr-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+              <marker id="sr-y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e0af68"/>
+              </marker>
+              <style>
+                .box { fill:#1a2030; stroke:#3a4660; stroke-width:1.2; rx:8; ry:8; }
+                .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
+                .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
+                .box-soft { fill:#161b25; stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 3; rx:8; ry:8; }
+                .lbl-b { fill:#dde3ec; font: bold 14px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 12px/1 ui-monospace, monospace; }
+                .arr   { stroke:#7aa2f7; stroke-width:1.4; fill:none; }
+                .arr-g { stroke:#9ece6a; stroke-width:1.4; fill:none; }
+                .arr-y { stroke:#e0af68; stroke-width:1.4; fill:none; stroke-dasharray:5 4; }
+                .lane-t { fill:#8a96a3; font: bold 12px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+                .lane-d { stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 4; }
+              </style>
+            </defs>
+
+            <text class="lane-t" x="20" y="30">APP JVM</text>
+
+            <!-- Listener concurrency cluster -->
+            <rect class="box-soft" x="160" y="50" width="380" height="180"/>
+            <text class="lane-t" x="170" y="68">ConcurrentMessageListenerContainer (concurrency = N)</text>
+
+            <rect class="box-em" x="180" y="80" width="160" height="60"/>
+            <text class="lbl-b" x="260" y="102" text-anchor="middle">ListenerConsumer #1</text>
+            <text class="lbl-s" x="260" y="120" text-anchor="middle">poll → dispatch → commit</text>
+            <text class="lbl-s" x="260" y="134" text-anchor="middle">owns 1 KafkaConsumer</text>
+
+            <rect class="box-em" x="360" y="80" width="160" height="60"/>
+            <text class="lbl-b" x="440" y="102" text-anchor="middle">ListenerConsumer #N</text>
+            <text class="lbl-s" x="440" y="120" text-anchor="middle">poll → dispatch → commit</text>
+            <text class="lbl-s" x="440" y="134" text-anchor="middle">owns 1 KafkaConsumer</text>
+
+            <!-- User listener + error handler -->
+            <rect class="box" x="180" y="160" width="340" height="60"/>
+            <text class="lbl-b" x="350" y="182" text-anchor="middle">User @KafkaListener method</text>
+            <text class="lbl-s" x="350" y="200" text-anchor="middle">sync: runs on listener thread (CPU here)</text>
+            <text class="lbl-s" x="350" y="214" text-anchor="middle">async: hands off, listener returns to poll</text>
+
+            <!-- KafkaTemplate / Producer -->
+            <rect class="box" x="580" y="80" width="170" height="80"/>
+            <text class="lbl-b" x="665" y="102" text-anchor="middle">KafkaTemplate</text>
+            <text class="lbl-s" x="665" y="120" text-anchor="middle">→ KafkaProducer</text>
+            <text class="lbl-s" x="665" y="136" text-anchor="middle">RecordAccumulator (32 MB)</text>
+            <text class="lbl-s" x="665" y="152" text-anchor="middle">sender thread (batched I/O)</text>
+
+            <!-- Retry topic scheduler -->
+            <rect class="box-warm" x="580" y="170" width="170" height="60"/>
+            <text class="lbl-b" x="665" y="192" text-anchor="middle">RetryTopic scheduler</text>
+            <text class="lbl-s" x="665" y="208" text-anchor="middle">backoff buckets · idle mostly</text>
+            <text class="lbl-s" x="665" y="222" text-anchor="middle">wakes only on retry traffic</text>
+
+            <!-- FailedRecordTracker (memory) -->
+            <rect class="box-soft" x="760" y="80" width="140" height="80"/>
+            <text class="lbl-b" x="830" y="102" text-anchor="middle">FailedRecord</text>
+            <text class="lbl-b" x="830" y="120" text-anchor="middle">Tracker</text>
+            <text class="lbl-s" x="830" y="138" text-anchor="middle">per (t, p, off)</text>
+            <text class="lbl-s" x="830" y="152" text-anchor="middle">attempt + backoff</text>
+
+            <!-- Brokers (outside JVM) -->
+            <line class="lane-d" x1="160" y1="270" x2="910" y2="270"/>
+            <text class="lane-t" x="20" y="300">KAFKA CLUSTER (brokers)</text>
+
+            <rect class="box" x="180" y="310" width="160" height="60"/>
+            <text class="lbl-b" x="260" y="332" text-anchor="middle">Broker A</text>
+            <text class="lbl-s" x="260" y="350" text-anchor="middle">partition leader</text>
+            <text class="lbl-s" x="260" y="364" text-anchor="middle">group coordinator</text>
+
+            <rect class="box" x="360" y="310" width="160" height="60"/>
+            <text class="lbl-b" x="440" y="332" text-anchor="middle">Broker B</text>
+            <text class="lbl-s" x="440" y="350" text-anchor="middle">partition leader</text>
+            <text class="lbl-s" x="440" y="364" text-anchor="middle">tx coordinator</text>
+
+            <rect class="box" x="580" y="310" width="170" height="60"/>
+            <text class="lbl-b" x="665" y="332" text-anchor="middle">Broker C</text>
+            <text class="lbl-s" x="665" y="350" text-anchor="middle">retry / DLT topics</text>
+            <text class="lbl-s" x="665" y="364" text-anchor="middle">reply topic</text>
+
+            <!-- Arrows: consumer connections (blue) -->
+            <path class="arr" d="M260,140 L260,308" marker-end="url(#sr-a)"/>
+            <path class="arr" d="M440,140 L440,308" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="290" y="230">FetchRequest · OffsetCommit · Heartbeat</text>
+
+            <!-- Arrow: producer sender → broker (green) -->
+            <path class="arr-g" d="M665,160 L665,308" marker-end="url(#sr-g)"/>
+            <text class="lbl-s" x="540" y="290">ProduceRequest (batched)</text>
+
+            <!-- Arrow: retry scheduler republishes (amber, dashed) -->
+            <path class="arr-y" d="M665,230 C570,260 540,210 540,165" marker-end="url(#sr-y)"/>
+            <text class="lbl-s" x="540" y="252">republish on backoff</text>
+
+            <!-- Listener -> user method handoff -->
+            <path class="arr" d="M260,140 L260,158" marker-end="url(#sr-a)"/>
+            <path class="arr" d="M440,140 L440,158" marker-end="url(#sr-a)"/>
+
+            <!-- Legend -->
+            <text class="lbl-s" x="160" y="430"><tspan fill="#7aa2f7">blue</tspan> = consumer side (FetchRequest, commits, heartbeat) · <tspan fill="#9ece6a">green</tspan> = producer side (ProduceRequest, batched) · <tspan fill="#e0af68">amber</tspan> = retry scheduler republish</text>
+            <text class="lbl-s" x="160" y="452">N × consumer connections per broker; 1 producer connection per broker; one shared reply consumer for sendAndReceive.</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          The expensive runtime axis for Spring Kafka is <em>user listener CPU</em> on the sync path, or <em>scheduler choice</em> on the async path. Memory growth surprises almost always come from a backed-up producer (slow broker), not from Spring Kafka structures. Network is a function of <code>concurrency</code>, retry-topic depth, and whether transactions are on.
+        </p>
 
         <h2 id="source-tree">Source Tree (for contributors)</h2>
 
