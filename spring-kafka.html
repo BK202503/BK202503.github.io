@@ -509,7 +509,7 @@
         </ul>
 
         <div class="diagram diagram--wide">
-          <svg viewBox="0 0 1000 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spring Kafka runtime, layered from app to OS to brokers: Spring Kafka container + listener + KafkaTemplate live in the APP layer; JVM layer holds the threads (N listener threads + producer sender + async scheduler) and the on-heap buffers (poll buffer, RecordAccumulator, FailedRecordTracker) plus off-heap NIO direct buffers; OS / kernel layer holds the CPU cores the threads run on, the page cache + per-socket TCP send/recv buffers, the epoll loop and NIC queues; the NIC reaches the Kafka brokers.">
+          <svg viewBox="0 0 1000 920" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spring Kafka runtime, layered from app to OS to brokers. JVM layer now has a NETWORK sub-cluster covering the JVM-side socket state (Java NIO Selector, per-broker TCP, in-flight pipelining, TLS engine and idle reaper) alongside the existing THREADS / HEAP / DIRECT sub-clusters.">
             <defs>
               <marker id="sr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
                 <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
@@ -617,59 +617,105 @@
             <text class="lbl-s" x="810" y="378">then into heap as records.</text>
             <text class="lbl-s" x="810" y="400">Released after consume.</text>
 
-            <line class="lane-d" x1="140" y1="430" x2="990" y2="430"/>
+            <!-- JVM lane internal divider between row 1 (threads/heap/direct) and row 2 (NETWORK) -->
+            <line class="lane-d" x1="140" y1="420" x2="990" y2="420"/>
+
+            <!-- JVM row 2: NETWORK sub-cluster (JVM-side socket state) -->
+            <text class="lane-t" x="20" y="438">NETWORK · JVM-side socket state</text>
+
+            <rect class="box-soft" x="140" y="450" width="200" height="124"/>
+            <text class="lane-t" x="150" y="468">SELECTOR</text>
+            <text class="lbl-s" x="150" y="486">Java NIO multiplexer</text>
+            <text class="lbl-s" x="150" y="500">— one per KafkaConsumer</text>
+            <text class="lbl-s" x="150" y="512">— one per KafkaProducer</text>
+            <text class="lbl-s" x="150" y="530">poll() blocks until any</text>
+            <text class="lbl-s" x="150" y="542">socket has data ready</text>
+            <text class="lbl-s" x="150" y="556">(fetch + commit + heartbeat</text>
+            <text class="lbl-s" x="150" y="568">all share the same Selector)</text>
+
+            <rect class="box-soft" x="360" y="450" width="240" height="124"/>
+            <text class="lane-t" x="370" y="468">PER-BROKER TCP</text>
+            <text class="lbl-s" x="370" y="486">long-lived TCP per broker</text>
+            <text class="lbl-s" x="370" y="500">opened lazily on first request</text>
+            <text class="lbl-s" x="370" y="512">to that broker, then reused</text>
+            <text class="lbl-s" x="370" y="530">closed only on idle reap or</text>
+            <text class="lbl-s" x="370" y="542">broker disconnect</text>
+            <text class="lbl-s" x="370" y="560">N × ListenerConsumer × #leaders</text>
+            <text class="lbl-s" x="370" y="572">+ 1 producer × #leaders</text>
+
+            <rect class="box-soft" x="620" y="450" width="180" height="124"/>
+            <text class="lane-t" x="630" y="468">IN-FLIGHT PIPELINING</text>
+            <text class="lbl-s" x="630" y="486">max.in.flight.requests</text>
+            <text class="lbl-s" x="630" y="498">.per.connection (default 5)</text>
+            <text class="lbl-s" x="630" y="516">producer / consumer can</text>
+            <text class="lbl-s" x="630" y="528">have N requests outstanding</text>
+            <text class="lbl-s" x="630" y="540">on one connection at once</text>
+            <text class="lbl-s" x="630" y="558">(idempotent producer forces</text>
+            <text class="lbl-s" x="630" y="570">this to ≤ 5 for ordering)</text>
+
+            <rect class="box-soft" x="820" y="450" width="180" height="124"/>
+            <text class="lane-t" x="830" y="468">TLS + IDLE REAP</text>
+            <text class="lbl-s" x="830" y="486">SSLEngine + session cache</text>
+            <text class="lbl-s" x="830" y="498">(when SSL listener used)</text>
+            <text class="lbl-s" x="830" y="510">TLS handshake at connect,</text>
+            <text class="lbl-s" x="830" y="522">resumed via session ID</text>
+            <text class="lbl-s" x="830" y="540">connections.max.idle.ms</text>
+            <text class="lbl-s" x="830" y="552">(default 9 min) closes</text>
+            <text class="lbl-s" x="830" y="564">idle sockets to free FDs</text>
+
+            <line class="lane-d" x1="140" y1="590" x2="990" y2="590"/>
 
             <!-- ─────────── LANE 3: OS / KERNEL ─────────── -->
-            <text class="lane-t" x="20" y="454">OS · Linux kernel</text>
+            <text class="lane-t" x="20" y="614">OS · Linux kernel</text>
 
-            <rect class="box" x="140" y="466" width="260" height="100"/>
-            <text class="lbl-b" x="270" y="486" text-anchor="middle">CPU cores</text>
-            <text class="lbl-s" x="270" y="504" text-anchor="middle">kernel scheduler timeshares</text>
-            <text class="lbl-s" x="270" y="516" text-anchor="middle">every JVM thread onto cores</text>
-            <text class="lbl-s" x="270" y="534" text-anchor="middle">poll loop = run-when-data,</text>
-            <text class="lbl-s" x="270" y="546" text-anchor="middle">otherwise blocks on epoll</text>
-            <text class="lbl-s" x="270" y="558" text-anchor="middle">(no busy-wait)</text>
+            <rect class="box" x="140" y="626" width="260" height="100"/>
+            <text class="lbl-b" x="270" y="646" text-anchor="middle">CPU cores</text>
+            <text class="lbl-s" x="270" y="664" text-anchor="middle">kernel scheduler timeshares</text>
+            <text class="lbl-s" x="270" y="676" text-anchor="middle">every JVM thread onto cores</text>
+            <text class="lbl-s" x="270" y="694" text-anchor="middle">poll loop = run-when-data,</text>
+            <text class="lbl-s" x="270" y="706" text-anchor="middle">otherwise blocks on epoll</text>
+            <text class="lbl-s" x="270" y="718" text-anchor="middle">(no busy-wait)</text>
 
-            <rect class="box-warm" x="420" y="466" width="360" height="100"/>
-            <text class="lbl-b" x="600" y="486" text-anchor="middle">Kernel RAM</text>
-            <text class="lbl-s" x="600" y="504" text-anchor="middle">page cache (file-backed, unused here)</text>
-            <text class="lbl-s" x="600" y="520" text-anchor="middle">+ per-socket TCP send / recv buffers</text>
-            <text class="lbl-s" x="600" y="532" text-anchor="middle">(net.ipv4.tcp_wmem / tcp_rmem · KB–MB each)</text>
-            <text class="lbl-s" x="600" y="548" text-anchor="middle">producer batches drain JVM → TCP send buf;</text>
-            <text class="lbl-s" x="600" y="560" text-anchor="middle">fetch responses fill TCP recv buf → JVM direct</text>
+            <rect class="box-warm" x="420" y="626" width="360" height="100"/>
+            <text class="lbl-b" x="600" y="646" text-anchor="middle">Kernel RAM</text>
+            <text class="lbl-s" x="600" y="664" text-anchor="middle">page cache (file-backed, unused here)</text>
+            <text class="lbl-s" x="600" y="680" text-anchor="middle">+ per-socket TCP send / recv buffers</text>
+            <text class="lbl-s" x="600" y="692" text-anchor="middle">(net.ipv4.tcp_wmem / tcp_rmem · KB–MB each)</text>
+            <text class="lbl-s" x="600" y="708" text-anchor="middle">producer batches drain JVM → TCP send buf;</text>
+            <text class="lbl-s" x="600" y="720" text-anchor="middle">fetch responses fill TCP recv buf → JVM direct</text>
 
-            <rect class="box" x="800" y="466" width="200" height="100"/>
-            <text class="lbl-b" x="900" y="486" text-anchor="middle">Net stack + NIC</text>
-            <text class="lbl-s" x="900" y="504" text-anchor="middle">epoll wakes JVM I/O thread</text>
-            <text class="lbl-s" x="900" y="516" text-anchor="middle">when a socket is readable</text>
-            <text class="lbl-s" x="900" y="534" text-anchor="middle">NIC TX / RX queues</text>
-            <text class="lbl-s" x="900" y="546" text-anchor="middle">no Spring Kafka tuning</text>
-            <text class="lbl-s" x="900" y="558" text-anchor="middle">— pure OS / NIC throughput</text>
+            <rect class="box" x="800" y="626" width="200" height="100"/>
+            <text class="lbl-b" x="900" y="646" text-anchor="middle">Net stack + NIC</text>
+            <text class="lbl-s" x="900" y="664" text-anchor="middle">epoll wakes JVM I/O thread</text>
+            <text class="lbl-s" x="900" y="676" text-anchor="middle">when a socket is readable</text>
+            <text class="lbl-s" x="900" y="694" text-anchor="middle">NIC TX / RX queues</text>
+            <text class="lbl-s" x="900" y="706" text-anchor="middle">no Spring Kafka tuning</text>
+            <text class="lbl-s" x="900" y="718" text-anchor="middle">— pure OS / NIC throughput</text>
 
-            <line class="lane-d" x1="140" y1="586" x2="990" y2="586"/>
+            <line class="lane-d" x1="140" y1="746" x2="990" y2="746"/>
 
             <!-- ─────────── LANE 4: KAFKA BROKERS ─────────── -->
-            <text class="lane-t" x="20" y="610">KAFKA CLUSTER (brokers, across the NIC)</text>
+            <text class="lane-t" x="20" y="770">KAFKA CLUSTER (brokers, across the NIC)</text>
 
-            <rect class="box" x="140" y="624" width="180" height="60"/>
-            <text class="lbl-b" x="230" y="644" text-anchor="middle">Broker A</text>
-            <text class="lbl-s" x="230" y="660" text-anchor="middle">partition leader</text>
-            <text class="lbl-s" x="230" y="672" text-anchor="middle">group coordinator</text>
+            <rect class="box" x="140" y="784" width="180" height="60"/>
+            <text class="lbl-b" x="230" y="804" text-anchor="middle">Broker A</text>
+            <text class="lbl-s" x="230" y="820" text-anchor="middle">partition leader</text>
+            <text class="lbl-s" x="230" y="832" text-anchor="middle">group coordinator</text>
 
-            <rect class="box" x="340" y="624" width="180" height="60"/>
-            <text class="lbl-b" x="430" y="644" text-anchor="middle">Broker B</text>
-            <text class="lbl-s" x="430" y="660" text-anchor="middle">partition leader</text>
-            <text class="lbl-s" x="430" y="672" text-anchor="middle">tx coordinator</text>
+            <rect class="box" x="340" y="784" width="180" height="60"/>
+            <text class="lbl-b" x="430" y="804" text-anchor="middle">Broker B</text>
+            <text class="lbl-s" x="430" y="820" text-anchor="middle">partition leader</text>
+            <text class="lbl-s" x="430" y="832" text-anchor="middle">tx coordinator</text>
 
-            <rect class="box" x="540" y="624" width="200" height="60"/>
-            <text class="lbl-b" x="640" y="644" text-anchor="middle">Broker C</text>
-            <text class="lbl-s" x="640" y="660" text-anchor="middle">retry / DLT topics</text>
-            <text class="lbl-s" x="640" y="672" text-anchor="middle">reply topic</text>
+            <rect class="box" x="540" y="784" width="200" height="60"/>
+            <text class="lbl-b" x="640" y="804" text-anchor="middle">Broker C</text>
+            <text class="lbl-s" x="640" y="820" text-anchor="middle">retry / DLT topics</text>
+            <text class="lbl-s" x="640" y="832" text-anchor="middle">reply topic</text>
 
-            <rect class="box-soft" x="760" y="624" width="240" height="60"/>
-            <text class="lbl-s" x="880" y="644" text-anchor="middle">see also:</text>
-            <text class="lbl-s" x="880" y="658" text-anchor="middle">apache-kafka.html</text>
-            <text class="lbl-s" x="880" y="672" text-anchor="middle">#runtime</text>
+            <rect class="box-soft" x="760" y="784" width="240" height="60"/>
+            <text class="lbl-s" x="880" y="804" text-anchor="middle">see also:</text>
+            <text class="lbl-s" x="880" y="818" text-anchor="middle">apache-kafka.html</text>
+            <text class="lbl-s" x="880" y="832" text-anchor="middle">#runtime</text>
 
             <!-- ─────────── ARROWS ─────────── -->
             <!-- App listener threads → JVM thread inventory (vertical down) -->
@@ -681,23 +727,37 @@
             <path class="arr-g" d="M660,110 L320,250" marker-end="url(#sr-g)"/>
             <path class="arr-g" d="M660,110 L520,250" marker-end="url(#sr-g)"/>
 
-            <!-- JVM threads → OS cores -->
-            <path class="arr" d="M270,412 L270,464" marker-end="url(#sr-a)"/>
-            <text class="lbl-s" x="280" y="448">run on</text>
+            <!-- JVM threads → NETWORK selector (within JVM lane, vertical) -->
+            <path class="arr" d="M290,412 L240,448" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="240" y="440">drive</text>
 
-            <!-- JVM direct buffers → kernel TCP buffer -->
-            <path class="arr-g" d="M900,412 L600,464" marker-end="url(#sr-g)"/>
-            <text class="lbl-s" x="720" y="448">copy via NIO socket</text>
+            <!-- JVM direct buffers → PER-BROKER TCP (within JVM lane) -->
+            <path class="arr-g" d="M900,412 L480,448" marker-end="url(#sr-g)"/>
+            <text class="lbl-s" x="640" y="440">supply socket bytes</text>
+
+            <!-- NETWORK SELECTOR → OS Net stack (cross-lane down) -->
+            <path class="arr" d="M240,574 L600,624" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="320" y="608">epoll registered fds</text>
+
+            <!-- PER-BROKER TCP → OS Kernel RAM (TCP socket buffers) -->
+            <path class="arr-g" d="M480,574 L600,624" marker-end="url(#sr-g)"/>
+
+            <!-- TLS box → kernel network (cross-lane down) -->
+            <path class="arr" d="M910,574 L900,624" marker-end="url(#sr-a)"/>
+
+            <!-- JVM threads → OS cores -->
+            <path class="arr" d="M270,574 L270,624" marker-end="url(#sr-a)"/>
+            <text class="lbl-s" x="280" y="608">run on</text>
 
             <!-- Kernel net stack → NIC → broker -->
-            <path class="arr" d="M900,566 L880,622" marker-end="url(#sr-a)"/>
-            <path class="arr" d="M600,566 L230,622" marker-end="url(#sr-a)"/>
-            <path class="arr-g" d="M600,566 L430,622" marker-end="url(#sr-g)"/>
-            <path class="arr-y" d="M600,566 L640,622" marker-end="url(#sr-y)"/>
+            <path class="arr" d="M900,726 L880,782" marker-end="url(#sr-a)"/>
+            <path class="arr" d="M600,726 L230,782" marker-end="url(#sr-a)"/>
+            <path class="arr-g" d="M600,726 L430,782" marker-end="url(#sr-g)"/>
+            <path class="arr-y" d="M600,726 L640,782" marker-end="url(#sr-y)"/>
 
             <!-- Legend -->
-            <text class="lbl-s" x="140" y="720"><tspan fill="#7aa2f7">blue</tspan> = consumer side (FetchRequest, OffsetCommit, Heartbeat) · <tspan fill="#9ece6a">green</tspan> = producer side (ProduceRequest, batched) · <tspan fill="#e0af68">amber</tspan> = retry / DLT republish</text>
-            <text class="lbl-s" x="140" y="738">Bytes never enter the JVM heap on the consume hot path until the record is materialised — they live in the kernel TCP buffer, then in a direct ByteBuffer, then in heap-allocated ConsumerRecord objects.</text>
+            <text class="lbl-s" x="140" y="880"><tspan fill="#7aa2f7">blue</tspan> = consumer side (FetchRequest, OffsetCommit, Heartbeat) · <tspan fill="#9ece6a">green</tspan> = producer side (ProduceRequest, batched) · <tspan fill="#e0af68">amber</tspan> = retry / DLT republish</text>
+            <text class="lbl-s" x="140" y="898">Bytes never enter the JVM heap on the consume hot path until the record is materialised — they live in the kernel TCP buffer, then in a direct ByteBuffer, then in heap-allocated ConsumerRecord objects.</text>
           </svg>
         </div>
         <p class="diagram-caption">
