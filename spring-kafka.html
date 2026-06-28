@@ -111,18 +111,21 @@
             <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
             <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
             <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <a href="/apache-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Spring Kafka</div>
             <a href="/spring-kafka.html">Overview</a>
             <a href="/spring-kafka.html#architecture">Architecture</a>
             <a href="/spring-kafka.html#message-flow">Message Flow</a>
             <a href="/spring-kafka.html#features">Features</a>
             <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Strimzi</div>
             <a href="/strimzi.html">Overview</a>
             <a href="/strimzi.html#architecture">Architecture</a>
             <a href="/strimzi.html#reconciliation">Reconciliation</a>
             <a href="/strimzi.html#crds">CRD Landscape</a>
             <a href="/strimzi.html#vs-apache-kafka">vs Apache Kafka</a>
+            <a href="/strimzi.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Appendix</div>
             <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
           </div>
@@ -177,6 +180,7 @@
             <li><a href="#message-flow">Message Flow</a></li>
             <li><a href="#features">Features</a></li>
             <li><a href="#internals">Internals — key source files</a></li>
+            <li><a href="#source-tree">Source Tree (for contributors)</a></li>
           </ol>
         </div>
 
@@ -463,6 +467,37 @@
           <li><strong><code>ConsumerFactory</code> / <code>ProducerFactory</code></strong> — pluggable client factories. <code>DefaultKafkaConsumerFactory</code> / <code>DefaultKafkaProducerFactory</code> are the standard implementations; both are aware of per-instance config overrides.</li>
           <li><strong><code>KafkaListenerAnnotationBeanPostProcessor</code></strong> — discovers <code>@KafkaListener</code> methods at startup and asks the chosen <code>KafkaListenerContainerFactory</code> to create the matching container.</li>
         </ul>
+
+        <h2 id="source-tree">Source Tree (for contributors)</h2>
+
+        <p>
+          Official source: <a href="https://github.com/spring-projects/spring-kafka" target="_blank" rel="noopener">github.com/spring-projects/spring-kafka</a>. Build system is Gradle (<code>./gradlew build</code>); JDK 17+ for the 3.x line, JDK 17+ for 4.x. Contribution flow is the standard <a href="https://github.com/spring-projects/spring-kafka/blob/main/CONTRIBUTING.adoc" target="_blank" rel="noopener">CONTRIBUTING.adoc</a> — fork → branch off <code>main</code> (next major) or a <code>X.Y.x</code> release branch → PR. CI runs on GitHub Actions.
+        </p>
+
+        <h3>Top-level modules</h3>
+        <ul>
+          <li><strong><code>spring-kafka/</code></strong> — the main module. Everything in <code>org.springframework.kafka.*</code>: listener containers, <code>KafkaTemplate</code>, error handlers, retry topics, transactions, support classes. Sources under <code>src/main/java</code>, unit tests under <code>src/test/java</code> (JUnit 5 + Mockito), integration tests under <code>src/test/java/...</code> with <code>@EmbeddedKafka</code>.</li>
+          <li><strong><code>spring-kafka-test/</code></strong> — test utilities published as a separate artifact. The single most-used class is <code>EmbeddedKafkaBroker</code> (programmatic in-process Kafka cluster); <code>@EmbeddedKafka</code> is its JUnit 5 hook. Also ships <code>KafkaTestUtils</code> for record polling and offset assertions.</li>
+          <li><strong><code>spring-kafka-bom/</code></strong> — Bill of Materials. A single <code>pom.xml</code>-equivalent that other Spring projects (Spring Boot, Spring Cloud Stream) import to lock the Spring Kafka + transitively-managed versions.</li>
+          <li><strong><code>spring-kafka-docs/</code></strong> — Antora-based reference documentation. Adoc sources are here; the rendered site lives at <code>docs.spring.io/spring-kafka/reference</code>. Doc PRs touch this module only.</li>
+          <li><strong><code>samples/</code></strong> — runnable example projects covering listener concurrency, retry topics, transactions, Kafka Streams binding, etc. Used as living documentation and as regression fixtures for behaviour-change PRs.</li>
+          <li><strong><code>src/</code></strong> (top-level) — checkstyle config, copyright headers, Gradle convention scripts shared by the modules above.</li>
+          <li><strong><code>build.gradle</code> / <code>settings.gradle</code> / <code>gradle.properties</code></strong> — Gradle project setup. The version is in <code>gradle.properties</code>; bump there to cut a release.</li>
+        </ul>
+
+        <h3>Version history</h3>
+        <ul>
+          <li><strong>2.x</strong> (2018 – 2022) — built on Spring Framework 5 / Spring Boot 2 / Java 8+. Introduced <code>@KafkaListener</code>'s concurrency model, transactional <code>KafkaTemplate</code>, the original error-handler hierarchy, and the first retry-topic implementation.</li>
+          <li><strong>3.0</strong> (Nov 2022) — Jakarta EE 9 / Spring Boot 3 / Java 17+ baseline. Package rename for <code>javax.*</code> → <code>jakarta.*</code>. New <code>CommonErrorHandler</code> as the single error-handler contract; <code>DefaultErrorHandler</code> replaced the older <code>SeekToCurrentErrorHandler</code> / <code>RecoveringBatchErrorHandler</code>.</li>
+          <li><strong>3.1 – 3.3</strong> (2023 – 2024) — <code>@RetryableTopic</code> hardening, observability via Micrometer, Kafka client 3.5 → 3.7 upgrades, KRaft test support in <code>EmbeddedKafkaBroker</code>.</li>
+          <li><strong>4.0</strong> (Jun 2025) — Spring Framework 7 / Spring Boot 4 / Java 17+. Native compilation (GraalVM) support tightened. <code>spring-kafka-streams</code> behaviour aligned with Apache Kafka 4.0 (KRaft-only).</li>
+          <li><strong>4.1</strong> (current) — async listener path overhaul (suspend / <code>Mono</code> / <code>CompletableFuture</code> return-types funneled through a single async-failure callback), strict partition-ordered retry across async boundaries.</li>
+        </ul>
+
+        <h3>Branching &amp; release model</h3>
+        <p>
+          <code>main</code> tracks the next major. Each minor (<code>3.3.x</code>, <code>4.0.x</code>, <code>4.1.x</code>) gets its own long-lived branch; bugfixes are committed to the oldest still-supported branch and forward-ported through every newer branch up to <code>main</code>. A maintainer typically cherry-picks the forward port — contributor PRs target one branch and a follow-up PR opens for the back/forward port if the diff doesn't apply cleanly. Release tagging convention is <code>vX.Y.Z</code>; milestones (<code>X.Y.0-M1</code>, <code>X.Y.0-RC1</code>) precede every <code>.0</code>.
+        </p>
 
         <h2>Related</h2>
         <ul class="contact-list">
