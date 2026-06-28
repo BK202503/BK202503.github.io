@@ -115,12 +115,14 @@
             <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
             <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
             <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <a href="/apache-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Spring Kafka</div>
             <a href="/spring-kafka.html">Overview</a>
             <a href="/spring-kafka.html#architecture">Architecture</a>
             <a href="/spring-kafka.html#message-flow">Message Flow</a>
             <a href="/spring-kafka.html#features">Features</a>
             <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Strimzi</div>
             <a href="/strimzi.html">Overview</a>
             <a href="/strimzi.html#architecture">Architecture</a>
@@ -180,6 +182,7 @@
             <li><a href="#reconciliation">Reconciliation</a></li>
             <li><a href="#crds">CRD Landscape</a></li>
             <li><a href="#vs-apache-kafka">Strimzi vs Apache Kafka</a></li>
+            <li><a href="#source-tree">Source Tree (for contributors)</a></li>
           </ol>
         </div>
 
@@ -534,6 +537,51 @@
 
         <p>
           The short version: if you already run Apache Kafka well by hand on Kubernetes, Strimzi is what the operator pattern would have you build anyway. If you do not run Kubernetes at all, Strimzi is the wrong tool — the value is the controller loop, not the broker binary.
+        </p>
+
+        <h2 id="source-tree">5. Source Tree (for contributors)</h2>
+
+        <p>
+          Official source: <a href="https://github.com/strimzi/strimzi-kafka-operator" target="_blank" rel="noopener">github.com/strimzi/strimzi-kafka-operator</a>. Strimzi is a <a href="https://www.cncf.io/projects/strimzi/" target="_blank" rel="noopener">CNCF</a> graduated project. Build is Maven (<code>pom.xml</code> at the root, plus a top-level <code>Makefile</code> that wraps Maven + Docker image builds + system tests); JDK 17+; contribution flow is fork → branch off <code>main</code> → PR with the <a href="https://github.com/strimzi/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md" target="_blank" rel="noopener">shared Strimzi PR template</a>. Governance documents (<code>GOVERNANCE.md</code>, <code>MAINTAINERS</code>, <code>AI_POLICY.md</code>) live in the sibling <a href="https://github.com/strimzi/governance" target="_blank" rel="noopener">strimzi/governance</a> repo.
+        </p>
+
+        <h3>Top-level modules</h3>
+        <ul>
+          <li><strong><code>cluster-operator/</code></strong> — the main reconciler. Watches <code>Kafka</code>, <code>KafkaNodePool</code>, <code>KafkaConnect</code>, <code>KafkaMirrorMaker2</code>, <code>KafkaBridge</code>, <code>KafkaRebalance</code> CRs. Builds <code>StrimziPodSet</code> + Services + ConfigMaps + Secrets. Owns the cert lifecycle (<code>ClusterCa</code>, <code>ClientsCa</code>), the rolling-restart orchestration (<code>KafkaRoller</code>), and the Cruise Control client. The largest module by far.</li>
+          <li><strong><code>topic-operator/</code></strong> — reconciles <code>KafkaTopic</code> CRs against the actual Kafka cluster via AdminClient. Bidirectional sync (CR → cluster on user changes, cluster → CR on out-of-band creates).</li>
+          <li><strong><code>user-operator/</code></strong> — reconciles <code>KafkaUser</code> CRs. Creates the credential <code>Secret</code> (per authentication type) and registers ACLs via AdminClient.</li>
+          <li><strong><code>api/</code></strong> — the CRD model classes (Java POJOs) consumed by every operator. <code>Kafka.java</code>, <code>KafkaSpec.java</code>, <code>KafkaTopicSpec.java</code>, etc. Adding a new field to a CR starts here.</li>
+          <li><strong><code>certificate-manager/</code></strong> — Cluster CA / Clients CA generation, signing, renewal, key rotation. Decoupled from <code>cluster-operator/</code> so it can be unit-tested without a live Kube.</li>
+          <li><strong><code>crd-annotations/</code> + <code>crd-generator/</code></strong> — an annotation processor and code generator. Annotated POJOs in <code>api/</code> are turned into the published CRD YAMLs under <code>install/</code> at build time.</li>
+          <li><strong><code>config-model/</code> + <code>config-model-generator/</code></strong> — parse the Apache Kafka config documentation and generate a JSON schema for valid broker / Connect / Streams config keys. Lets Strimzi validate <code>Kafka.spec.kafka.config</code> at admission time.</li>
+          <li><strong><code>operator-common/</code></strong> — shared reconciliation abstractions: the <code>AbstractOperator</code> base, fabric8 client wrappers, result types. Imported by all three operators.</li>
+          <li><strong><code>kafka-agent/</code>, <code>kafka-init/</code>, <code>tracing-agent/</code></strong> — small Java agents and init containers baked into the operator's container images. <code>kafka-agent</code> exposes broker readiness / KRaft quorum state to the operator; <code>kafka-init</code> wires per-pod identity at start-up; <code>tracing-agent</code> injects OpenTelemetry into Kafka components.</li>
+          <li><strong><code>install/</code></strong> — the canonical install YAML (CRDs + RBAC + Deployment). Generated; bumping the bundle here is part of every release.</li>
+          <li><strong><code>helm-charts/</code></strong> — Helm chart for the operator. Mirrors <code>install/</code> but parameterised.</li>
+          <li><strong><code>docker-images/</code></strong> — Dockerfile per component. Built via the top-level Makefile + <code>Makefile.docker</code>.</li>
+          <li><strong><code>packaging/</code></strong> — release-bundle assembly. Produces the <code>.tar.gz</code> and the published artifacts.</li>
+          <li><strong><code>systemtest/</code></strong> — end-to-end tests that stand up a real Kube cluster (kind / minikube / OCP) and exercise the operators. Heaviest part of CI.</li>
+          <li><strong><code>mockkube/</code></strong> — an in-memory fake Kubernetes API used by unit tests so reconciliation logic can be tested without spinning up a cluster.</li>
+          <li><strong><code>documentation/</code></strong> — AsciiDoc source for the user-facing docs at <code>strimzi.io/documentation</code>.</li>
+          <li><strong><code>development-docs/</code></strong> — contributor-facing docs (how to set up an env, how to run system tests, release process).</li>
+          <li><strong><code>examples/</code></strong> — sample CRs (single-node KRaft cluster, dual-listener TLS, Connect with KafkaConnector, etc.). Doubles as smoke fixtures.</li>
+          <li><strong><code>test/</code>, <code>tools/</code></strong> — shared test utilities and dev-only tools.</li>
+          <li><strong><code>kafka-versions.yaml</code></strong> — single source of truth for which Apache Kafka versions a given Strimzi release supports. Every Strimzi PR that bumps Kafka touches this file.</li>
+        </ul>
+
+        <h3>Version history</h3>
+        <ul>
+          <li><strong>0.1 – 0.30</strong> (2018 – 2022) — pre-1.0 era. ZooKeeper-only Kafka clusters. CRs and reconciler structure evolved heavily; API versions on the CRDs (<code>v1alpha1</code>, <code>v1beta1</code>, <code>v1beta2</code>) reflect those rewrites.</li>
+          <li><strong>0.32 – 0.40</strong> (2023) — KRaft support added (preview, then mostly-supported). <code>KafkaNodePool</code> CR introduced — first-class node roles instead of one monolithic StatefulSet.</li>
+          <li><strong>0.41 – 0.46</strong> (2024) — KRaft becomes the default for new clusters; ZooKeeper migration tooling matures. <code>StrimziPodSet</code> replaces <code>StatefulSet</code> as the underlying primitive for finer rolling-update control.</li>
+          <li><strong>0.47 – 0.51</strong> (late 2024 – early 2025) — ZooKeeper removed in lockstep with Apache Kafka 4.0. Cluster Operator strictly KRaft-only.</li>
+          <li><strong>1.0.0</strong> (May 2025) — API stability promise. CRDs promoted to <code>v1</code>. Strimzi commits to N-1 minor compatibility for CRs from this point on.</li>
+          <li><strong>1.1.0</strong> (current) — continued polish on the 1.x API: tighter Cruise Control integration, faster rolling restarts on large clusters, improved observability defaults.</li>
+        </ul>
+
+        <h3>Branching &amp; release model</h3>
+        <p>
+          <code>main</code> tracks the next minor. Each released minor gets a <code>release-X.Y.x</code> branch; bugfixes are committed to <code>main</code> and cherry-picked back. Release cadence is roughly one minor every 6 – 8 weeks during the pre-1.0 era, slower now post-1.0. Releases are tagged <code>X.Y.Z-rcN</code> for release candidates, then <code>X.Y.Z</code> after the maintainer vote. Container images are published to <code>quay.io/strimzi/*</code>; Helm chart artefacts to <code>strimzi.io/charts/</code>. The supported Apache Kafka matrix for a given Strimzi release is the source of truth in <code>kafka-versions.yaml</code>.
         </p>
 
         <h2>Related</h2>

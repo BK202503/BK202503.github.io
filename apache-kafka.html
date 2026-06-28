@@ -122,18 +122,21 @@
             <a href="/apache-kafka.html#exactly-once">Exactly-Once</a>
             <a href="/apache-kafka.html#runtime">Memory &amp; CPU</a>
             <a href="/apache-kafka.html#cli">CLI Commands</a>
+            <a href="/apache-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Spring Kafka</div>
             <a href="/spring-kafka.html">Overview</a>
             <a href="/spring-kafka.html#architecture">Architecture</a>
             <a href="/spring-kafka.html#message-flow">Message Flow</a>
             <a href="/spring-kafka.html#features">Features</a>
             <a href="/spring-kafka.html#internals">Internals</a>
+            <a href="/spring-kafka.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Strimzi</div>
             <a href="/strimzi.html">Overview</a>
             <a href="/strimzi.html#architecture">Architecture</a>
             <a href="/strimzi.html#reconciliation">Reconciliation</a>
             <a href="/strimzi.html#crds">CRD Landscape</a>
             <a href="/strimzi.html#vs-apache-kafka">vs Apache Kafka</a>
+            <a href="/strimzi.html#source-tree">Source Tree</a>
             <div class="dropdown-section">Appendix</div>
             <a href="/kafka-integration.html">Spring ↔ Apache Kafka — joint diagram</a>
           </div>
@@ -188,6 +191,7 @@
             <li><a href="#exactly-once">Exactly-Once Semantics</a></li>
             <li><a href="#runtime">Memory / CPU / I/O Pipeline</a></li>
             <li><a href="#cli">CLI Commands</a></li>
+            <li><a href="#source-tree">Source Tree (for contributors)</a></li>
           </ol>
         </div>
 
@@ -814,6 +818,55 @@ kafka-acls.sh --bootstrap-server $BOOTSTRAP \
 # List existing ACLs scoped to a topic
 kafka-acls.sh --bootstrap-server $BOOTSTRAP \
   --list --topic orders</code></pre>
+
+        <h2 id="source-tree">Source Tree (for contributors)</h2>
+
+        <p>
+          Official source: <a href="https://github.com/apache/kafka" target="_blank" rel="noopener">github.com/apache/kafka</a> (read-only GitHub mirror of the Apache Git repository). Apache Kafka is governed by the Apache Software Foundation — changes of any meaningful scope go through a <a href="https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Improvement+Proposals" target="_blank" rel="noopener">KIP (Kafka Improvement Proposal)</a> on the dev mailing list before code lands. Bug fixes and small improvements go directly as GitHub PRs that a committer reviews and pushes. Build is Gradle (<code>./gradlew jar</code>, <code>./gradlew test</code>); JDK 17+; the broker (<code>core/</code>) is still Scala, almost everything else is Java.
+        </p>
+
+        <h3>Top-level modules</h3>
+        <ul>
+          <li><strong><code>clients/</code></strong> — Java producer, consumer, admin client, and the protocol / serialization layer they share with the broker (<code>org.apache.kafka.common.*</code>). The most-changed module after <code>core/</code>; any change to wire format, partition assignment, or client-side coordinator logic lives here.</li>
+          <li><strong><code>core/</code></strong> — the broker. Scala. Owns request handling (<code>KafkaApis</code>), replication (<code>ReplicaManager</code>, <code>Partition</code>), the network layer (<code>SocketServer</code>, <code>Processor</code>), and the log subsystem entry points. KRaft refactor moved a lot out of <code>core/</code> into <code>metadata/</code> and <code>raft/</code>, but <code>core/</code> is still the JVM that ships as <code>kafka-server-start.sh</code>.</li>
+          <li><strong><code>server/</code> + <code>server-common/</code></strong> — broker-side modules extracted out of <code>core/</code> as Java. <code>server-common/</code> is intentionally usable by both clients and broker; <code>server/</code> is broker-only.</li>
+          <li><strong><code>raft/</code></strong> — KRaft consensus protocol implementation (the Apache Kafka–native Raft used by the metadata quorum). Independent of ZooKeeper since 3.3.</li>
+          <li><strong><code>metadata/</code></strong> — KRaft metadata records, log compaction, broker registration, controller state machine. The "what the controller thinks the cluster looks like" layer.</li>
+          <li><strong><code>coordinator-common/</code>, <code>group-coordinator/</code>, <code>transaction-coordinator/</code>, <code>share-coordinator/</code></strong> — the four coordinator-style subsystems. Group coordinator handles consumer-group rebalancing; transaction coordinator handles EOS transaction state; share coordinator (KIP-932, 4.x) owns shared-consumption / queue semantics. All four were extracted as standalone modules during the KRaft era to make them testable without a full broker.</li>
+          <li><strong><code>storage/</code></strong> — the log subsystem: <code>LogSegment</code>, index files, log cleaner, tiered storage (KIP-405) interfaces. Performance-sensitive; benchmarked separately via <code>jmh-benchmarks/</code>.</li>
+          <li><strong><code>streams/</code></strong> — Kafka Streams DSL + Processor API + state stores (RocksDB and in-memory). Lives as its own subproject with its own integration tests and docs.</li>
+          <li><strong><code>connect/</code></strong> — Kafka Connect runtime, framework, REST API, and the bundled file / mirror-maker connectors.</li>
+          <li><strong><code>generator/</code></strong> — code-generates protocol message classes from JSON schemas under <code>clients/src/main/resources/common/message/</code>. Touch this if you add a new request/response type — every wire-format change starts with a JSON schema edit + regenerate.</li>
+          <li><strong><code>tools/</code></strong> — the Java behind the <code>bin/*.sh</code> entry points (<code>kafka-topics.sh</code>, <code>kafka-consumer-groups.sh</code>, <code>kafka-reassign-partitions.sh</code>, ...).</li>
+          <li><strong><code>jmh-benchmarks/</code></strong> — JMH microbenchmarks. Any perf-sensitive change is expected to come with a benchmark here.</li>
+          <li><strong><code>examples/</code></strong> — minimal sample producers, consumers, Streams apps. Used in docs.</li>
+          <li><strong><code>tests/</code></strong> — Python <a href="https://github.com/confluentinc/ducktape" target="_blank" rel="noopener">ducktape</a> system tests. Provision real broker clusters in containers / VMs and exercise end-to-end behaviour. Separate from JVM unit / integration tests.</li>
+          <li><strong><code>trogdor/</code></strong> — fault-injection / chaos framework used by the system tests.</li>
+          <li><strong><code>shell/</code></strong> — interactive metadata shell (<code>kafka-metadata-shell.sh</code>) for inspecting KRaft snapshots.</li>
+          <li><strong><code>docker/</code> + <code>docs/</code></strong> — official Docker image build, and the AsciiDoc/HTML source of <code>kafka.apache.org/documentation</code>.</li>
+          <li><strong><code>bin/</code></strong> — the shell scripts that ship in the binary distribution; thin wrappers around the Java classes in <code>tools/</code> and <code>core/</code>.</li>
+          <li><strong><code>checkstyle/</code>, <code>gradle/</code>, <code>licenses/</code>, <code>release/</code>, <code>vagrant/</code>, <code>committer-tools/</code></strong> — build/style/release machinery. Rarely touched by feature PRs.</li>
+        </ul>
+
+        <h3>Version history</h3>
+        <ul>
+          <li><strong>0.7</strong> (2012, Apache Incubator) — original Scala broker contributed by LinkedIn. No replication.</li>
+          <li><strong>0.8</strong> (2013) — intra-cluster replication (ISR). The moment Kafka became safe to run as a system of record.</li>
+          <li><strong>0.9</strong> (2015) — new Java consumer (<code>KafkaConsumer</code>) replacing the high-level Scala consumer; security (SSL, SASL, ACLs); Connect framework.</li>
+          <li><strong>0.10</strong> (2016) — Kafka Streams. Record timestamps.</li>
+          <li><strong>0.11</strong> (2017) — idempotent producer + transactions (the foundation of EOS).</li>
+          <li><strong>1.x – 2.x</strong> (2017 – 2020) — broker hardening, exactly-once Streams, KIP-500 design discussions (replace ZooKeeper).</li>
+          <li><strong>3.0</strong> (Sep 2021) — KRaft preview (still ZooKeeper-default).</li>
+          <li><strong>3.3</strong> (Oct 2022) — KRaft GA for new clusters; ZooKeeper still supported for upgrades.</li>
+          <li><strong>3.5 – 3.9</strong> (2023 – 2024) — ZooKeeper-to-KRaft migration path stabilises; tiered storage (KIP-405) ships.</li>
+          <li><strong>4.0</strong> (2025) — ZooKeeper removed entirely; KRaft is the only metadata mode. New consumer rebalance protocol (KIP-848) becomes the default.</li>
+          <li><strong>4.1 – 4.3</strong> (current line) — share groups (KIP-932) queue-style consumption, further coordinator splits, ongoing tiered-storage polish.</li>
+        </ul>
+
+        <h3>Branching &amp; release model</h3>
+        <p>
+          <code>trunk</code> (the repository's <code>main</code> branch is named <code>trunk</code>) is the next minor. Each released minor gets a long-lived branch (<code>4.0</code>, <code>4.1</code>, <code>4.2</code>, <code>4.3</code>); bugfixes are committed to <code>trunk</code> first then cherry-picked back to every still-supported branch by the committer. Release cadence is roughly one minor every 4 months. The Apache release process is run by the release manager: tag <code>X.Y.Z-rcN</code>, vote on <code>dev@kafka.apache.org</code>, promote to <code>X.Y.Z</code>. Tags published to GitHub follow the same names; the actual <code>.tar.gz</code> artefacts live on <code>downloads.apache.org</code>.
+        </p>
 
         <h2>Related</h2>
         <ul class="contact-list">
