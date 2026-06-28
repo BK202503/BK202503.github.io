@@ -380,7 +380,7 @@
         <h3>Listener side</h3>
         <ul>
           <li><strong><code>@KafkaListener</code></strong> on a method — declarative subscription. Supports topic literals, patterns, explicit partition assignments, and SpEL.</li>
-          <li><strong>Return types</strong> — <code>void</code>, a value (used with <code>@SendTo</code> for request-reply), <code>CompletableFuture&lt;T&gt;</code>, <code>Mono&lt;T&gt;</code>, and Kotlin <code>suspend</code>. Async return types automatically switch <code>AckMode</code> to <code>MANUAL</code> with out-of-order commits.</li>
+          <li><strong>Return types</strong> — <code>void</code>, a value (used with <code>@SendTo</code> for request-reply), <code>CompletableFuture&lt;T&gt;</code>, <code>Mono&lt;T&gt;</code>, and Kotlin <code>suspend</code>. Spring Kafka uses manual acknowledgment semantics internally to support asynchronous completion and out-of-order commits.</li>
           <li><strong>Batch mode</strong> — set the container factory's <code>batchListener=true</code> and accept <code>List&lt;ConsumerRecord&lt;K,V&gt;&gt;</code>; the listener processes a full poll's worth of records per invocation.</li>
           <li><strong><code>@KafkaHandler</code></strong> on class-level <code>@KafkaListener</code> — payload-type dispatch (different methods for different message payload classes).</li>
           <li><strong>Consumer-aware injection</strong> — <code>Consumer</code>, <code>Acknowledgment</code>, <code>ConsumerRecordMetadata</code> can be method parameters.</li>
@@ -388,7 +388,7 @@
 
         <h3>Error handling and retry</h3>
         <ul>
-          <li><strong><code>DefaultErrorHandler</code></strong> — the standard <code>CommonErrorHandler</code>. Uses a <code>BackOff</code> (<code>FixedBackOff</code>, <code>ExponentialBackOff</code>) for in-place retry and a <code>ConsumerRecordRecoverer</code> when attempts are exhausted. <em>Blocks the partition</em> during retry.</li>
+          <li><strong><code>DefaultErrorHandler</code></strong> — the standard <code>CommonErrorHandler</code>. Uses a <code>BackOff</code> (<code>FixedBackOff</code>, <code>ExponentialBackOff</code>) for in-place retry and a <code>ConsumerRecordRecoverer</code> when attempts are exhausted. Performs <em>blocking retries</em> for the affected partition (<code>@RetryableTopic</code> takes a different, non-blocking approach via separate retry topics).</li>
           <li><strong><code>@RetryableTopic</code></strong> — non-blocking retry. Failed records are published to a chain of retry topics (each with its own delay) and finally a DLT; the main partition keeps advancing. Useful when one bad record must not block its partition peers.</li>
           <li><strong><code>DeadLetterPublishingRecoverer</code></strong> — pluggable recoverer that publishes the failed record to a DLT with structured headers (cause class, stack trace, original topic / partition / offset, timestamp).</li>
           <li><strong><code>KafkaListenerErrorHandler</code></strong> — per-listener hook for translating exceptions before they reach the container's <code>CommonErrorHandler</code>.</li>
@@ -398,14 +398,14 @@
         <h3>Producer side</h3>
         <ul>
           <li><strong><code>KafkaTemplate</code></strong> — main producer entrypoint. Supports <code>send(ProducerRecord)</code>, <code>send(topic, key, value)</code>, transactional <code>executeInTransaction</code>, and <code>sendAndReceive</code> for request-reply.</li>
-          <li><strong><code>ReplyingKafkaTemplate</code></strong> — request-reply on top of <code>KafkaTemplate</code> + a reply container; correlates by a generated header.</li>
-          <li><strong>Transactions</strong> — <code>KafkaTransactionManager</code> + transactional producer. Combine with <code>JpaTransactionManager</code> via <code>ChainedKafkaTransactionManager</code> for "do DB write + publish" atomicity within the same Spring transaction boundary.</li>
+          <li><strong><code>ReplyingKafkaTemplate</code></strong> — request-reply on top of <code>KafkaTemplate</code> + a reply container; correlates request and reply via the <code>KafkaHeaders.CORRELATION_ID</code> header (UUID by default, customisable through a <code>CorrelationIdStrategy</code>).</li>
+          <li><strong>Transactions</strong> — <code>KafkaTransactionManager</code> + transactional producer. For "do DB write + publish" atomicity, the historical option was <code>ChainedKafkaTransactionManager</code>; that class is now deprecated, and current guidance favors the outbox pattern or Spring's transaction synchronization to coordinate the DB transaction and the producer transaction.</li>
         </ul>
 
         <h3>Exactly-once and ordering</h3>
         <ul>
           <li><strong>Exactly-once semantics</strong> — set <code>enable.idempotence=true</code> + <code>transactional.id</code> on the producer, use transactional <code>KafkaTemplate</code>, and set the consumer's <code>isolation.level=read_committed</code>.</li>
-          <li><strong>Per-key ordering</strong> — Kafka guarantees ordering inside a partition. Spring Kafka preserves it on the blocking <code>@KafkaListener</code> path. Async return types (suspend / <code>Mono</code> / <code>CompletableFuture</code>) dispatch concurrently within a partition unless you wait for completion — consider this when ordering matters.</li>
+          <li><strong>Per-key ordering</strong> — Kafka guarantees ordering inside a partition. Spring Kafka preserves it on the blocking <code>@KafkaListener</code> path. Async return types (suspend / <code>Mono</code> / <code>CompletableFuture</code>) may process concurrently within a partition depending on listener configuration and async completion semantics — consider this when ordering matters.</li>
         </ul>
 
         <h3>Operability</h3>
@@ -444,7 +444,7 @@
 
         <h3>CPU / threading model</h3>
         <ul>
-          <li><strong>Listener threads</strong> — <code>ConcurrentMessageListenerContainer</code> creates <code>concurrency</code> child <code>KafkaMessageListenerContainer</code>s. Each child runs one <code>ListenerConsumer</code> thread that owns one <code>KafkaConsumer</code> instance and loops <code>poll → dispatch → commit</code>. CPU on this thread is dominated by user listener code; record deserialization and the Spring conversion to <code>Message&lt;?&gt;</code> are usually noise.</li>
+          <li><strong>Listener threads</strong> — <code>ConcurrentMessageListenerContainer</code> creates <code>concurrency</code> child <code>KafkaMessageListenerContainer</code>s. Each child runs one <code>ListenerConsumer</code> thread that owns one <code>KafkaConsumer</code> instance and loops <code>poll → dispatch → commit</code>. CPU on this thread is application-dependent: user listener code usually dominates, but heavy deserializers (Avro / Protobuf / Jackson JSON) can contribute meaningfully, and the Spring conversion to <code>Message&lt;?&gt;</code> sits on top of that.</li>
           <li><strong>Synchronous vs async dispatch</strong> — with a <code>void</code> / blocking return type, the user method runs on the listener thread itself, so CPU and throughput are bound by what the user code does. With async return types (<code>CompletableFuture</code>, <code>Mono</code>, Kotlin <code>suspend</code>), the listener thread hands off and returns to <code>poll</code> immediately; CPU moves to the scheduler the user picked.</li>
           <li><strong>Producer sender thread</strong> — <code>KafkaTemplate</code> wraps a single Apache Kafka <code>KafkaProducer</code>, which runs its own internal sender thread for batching and flushing. Most apps do not see this thread directly; it is the producer's network I/O thread.</li>
           <li><strong>Retry-topic scheduler</strong> — when <code>@RetryableTopic</code> is enabled, Spring Kafka starts a small scheduled-executor pool (<code>RetryTopicSchedulerLifecycle</code>) that wakes records out of their backoff bucket and republishes them. Idle most of the time; spikes only with retry traffic.</li>
@@ -462,8 +462,8 @@
 
         <h3>Network traffic</h3>
         <ul>
-          <li><strong>One TCP connection per broker per client</strong> — each <code>ListenerConsumer</code>'s <code>KafkaConsumer</code> opens persistent connections to every broker it currently fetches from. Same for the <code>KafkaTemplate</code>'s producer. With <code>concurrency=N</code> the consumer connection count is roughly <code>N × brokers_with_assigned_partitions</code>.</li>
-          <li><strong>Poll frequency</strong> — each listener thread sends a <code>FetchRequest</code> roughly every <code>fetch.max.wait.ms</code> (or sooner if data is available), and an <code>OffsetCommit</code> every <code>auto.commit.interval.ms</code> (or on every successful record when using <code>MANUAL</code> ack mode). Heartbeats to the group coordinator run on a separate background thread inside the consumer at <code>heartbeat.interval.ms</code>.</li>
+          <li><strong>Long-lived TCP per broker per client</strong> — each <code>ListenerConsumer</code>'s <code>KafkaConsumer</code> typically maintains long-lived TCP connections to the brokers it actually communicates with (leaders of its assigned partitions plus the group coordinator), opened lazily on first use. Same shape for the <code>KafkaTemplate</code>'s producer. With <code>concurrency=N</code> the consumer connection count is roughly <code>N × brokers_with_assigned_partitions</code>.</li>
+          <li><strong>Poll frequency</strong> — each listener thread sends a <code>FetchRequest</code> roughly every <code>fetch.max.wait.ms</code> (or sooner if data is available). Spring Kafka defaults <code>enable.auto.commit=false</code>, so the <code>OffsetCommit</code> cadence is driven by the container's <code>AckMode</code> (<code>RECORD</code> / <code>BATCH</code> / <code>TIME</code> / <code>COUNT</code> / <code>COUNT_TIME</code> / <code>MANUAL</code> / <code>MANUAL_IMMEDIATE</code>), not by <code>auto.commit.interval.ms</code>. Heartbeats to the group coordinator run on a separate background thread inside the consumer at <code>heartbeat.interval.ms</code>.</li>
           <li><strong>Retry / DLT republishes</strong> — every retry attempt or DLT publication is an extra <code>ProduceRequest</code>. With <code>@RetryableTopic</code> and N retry levels, a failing record turns into N+1 produces (original failure → retry-1 → retry-2 → ... → DLT). Visible in producer-side metrics; usually small unless failure rates spike.</li>
           <li><strong>Request-reply (<code>sendAndReceive</code>)</strong> — adds one outbound <code>ProduceRequest</code> on the request topic + one inbound <code>FetchRequest</code> on the reply topic for every call. Spring Kafka correlates by header, so the reply consumer is shared.</li>
           <li><strong>Transactions</strong> — adds <code>InitProducerId</code> at startup and <code>AddPartitionsToTxn</code> / <code>EndTxn</code> round trips per transaction boundary. One transactional commit = a handful of extra small requests, not per record.</li>
@@ -1061,12 +1061,12 @@
           <li><strong>3.0</strong> (Nov 2022) — Jakarta EE 9 / Spring Boot 3 / Java 17+ baseline. Package rename for <code>javax.*</code> → <code>jakarta.*</code>. New <code>CommonErrorHandler</code> as the single error-handler contract; <code>DefaultErrorHandler</code> replaced the older <code>SeekToCurrentErrorHandler</code> / <code>RecoveringBatchErrorHandler</code>.</li>
           <li><strong>3.1 – 3.3</strong> (2023 – 2024) — <code>@RetryableTopic</code> hardening, observability via Micrometer, Kafka client 3.5 → 3.7 upgrades, KRaft test support in <code>EmbeddedKafkaBroker</code>.</li>
           <li><strong>4.0</strong> (Jun 2025) — Spring Framework 7 / Spring Boot 4 / Java 17+. Native compilation (GraalVM) support tightened. <code>spring-kafka-streams</code> behaviour aligned with Apache Kafka 4.0 (KRaft-only).</li>
-          <li><strong>4.1</strong> (current) — async listener path overhaul (suspend / <code>Mono</code> / <code>CompletableFuture</code> return-types funneled through a single async-failure callback), strict partition-ordered retry across async boundaries.</li>
+          <li><strong>4.1</strong> (latest at the time of writing) — async listener path overhaul (suspend / <code>Mono</code> / <code>CompletableFuture</code> return-types funneled through a single async-failure callback), strict partition-ordered retry across async boundaries.</li>
         </ul>
 
         <h3>Branching &amp; release model</h3>
         <p>
-          <code>main</code> tracks the next major. Each minor (<code>3.3.x</code>, <code>4.0.x</code>, <code>4.1.x</code>) gets its own long-lived branch; bugfixes are committed to the oldest still-supported branch and forward-ported through every newer branch up to <code>main</code>. A maintainer typically cherry-picks the forward port — contributor PRs target one branch and a follow-up PR opens for the back/forward port if the diff doesn't apply cleanly. Release tagging convention is <code>vX.Y.Z</code>; milestones (<code>X.Y.0-M1</code>, <code>X.Y.0-RC1</code>) precede every <code>.0</code>.
+          <code>main</code> tracks the next major. Each minor (<code>3.3.x</code>, <code>4.0.x</code>, <code>4.1.x</code>) gets its own long-lived branch; in practice contributor PRs target the branch the maintainer asks for (often the actively maintained one), and a maintainer handles back/forward-porting across the supported branches when the diff doesn't apply cleanly. Release tagging convention is <code>vX.Y.Z</code>; milestones (<code>X.Y.0-M1</code>, <code>X.Y.0-RC1</code>) precede every <code>.0</code>.
         </p>
 
         <h2>Related</h2>
