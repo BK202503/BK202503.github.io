@@ -157,6 +157,9 @@
             <a href="/contributions/strimzi.html">Strimzi — overview</a>
             <a href="/contributions/strimzi/12884.html">PR #12884 · GH-12847</a>
             <a href="/contributions/strimzi/12885.html">PR #12885 · GH-12442</a>
+            <div class="dropdown-section">PostgreSQL</div>
+            <a href="/contributions/postgresql.html">PostgreSQL — overview</a>
+            <a href="/contributions/postgresql/btree-gist-nan.html">btree_gist NaN · BUG #19501 / #19524</a>
             <div class="dropdown-section">Spring Modulith / AI / Infinispan</div>
             <a href="/contributions/spring-modulith.html">Spring Modulith — PR #1714</a>
             <a href="/contributions/spring-ai.html">Spring AI — PR #6317</a>
@@ -418,6 +421,28 @@
                   <span class="pr-title">Use Cluster CA to establish trust in Cruise Control client in CO</span>
                 </a>
                 <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/postgresql.html">PostgreSQL</a></h3>
+              <span class="badge">contrib/btree_gist NaN fix</span>
+            </header>
+            <p class="group-desc"
+               data-ko="contrib/btree_gist의 float4/float8 opclass가 raw C ==/</> 연산자를 그대로 써서 IEEE 754 NaN을 잘못 처리. EXCLUDE 제약이 NaN 중복을 허용, RLS 정책이 NaN 행을 누수, GiST index scan이 같은 쿼리에 대해 seq scan과 다른 결과를 반환. utils/float.h의 NaN-aware float{4,8}_* / float{4,8}_cmp_internal()로 교체해 regular btree opclass와 같은 total order로 맞춤. core 245/245 + contrib 48 modules 전체 make check 통과. PostgreSQL은 GitHub PR을 안 받아서 pgsql-bugs 메일링리스트로 클레임 발송 (현재 모더레이션 대기), 통과 후 pgsql-hackers + CommitFest /59/."
+               data-en="contrib/btree_gist's float4/float8 opclasses used raw C ==/</> operators, so IEEE 754 NaN was mishandled in three ways: EXCLUDE constraints accepted duplicate NaNs, RLS predicates leaked NaN rows on index scan, and GiST index scan disagreed with seq scan on the same query. Swap the five comparator callbacks + the picksplit comparator for the NaN-aware float{4,8}_* / float{4,8}_cmp_internal() helpers in utils/float.h so GiST matches the regular btree opclass. make check is green for core (245/245) and all 48 contrib modules. PostgreSQL doesn't take GitHub PRs — claim sent to pgsql-bugs (currently held for moderation); pgsql-hackers patch + CommitFest /59/ follow once approved.">
+              contrib/btree_gist의 float4/float8 opclass가 raw C ==/</> 연산자를 그대로 써서 IEEE 754 NaN을 잘못 처리. EXCLUDE 제약이 NaN 중복을 허용, RLS 정책이 NaN 행을 누수, GiST index scan이 같은 쿼리에 대해 seq scan과 다른 결과를 반환. utils/float.h의 NaN-aware float{4,8}_* / float{4,8}_cmp_internal()로 교체해 regular btree opclass와 같은 total order로 맞춤. core 245/245 + contrib 48 modules 전체 make check 통과. PostgreSQL은 GitHub PR을 안 받아서 pgsql-bugs 메일링리스트로 클레임 발송 (현재 모더레이션 대기), 통과 후 pgsql-hackers + CommitFest /59/.
+            </p>
+            <p class="group-more"><a href="contributions/postgresql.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://www.postgresql.org/message-id/19524-9559d302c8455664%40postgresql.org" target="_blank" rel="noopener">
+                  <span class="pr-id">BUG #19524</span>
+                  <span class="pr-title">pgsql-bugs reply (patch ready) — held for moderation</span>
+                </a>
+                <span class="pr-state state-open">moderation</span>
               </li>
             </ul>
           </article>
