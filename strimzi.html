@@ -61,6 +61,10 @@
     table.comparison th, table.comparison td { border: 1px solid var(--border, #1f2630); padding: 10px 12px; vertical-align: top; text-align: left; }
     table.comparison thead th { background: var(--bg-card, #11151c); font-weight: 600; }
     table.comparison tbody td:first-child { font-weight: 600; white-space: nowrap; color: var(--accent, #7aa2f7); }
+    .diagram--wide { max-width: none; margin-left: -180px; margin-right: -180px; }
+    @media (max-width: 1100px) {
+      .diagram--wide { margin-left: 0; margin-right: 0; }
+    }
   </style>
 </head>
 <body data-lang="en">
@@ -545,7 +549,7 @@
           Official source: <a href="https://github.com/strimzi/strimzi-kafka-operator" target="_blank" rel="noopener">github.com/strimzi/strimzi-kafka-operator</a>. Strimzi is a <a href="https://www.cncf.io/projects/strimzi/" target="_blank" rel="noopener">CNCF</a> graduated project. Build is Maven (<code>pom.xml</code> at the root, plus a top-level <code>Makefile</code> that wraps Maven + Docker image builds + system tests); JDK 17+; contribution flow is fork → branch off <code>main</code> → PR with the <a href="https://github.com/strimzi/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md" target="_blank" rel="noopener">shared Strimzi PR template</a>. Governance documents (<code>GOVERNANCE.md</code>, <code>MAINTAINERS</code>, <code>AI_POLICY.md</code>) live in the sibling <a href="https://github.com/strimzi/governance" target="_blank" rel="noopener">strimzi/governance</a> repo.
         </p>
 
-        <div class="diagram">
+        <div class="diagram diagram--wide">
           <svg viewBox="0 0 920 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strimzi module flows: build-time codegen turns api + crd-annotations + Kafka config docs into install YAML and JSON schema; runtime operators (cluster, topic, user) depend on api + operator-common + certificate-manager and reconcile CRs against the Kube API; image build packages the operators plus kafka-agent / kafka-init / tracing-agent into docker-images published to quay.io; mockkube and systemtest exercise the operators in tests.">
             <defs>
               <marker id="st-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
@@ -562,13 +566,13 @@
                 .box-em { fill:#1a2030; stroke:#7aa2f7; stroke-width:1.6; rx:8; ry:8; }
                 .box-warm { fill:#1a2030; stroke:#e0af68; stroke-width:1.4; rx:8; ry:8; }
                 .box-soft { fill:#161b25; stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 3; rx:8; ry:8; }
-                .lbl-b { fill:#dde3ec; font: bold 12px/1 ui-monospace, monospace; }
-                .lbl   { fill:#dde3ec; font: 11px/1 ui-monospace, monospace; }
-                .lbl-s { fill:#8a96a3; font: 10px/1 ui-monospace, monospace; }
+                .lbl-b { fill:#dde3ec; font: bold 14px/1 ui-monospace, monospace; }
+                .lbl   { fill:#dde3ec; font: 13px/1 ui-monospace, monospace; }
+                .lbl-s { fill:#8a96a3; font: 12px/1 ui-monospace, monospace; }
                 .arr   { stroke:#7aa2f7; stroke-width:1.3; fill:none; }
                 .arr-g { stroke:#9ece6a; stroke-width:1.3; fill:none; }
                 .arr-y { stroke:#e0af68; stroke-width:1.3; fill:none; }
-                .lane-t { fill:#8a96a3; font: bold 10px/1 ui-monospace, monospace; letter-spacing:0.06em; }
+                .lane-t { fill:#8a96a3; font: bold 12px/1 ui-monospace, monospace; letter-spacing:0.06em; }
                 .lane-d { stroke:#3a4660; stroke-width:1.0; stroke-dasharray:4 4; }
               </style>
             </defs>
