@@ -396,7 +396,7 @@
           <article class="group">
             <header class="group-head">
               <h3><a href="contributions/postgresql.html">PostgreSQL</a></h3>
-              <span class="badge">2 patches in flight</span>
+              <span class="badge">1 merged · 1 in flight</span>
             </header>
             <p class="group-desc"
                data-ko="contrib/btree_gist의 float4/float8 opclass가 raw C ==/</> 연산자를 그대로 써서 IEEE 754 NaN을 잘못 처리. EXCLUDE 제약이 NaN 중복을 허용, RLS 정책이 NaN 행을 누수, GiST index scan이 같은 쿼리에 대해 seq scan과 다른 결과를 반환. utils/float.h의 NaN-aware float{4,8}_* / float{4,8}_cmp_internal()로 교체해 regular btree opclass와 같은 total order로 맞춤. core 245/245 + contrib 48 modules 전체 make check 통과. PostgreSQL은 GitHub PR을 안 받아서 pgsql-bugs 메일링리스트로 클레임 발송 (현재 모더레이션 대기), 통과 후 pgsql-hackers + CommitFest /59/."
@@ -413,11 +413,11 @@
                 <span class="pr-state state-open">in archive</span>
               </li>
               <li>
-                <a href="https://www.postgresql.org/message-id/CAMQXxchB0ZfMHyk+Ji-=s3hkqh0_XyuKiaNLRgvatvndSt3KNw@mail.gmail.com" target="_blank" rel="noopener">
-                  <span class="pr-id">[2] doc</span>
-                  <span class="pr-title">config.sgml id / xreflabel fix — pgsql-hackers thread, awaiting review</span>
+                <a href="https://github.com/postgres/postgres/commit/e42d4a1f3dc59420be796883404020cb41ddd05e" target="_blank" rel="noopener">
+                  <span class="pr-id">[2] commit e42d4a1</span>
+                  <span class="pr-title">config.sgml varlistentry attribute consistency — merged by Daniel Gustafsson</span>
                 </a>
-                <span class="pr-state state-open">in archive</span>
+                <span class="pr-state state-merged">merged</span>
               </li>
             </ul>
           </article>
