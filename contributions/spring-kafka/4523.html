@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Spring Kafka Issue #4523 — First-class DLT replay API (feature proposal) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 제안한 DLT 자동 재처리 + parking queue API. @RetryableTopic 파이프라인에서 DLT에 들어간 레코드를 root cause 수정 후 자동 재처리하는 first-class 메커니즘 + 다시 실패한 레코드의 parking queue 종착 — 모두 opt-in." />
+  <meta name="keywords" content="Spring Kafka, DLT replay, dead letter reprocess, parking queue, RetryableTopic, DltReplayService, DltReplayPolicy, feature proposal, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/spring-kafka/4523.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/spring-kafka/4523.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/spring-kafka/4523.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/spring-kafka/4523.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Spring Kafka Issue #4523 — First-class DLT replay API" />
+  <meta property="og:description" content="@RetryableTopic 파이프라인의 DLT 자동 재처리 + parking queue first-class API 제안." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/spring-kafka/4523.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Spring Kafka Issue #4523 — First-class DLT replay API" />
+  <meta name="twitter:description" content="@RetryableTopic DLT 자동 재처리 + parking queue 제안." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Spring Kafka", "item": "https://bk202503.github.io/contributions/spring-kafka.html" },
+      { "@type": "ListItem", "position": 4, "name": "Issue #4523 · DLT replay API" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Spring Kafka Issue #4523 — First-class DLT replay API",
+    "url": "https://bk202503.github.io/contributions/spring-kafka/4523.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Spring Kafka", "DLT replay", "Dead Letter Topic", "RetryableTopic", "Parking Queue"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <a href="/contributions/spring-kafka-4465.html">Spring Kafka — 무한 재전송 (GH-4465)</a>
+            <a href="/contributions/spring-kafka-4504.html">Spring Kafka — silent 유실 (GH-4504)</a>
+            <a href="/contributions/apache-kafka.html">Apache Kafka</a>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS</a>
+            <a href="/contributions/strimzi.html">Strimzi</a>
+            <a href="/contributions/postgresql.html">PostgreSQL</a>
+            <a href="/contributions/spring-modulith.html">Spring Modulith</a>
+            <a href="/contributions/spring-ai.html">Spring AI</a>
+            <a href="/contributions/infinispan.html">Infinispan</a>
+            <a href="/contributions/mapstruct.html">MapStruct</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <a href="/apache-kafka.html">Apache Kafka</a>
+            <a href="/spring-kafka.html">Spring Kafka</a>
+            <a href="/strimzi.html">Strimzi</a>
+            <a href="/postgresql.html">PostgreSQL</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#confluent">Confluent</a>
+          <div class="dropdown">
+            <a href="/confluent.html">Confluent Platform &amp; Cloud</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/spring-kafka.html">Spring Kafka</a></li>
+          <li aria-current="page">Issue #4523 · DLT replay API</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Feature proposal · Spring Kafka · enhancement</p>
+        <h1 class="title">Spring Kafka Issue #4523 — First-class DLT replay API</h1>
+        <p class="lede">
+          <code>@RetryableTopic</code> 파이프라인에서 DLT 에 들어간 레코드를 운영자가 직접 손대지 않고 framework가 자동으로 다시 retry chain으로 흘려주는 first-class API. 다시 실패하면 <em>parking queue</em>로 보내 human-only 검토 대상으로 격리. 전부 opt-in.
+        </p>
+        <div class="hero-meta">
+          <a class="pill" href="https://github.com/spring-projects/spring-kafka/issues/4523" target="_blank" rel="noopener">
+            <span>GitHub Issue</span><span class="pill-sub">spring-projects/spring-kafka#4523 · open</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>배경</h2>
+        <p>
+          <code>@RetryableTopic</code> chain이 retry 소진되면 레코드는 DLT 에 안착하고 거기서 멈춤. 그 다음 — "root cause 가 수정된 뒤 DLT 레코드를 다시 흘려보내기" — 는 현재 100% 운영자 수동 작업: 콘솔에 들어가서 레코드 persist, 직접 producer 호출, 헤더 맞추기, 빌어서 원본 토픽으로 재전송.
+        </p>
+        <p>
+          DLT 에 어떤 레코드가 자동 재처리 안전 대상이고 어떤 건 사람이 봐야 하는지 결정하는 정책, 그리고 재처리도 또 실패한 진짜 poison-pill 의 종착지(parking queue) 까지 — 모두 팀마다 ad-hoc 으로 다시 짜고 있음. 헤더 컨벤션 / cap / parking 시맨틱이 팀마다 일관되지 않음.
+        </p>
+        <p>
+          2022년 #2172 가 같은 주제로 열렸다가 "직접 <code>DestinationTopicResolver</code> 로 만드세요" 로 닫혔지만, 이후로도 동일 use case가 SO·Slack·discussions 에 반복 등장. framework 차원의 contract 가 필요한 시점.
+        </p>
+
+        <h2>흐름</h2>
+        <pre><code>Main Topic
+   |
+   v
+ Consumer
+   |
+   +--&gt; DLT (retries exhausted)
+            |
+            v
+      DLT Reprocessor  (new — automated)
+            |
+   +--------+--------+
+   |                 |
+Success           Still Fail
+   |                 |
+Main Topic       Parking Queue
+                     |
+                     v
+              human-only review
+                  (terminal)</code></pre>
+
+        <h2>제안 요지 — 4 dimensions</h2>
+        <ol>
+          <li><strong>Replay entry point</strong> — <code>DltReplayService</code> 빈. <code>ConsumerRecord</code> 또는 <code>(key, value, headers, originalTopic)</code> tuple 받아서 <code>DestinationTopicResolver</code> 가 resolve한 retry chain entry로 republish.</li>
+          <li><strong>Eligibility policy</strong> — <code>DltReplayPolicy</code>. 어떤 DLT 레코드가 auto-replay 대상인지 결정. 빌트인: <code>ALL</code> / <code>EXCEPTION_ALLOWLIST</code> / <code>EXCEPTION_DENYLIST</code> / <code>HEADER_MARKER</code> (운영자가 콘솔에서 <code>kafka_dlt-replay-ready</code> 마킹) / <code>MANUAL_ONLY</code> (기본) / 커스텀 <code>Predicate</code>.</li>
+          <li><strong>Cap + parking topic</strong> — <code>max-replay-attempts</code> (default 1) 카운터를 <code>kafka_dlt-replay-attempt</code> 헤더에 stamp. 초과 시 <code>parkingTopic</code>(default <code>&lt;original&gt;-DLT-PARKED</code>) 으로 라우팅. 종착지, human-review-only.</li>
+          <li><strong>Audit hook</strong> — <code>DltReplayAuditor</code> SPI. <code>onReplay</code> / <code>onParked</code> / <code>onReplayFailed</code>. 기본은 INFO 로깅만, 사용자가 티켓팅·감사 시스템과 연동.</li>
+        </ol>
+
+        <h2>API sketch</h2>
+        <pre><code>public interface DltReplayService {
+    CompletableFuture&lt;SendResult&lt;?, ?&gt;&gt; replay(ConsumerRecord&lt;?, ?&gt; dltRecord);
+    CompletableFuture&lt;SendResult&lt;?, ?&gt;&gt; replay(byte[] key, byte[] value, Headers headers, String originalTopic);
+}
+
+public interface DltReplayPolicy {
+    boolean isEligible(ConsumerRecord&lt;?, ?&gt; dltRecord);
+}
+
+public interface DltReplayAuditor {
+    void onReplay(ConsumerRecord&lt;?, ?&gt; dltRecord, SendResult&lt;?, ?&gt; result);
+    void onParked(ConsumerRecord&lt;?, ?&gt; dltRecord, int attempts);
+    void onReplayFailed(ConsumerRecord&lt;?, ?&gt; dltRecord, Throwable cause);
+}</code></pre>
+
+        <h2>대안과 비교</h2>
+        <ul>
+          <li><strong>"DIY 패턴만 docs 화"</strong> — #2172의 결론. 팀마다 같은 plumbing 재구현, 헤더/cap/parking 시맨틱 비일관.</li>
+          <li><strong>"DLT 자체에 타이머 두고 N분 지난 거 자동 replay"</strong> — root-cause 해결은 사람 신호이지 시계 신호가 아님. 시계 기반 replay = retry-storm 위험.</li>
+          <li><strong>"cap 없이 무한 replay"</strong> — 진짜 poison-pill 이 영원히 순환, DLT 가 정착하지 않고, ops 가 transient/permanent 구분 불가.</li>
+          <li><strong>"클러스터 공통 graveyard topic 하나"</strong> — per-listener topology 보장 깨짐. per-listener parking (DLT 패턴 그대로 미러) 가 단순.</li>
+        </ul>
+
+        <h2>구현 로드맵</h2>
+        <ul>
+          <li><strong>Phase 1</strong> — <code>DltReplayService</code> + <code>DltReplayPolicy</code> + <code>DltReplayAuditor</code> + 헤더 상수 + autoconfiguration 토글. parking 아직 없음 (cap=1 시 두 번째 실패는 그냥 다시 DLT, status quo).</li>
+          <li><strong>Phase 2</strong> — parking topic + <code>onParked</code> audit + auto-create (opt-in).</li>
+          <li><strong>Phase 3</strong> (별도 issue) — REST facade autoconfiguration (manual replay 용).</li>
+        </ul>
+        <p>
+          maintainer 협의 후 Phase 1 + 2 PR 진행 의향 있음. PR body에 #2172 링크 + 본 issue 링크 첨부 예정.
+        </p>
+
+        <h2>제출 현황</h2>
+        <ul class="pr-list">
+          <li>
+            <a href="https://github.com/spring-projects/spring-kafka/issues/4523" target="_blank" rel="noopener">
+              <span class="pr-id">Issue #4523</span>
+              <span class="pr-title">First-class DLT replay API — feature proposal (type: enhancement)</span>
+            </a>
+            <span class="pr-state state-open">open · awaiting triage</span>
+          </li>
+          <li>
+            <a href="https://github.com/spring-projects/spring-kafka/issues/2172" target="_blank" rel="noopener">
+              <span class="pr-id">Issue #2172 (2022)</span>
+              <span class="pr-title">Prior discussion — closed without first-class implementation</span>
+            </a>
+            <span class="pr-state state-closed">closed (referenced)</span>
+          </li>
+        </ul>
+
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">Issue</span><a href="https://github.com/spring-projects/spring-kafka/issues/4523" target="_blank" rel="noopener">spring-projects/spring-kafka#4523</a></li>
+          <li><span class="k">Prior</span><a href="https://github.com/spring-projects/spring-kafka/issues/2172" target="_blank" rel="noopener">#2172 (2022 closed)</a></li>
+          <li><span class="k">Project</span><a href="/contributions/spring-kafka.html">Spring Kafka 기여 개요</a></li>
+          <li><span class="k">Sibling</span><a href="/spring-kafka.html">Spring Kafka — Architecture, Internals</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>

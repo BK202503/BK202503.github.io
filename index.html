@@ -301,6 +301,28 @@
 
           <article class="group">
             <header class="group-head">
+              <h3><a href="contributions/spring-kafka/4523.html">Spring Kafka — DLT replay API (#4523)</a></h3>
+              <span class="badge">feature proposal</span>
+            </header>
+            <p class="group-desc"
+               data-ko="@RetryableTopic 파이프라인에서 DLT에 안착한 레코드를 framework가 자동으로 retry chain entry로 다시 흘려보내는 first-class API 제안. eligibility policy(DltReplayPolicy)로 자동 재처리 대상 결정, cap 초과한 레코드는 parking queue에 종착시켜 human-only 검토 대상으로 격리. 모두 opt-in. 2022년 #2172가 'DIY로 하세요'로 닫혔던 use case를 framework 차원 contract로 lift."
+               data-en="Feature proposal: a first-class API that auto-replays DLT records back into the @RetryableTopic chain, with a pluggable DltReplayPolicy deciding which records are eligible, and a parking topic catching records that fail the replay (terminal, human-only review). Opt-in throughout. Picks up the use case that #2172 (2022) closed as DIY.">
+              @RetryableTopic 파이프라인에서 DLT에 안착한 레코드를 framework가 자동으로 retry chain entry로 다시 흘려보내는 first-class API 제안. eligibility policy(DltReplayPolicy)로 자동 재처리 대상 결정, cap 초과한 레코드는 parking queue에 종착시켜 human-only 검토 대상으로 격리. 모두 opt-in. 2022년 #2172가 'DIY로 하세요'로 닫혔던 use case를 framework 차원 contract로 lift.
+            </p>
+            <p class="group-more"><a href="contributions/spring-kafka/4523.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/spring-projects/spring-kafka/issues/4523" target="_blank" rel="noopener">
+                  <span class="pr-id">Issue #4523</span>
+                  <span class="pr-title">First-class DLT replay API — feature proposal (type: enhancement)</span>
+                </a>
+                <span class="pr-state state-open">open · awaiting triage</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
               <h3><a href="contributions/apache-kafka.html">Apache Kafka</a></h3>
               <span class="badge">4 PRs · ByteBuffer remaining-bytes 시리즈</span>
             </header>
