@@ -389,7 +389,7 @@
           <article class="group">
             <header class="group-head">
               <h3><a href="contributions/strimzi.html">Strimzi</a></h3>
-              <span class="badge">cert + TLS trust cleanups</span>
+              <span class="badge">2 PRs · 1 design proposal</span>
             </header>
             <p class="group-desc"
                data-ko="Strimzi Kafka Operator의 cert 처리 두 군데 정리. (1) GH-12847 — KafkaCluster만 IOException → RuntimeException으로 던지고, CruiseControl·ClusterCa는 warning 로그 후 빈 secret data / null CertAndKey로 진행하던 비대칭을 통일 (KafkaExporter 등 호출자 NPE 차단). (2) GH-12442 — Cluster Operator의 Cruise Control 클라이언트가 CC 서버 공개키를 핀하던 트러스트를 Cluster CA 기반으로 전환해 CA 롤 + 서버 cert 회전 사이 신뢰 불일치 제거."
@@ -411,6 +411,13 @@
                   <span class="pr-title">Use Cluster CA to establish trust in Cruise Control client in CO</span>
                 </a>
                 <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/strimzi/proposals/pull/235" target="_blank" rel="noopener">
+                  <span class="pr-id">proposals #235</span>
+                  <span class="pr-title">Add proposal for scheduled mode in auto-rebalance (design discussion)</span>
+                </a>
+                <span class="pr-state state-open">open · awaiting review</span>
               </li>
             </ul>
           </article>
