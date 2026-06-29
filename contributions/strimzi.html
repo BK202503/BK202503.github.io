@@ -158,6 +158,11 @@
           Cluster Operator의 Cruise Control 클라이언트(<code>CruiseControlApiImpl</code>)가 CC 서버 Secret을 <code>PemTrustSet</code>으로 만들어 트러스트했음 — 즉 CC 서버 공개키를 핀하는 형태. Cluster CA 롤 + CC 서버 cert 회전 사이에 열린 rebalance 연결은 새 서버 cert를 못 믿어 실패. <code>KafkaResources.clusterCaCertificateSecretName(...)</code>을 fetch해 CA 기반 트러스트로 전환 — CA가 sign한 새 서버 cert가 자동으로 신뢰됨. PR #12885로 제출.
         </p>
 
+        <h2>세 번째 — Scheduled mode for auto-rebalance (design proposal)</h2>
+        <p>
+          Strimzi의 <code>spec.cruiseControl.autoRebalance</code> 리스트에 <code>schedule</code> 모드 추가 제안. 현재 모드는 <code>add-brokers</code> / <code>remove-brokers</code> (scaling 트리거) 와 <code>imbalance</code> (PR #211, anomaly 트리거) — cron 기반 시간 트리거는 없음. 같은 template + finalizer 머시너리 재사용, 모든 <code>imbalance</code>·scaling과의 인터랙션(debounce window, deferral) 정의. strimzi/proposals 레포에 디자인 문서 PR로 제출.
+        </p>
+
         <h2>PR 목록</h2>
         <ul class="pr-list">
           <li>
@@ -173,6 +178,13 @@
               <span class="pr-title">Use Cluster CA to establish trust in Cruise Control client in CO</span>
             </a>
             <span class="pr-state state-open">open</span>
+          </li>
+          <li>
+            <a href="https://github.com/strimzi/proposals/pull/235" target="_blank" rel="noopener">
+              <span class="pr-id">proposals #235</span>
+              <span class="pr-title">Add proposal for scheduled mode in auto-rebalance (design discussion)</span>
+            </a>
+            <span class="pr-state state-open">open · awaiting review</span>
           </li>
         </ul>
 
