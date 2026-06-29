@@ -182,6 +182,21 @@
         </ul>
         <p><a href="spring-kafka-4504.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
 
+        <h2><a href="spring-kafka/4523.html">DLT 자동 재처리 API — feature proposal (#4523)</a></h2>
+        <p>
+          <code>@RetryableTopic</code> 파이프라인에서 DLT 에 들어간 레코드를 framework가 자동으로 retry chain entry로 다시 흘려보내는 first-class API 제안. 자동 재처리 대상은 pluggable policy(<code>DltReplayPolicy</code>)로 결정, 다시 실패한 레코드는 <em>parking queue</em>에 종착시켜 human-review-only로 격리. 모두 opt-in. 2022년 #2172의 후속이며 이번엔 framework 차원 contract로 lift.
+        </p>
+        <ul class="pr-list">
+          <li>
+            <a href="https://github.com/spring-projects/spring-kafka/issues/4523" target="_blank" rel="noopener">
+              <span class="pr-id">Issue #4523</span>
+              <span class="pr-title">Feature: First-class DLT replay API (operator-driven re-processing of records after DLT handling)</span>
+            </a>
+            <span class="pr-state state-open">open · awaiting triage</span>
+          </li>
+        </ul>
+        <p><a href="spring-kafka/4523.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">Project</span><a href="https://github.com/spring-projects/spring-kafka" target="_blank" rel="noopener">spring-projects/spring-kafka</a></li>
