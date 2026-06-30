@@ -158,11 +158,6 @@
           Cluster Operator의 Cruise Control 클라이언트(<code>CruiseControlApiImpl</code>)가 CC 서버 Secret을 <code>PemTrustSet</code>으로 만들어 트러스트했음 — 즉 CC 서버 공개키를 핀하는 형태. Cluster CA 롤 + CC 서버 cert 회전 사이에 열린 rebalance 연결은 새 서버 cert를 못 믿어 실패. <code>KafkaResources.clusterCaCertificateSecretName(...)</code>을 fetch해 CA 기반 트러스트로 전환 — CA가 sign한 새 서버 cert가 자동으로 신뢰됨. PR #12885로 제출.
         </p>
 
-        <h2>세 번째 — MM2 Grafana 대시보드 SMR 라벨 (GH-12870)</h2>
-        <p>
-          MirrorMaker 2 Grafana 대시보드(<code>packaging/examples/metrics/strimzi-metrics-reporter/grafana-dashboards/strimzi-kafka-mirror-maker-2.json</code>)의 replication-consumer lag 패널 두 개가 Strimzi Metrics Reporter 환경에서 빈 그래프를 그림. PromQL 필터가 JMX Exporter 시절 라벨 표기(<code>clientid=~".*replication-consumer\""</code>, 값 끝에 escaped quote)에 묶여 있어 SMR이 내보내는 라벨(<code>client_id</code>, unquoted)과 매칭이 안 됨. 같은 파일의 producer-side <code>{{clientid}}</code> legend 한 곳까지 같은 SMR 컨벤션으로 정리. <code>examples/</code> 트리는 릴리스 때만 갱신된다는 컨벤션에 맞춰 <code>packaging/examples/</code>만 수정. PR #12889로 제출.
-        </p>
-
         <h2>PR 목록</h2>
         <ul class="pr-list">
           <li>
@@ -178,13 +173,6 @@
               <span class="pr-title">Use Cluster CA to establish trust in Cruise Control client in CO</span>
             </a>
             <span class="pr-state state-merged">merged</span>
-          </li>
-          <li>
-            <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12889" target="_blank" rel="noopener">
-              <span class="pr-id">PR #12889</span>
-              <span class="pr-title">Fix MM2 Grafana dashboards for Strimzi Metrics Reporter</span>
-            </a>
-            <span class="pr-state state-open">open</span>
           </li>
         </ul>
 
