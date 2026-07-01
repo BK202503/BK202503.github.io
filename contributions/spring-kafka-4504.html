@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Spring Kafka 기여 — 두 레코드 silent 유실 (GH-4504) | 김빌 (Bill Kim)</title>
-  <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 업스트림 패치. 같은 파티션 두 비동기 실패 레코드가 per-record seek 클로버링으로 silent 유실되던 회귀(GH-4504)를 offset-order grouping으로 수정 (PR #4505 merged). 4.0.x backport fix-forward PR #4517도 merged, head-of-line amplification bound 후속 PR #4512는 open." />
+  <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 업스트림 패치. 같은 파티션 두 비동기 실패 레코드가 per-record seek 클로버링으로 silent 유실되던 회귀(GH-4504)를 offset-order grouping으로 수정 (PR #4505, #4512, #4517 모두 merged)." />
   <meta name="keywords" content="Spring Kafka, GH-4504, PR 4505, PR 4512, PR 4517, silent record loss, two failing records same partition, async retry seek clobbering, asyncRetryOffsets, seenMultiAttemptRetry, head-of-line amplification, suspend KafkaListener, DefaultErrorHandler, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
@@ -24,7 +24,7 @@
   <meta property="og:url" content="https://bk202503.github.io/contributions/spring-kafka-4504.html" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Spring Kafka 기여 — 두 레코드 silent 유실 (GH-4504)" />
-  <meta name="twitter:description" content="같은 파티션 두 비동기 실패 레코드 silent 유실 회귀를 PR #4505로 수정 (merged), 4.0.x backport PR #4517도 merged, amplification 후속 PR #4512 open." />
+  <meta name="twitter:description" content="같은 파티션 두 비동기 실패 레코드 silent 유실 회귀를 PR #4505 / #4512 / #4517 세 개로 수정, 전부 merged." />
 
   <script type="application/ld+json">
   {
@@ -129,7 +129,7 @@
         <p class="eyebrow">Contribution · Spring Kafka · Kotlin Coroutines</p>
         <h1 class="title">Spring Kafka — 두 레코드 silent 유실 (GH-4504)</h1>
         <p class="lede">
-          같은 파티션의 두 레코드가 같이 비동기 실패하면 earlier-offset 레코드가 한 번만 invoke되고 recoverer에 도달하지 못해 silent 유실되는 회귀. PR #4505로 수정 머지됐고, 4.0.x backport 회귀를 풀어주는 PR #4517도 머지됐습니다. head-of-line amplification을 linear로 bound하는 후속 PR #4512는 main 대상으로 진행 중입니다.
+          같은 파티션의 두 레코드가 같이 비동기 실패하면 earlier-offset 레코드가 한 번만 invoke되고 recoverer에 도달하지 못해 silent 유실되는 회귀. PR #4505로 수정 머지됐고, 4.0.x backport 회귀를 풀어주는 PR #4517과 head-of-line amplification을 linear로 bound하는 후속 PR #4512도 머지됐습니다.
         </p>
       </div>
     </section>
@@ -155,7 +155,7 @@
           </li>
         </ul>
 
-        <h2>후속 — amplification bound (PR #4512, open)</h2>
+        <h2>후속 — amplification bound (PR #4512, merged 2026-07-01, commit <code>7dab9351</code>)</h2>
         <p>
           reporter가 burst 시 invocation이 <code>N·(N+2)</code> (quadratic)로 증가하는 head-of-line amplification을 측정. 메인테이너 요청으로 PR을 분리, <code>asyncRetryOffsets</code> + <code>seenMultiAttemptRetry</code> 게이트로 dispatch loop skip + manual seek를 적용해 invocation을 <code>N·(n+2)−1</code> (linear)로 bound. <code>@RetryableTopic</code> 시나리오 회귀 없이.
         </p>
@@ -165,7 +165,7 @@
               <span class="pr-id">PR #4512</span>
               <span class="pr-title">GH-4504: Bound async retry to linear delivery count per record</span>
             </a>
-            <span class="pr-state state-open">open</span>
+            <span class="pr-state state-merged">merged</span>
           </li>
         </ul>
 

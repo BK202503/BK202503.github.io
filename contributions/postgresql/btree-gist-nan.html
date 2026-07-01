@@ -126,14 +126,14 @@
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Contribution · PostgreSQL · contrib/btree_gist</p>
+        <p class="eyebrow">Contribution · PostgreSQL · contrib/btree_gist · merged</p>
         <h1 class="title">btree_gist NaN ordering — float4/float8 opclass</h1>
         <p class="lede">
           <code>contrib/btree_gist</code>의 float opclass가 raw C <code>==</code>/<code>&lt;</code>/<code>&gt;</code> 를 직접 써서 IEEE 754 NaN을 잘못 처리. EXCLUDE 우회 / RLS 누수 / index ↔ seq scan 결과 불일치 세 시나리오 동시 발생. NaN-aware <code>float{4,8}_*</code> 헬퍼 + <code>float{4,8}_cmp_internal()</code>로 교체해 regular btree opclass와 같은 total order로 맞춘 패치.
         </p>
         <div class="hero-meta">
-          <a class="pill" href="https://www.postgresql.org/message-id/CAMQXxcgbtD2LXfX0tpgvOizxP-XxrCHV2ZDy4By_TZnJMsxXWQ@mail.gmail.com" target="_blank" rel="noopener">
-            <span>BUG #19524 thread</span><span class="pill-sub">pgsql-bugs (in archive · awaiting next step)</span>
+          <a class="pill" href="https://github.com/postgres/postgres/commit/7d3448961da3f8cb5c78b9d58c5e03b6bff53364" target="_blank" rel="noopener">
+            <span>commit 7d344896</span><span class="pill-sub">merged 2026-07-01</span>
           </a>
         </div>
       </div>

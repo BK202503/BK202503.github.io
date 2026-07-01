@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Spring Kafka PR #4512 — GH-4504 Bound async retry to linear delivery count (open) | 김빌 (Bill Kim)</title>
+  <title>Spring Kafka PR #4512 — GH-4504 Bound async retry to linear delivery count (merged) | 김빌 (Bill Kim)</title>
   <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 PR #4512 (GH-4504 follow-up). PR #4505의 데이터 유실 fix 후 남은 head-of-line amplification을 N·(n+2)−1으로 선형 bound. asyncRetryOffsets + seenMultiAttemptRetry 게이트로 dispatch-loop skip + manual seek." />
   <meta name="keywords" content="Spring Kafka PR 4512, GH-4504, head-of-line amplification, async retry bound, asyncRetryOffsets, seenMultiAttemptRetry, RecordInRetryException, suspend KafkaListener burst, DefaultErrorHandler quadratic, ListenerConsumer dispatch loop skip, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
@@ -126,14 +126,14 @@
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Spring Kafka · open · follow-up to merged #4505</p>
+        <p class="eyebrow">Spring Kafka · merged · follow-up to merged #4505</p>
         <h1 class="title">PR #4512 — GH-4504: Bound async retry to linear delivery count per record</h1>
         <p class="lede">
           PR #4505가 데이터 유실은 잡았으나 같은 파티션에 항상 실패하는 N개 레코드가 들어오면 suspend 리스너의 invocation 수가 <code>N·(N+2)</code> (quadratic)로 증가하는 head-of-line amplification이 남아 있었습니다. 메인테이너 요청으로 PR을 분리, 본 PR에서 <code>asyncRetryOffsets</code> + <code>seenMultiAttemptRetry</code> 게이트 + manual seek로 invocation을 <code>N·(n+2)−1</code> (linear)로 bound. <code>@RetryableTopic</code> 시나리오(publish-and-done recoverer) 회귀 없이.
         </p>
         <div class="hero-meta">
-          <a class="pill" href="https://github.com/spring-projects/spring-kafka/pull/4512" target="_blank" rel="noopener">
-            <span>GitHub PR</span><span class="pill-sub">spring-projects/spring-kafka#4512</span>
+          <a class="pill" href="https://github.com/spring-projects/spring-kafka/commit/7dab9351ce54b37fa71a77123fab7dfb0e3f7e8b" target="_blank" rel="noopener">
+            <span>commit 7dab9351</span><span class="pill-sub">merged 2026-07-01</span>
           </a>
         </div>
       </div>
