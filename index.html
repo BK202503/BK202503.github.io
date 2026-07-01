@@ -265,107 +265,6 @@
 
           <article class="group">
             <header class="group-head">
-              <h3><a href="contributions/apache-kafka.html">Apache Kafka</a></h3>
-              <span class="badge">4 PRs · ByteBuffer remaining-bytes 시리즈</span>
-            </header>
-            <p class="group-desc"
-               data-ko="Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다."
-               data-en="Tracked a class of ByteBuffer.array() misuses across Kafka Connect and submitted a consistent fix. Four separate PRs land the same family of patch into four components so direct/sliced buffers behave correctly.">
-              Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다.
-            </p>
-            <p class="group-more"><a href="contributions/apache-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
-            <ul class="pr-list">
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22536" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22536</span>
-                  <span class="pr-title">KAFKA-20656 — Struct honors ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22535" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22535</span>
-                  <span class="pr-title">KAFKA-20666 — Offset backing stores honor ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22534</span>
-                  <span class="pr-title">KAFKA-20658 — Cast SMT honors ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-              <li>
-                <a href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #22533</span>
-                  <span class="pr-title">KAFKA-20657 — JsonConverter BYTES uses ByteBuffer remaining bytes</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-            </ul>
-          </article>
-
-          <article class="group">
-            <header class="group-head">
-              <h3><a href="contributions/spring-cloud-aws.html">Spring Cloud AWS</a></h3>
-              <span class="badge">SQS QueueNotFoundStrategy</span>
-            </header>
-            <p class="group-desc"
-               data-ko="Spring Cloud AWS 3.x SQS 컨테이너에 IGNORE QueueNotFoundStrategy를 추가해, 큐가 없을 때 listener를 조용히 skip하고 application context 부팅을 차단하지 않도록 복원했습니다. 2.x spring-cloud-starter-aws-messaging의 기본 동작을 typed exception을 도입해 FAIL / CREATE / RetryableTopic 경로를 손대지 않고 분리해 적용했습니다."
-               data-en="Added an IGNORE QueueNotFoundStrategy for SQS in Spring Cloud AWS 3.x so a missing queue logs a warning and skips the listener instead of blocking application startup — restoring the 2.x default behavior via a typed signal that leaves the existing FAIL / CREATE / RetryableTopic paths untouched.">
-              Spring Cloud AWS 3.x SQS 컨테이너에 IGNORE QueueNotFoundStrategy를 추가해, 큐가 없을 때 listener를 조용히 skip하고 application context 부팅을 차단하지 않도록 복원했습니다. 2.x spring-cloud-starter-aws-messaging의 기본 동작을 typed exception을 도입해 FAIL / CREATE / RetryableTopic 경로를 손대지 않고 분리해 적용했습니다.
-            </p>
-            <p class="group-more"><a href="contributions/spring-cloud-aws.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
-            <ul class="pr-list">
-              <li>
-                <a href="https://github.com/awspring/spring-cloud-aws/pull/1640" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #1640</span>
-                  <span class="pr-title">GH-1143 Add IGNORE QueueNotFoundStrategy option for SQS</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-            </ul>
-          </article>
-
-          <article class="group">
-            <header class="group-head">
-              <h3><a href="contributions/strimzi.html">Strimzi</a></h3>
-              <span class="badge">cert + TLS trust cleanups</span>
-            </header>
-            <p class="group-desc"
-               data-ko="Strimzi Kafka Operator의 cert 처리 두 군데 정리. (1) GH-12847 — KafkaCluster만 IOException → RuntimeException으로 던지고, CruiseControl·ClusterCa는 warning 로그 후 빈 secret data / null CertAndKey로 진행하던 비대칭을 통일 (KafkaExporter 등 호출자 NPE 차단). (2) GH-12442 — Cluster Operator의 Cruise Control 클라이언트가 CC 서버 공개키를 핀하던 트러스트를 Cluster CA 기반으로 전환해 CA 롤 + 서버 cert 회전 사이 신뢰 불일치 제거."
-               data-en="Two cleanups in Strimzi's cert handling. (1) GH-12847 — KafkaCluster rethrew IOException as RuntimeException so the reconciliation failed cleanly, but CruiseControl and ClusterCa just logged a warning and continued with empty secret data / null CertAndKey, which then NPE'd in callers like KafkaExporter; PR aligns all three on the KafkaCluster pattern. (2) GH-12442 — the Cluster Operator's Cruise Control client built its trust store from the CC server Secret (effectively pinning the server's public key); PR switches it to the Cluster CA cert Secret so a CA-signed server-cert rotation stays trusted.">
-              Strimzi Kafka Operator의 cert 처리 두 군데 정리. (1) GH-12847 — KafkaCluster만 IOException → RuntimeException으로 던지고, CruiseControl·ClusterCa는 warning 로그 후 빈 secret data / null CertAndKey로 진행하던 비대칭을 통일 (KafkaExporter 등 호출자 NPE 차단). (2) GH-12442 — Cluster Operator의 Cruise Control 클라이언트가 CC 서버 공개키를 핀하던 트러스트를 Cluster CA 기반으로 전환해 CA 롤 + 서버 cert 회전 사이 신뢰 불일치 제거.
-            </p>
-            <p class="group-more"><a href="contributions/strimzi.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
-            <ul class="pr-list">
-              <li>
-                <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12884" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #12884</span>
-                  <span class="pr-title">Unify IOException handling in cert generation paths</span>
-                </a>
-                <span class="pr-state state-open">open</span>
-              </li>
-              <li>
-                <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12885" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #12885</span>
-                  <span class="pr-title">Use Cluster CA to establish trust in Cruise Control client in CO</span>
-                </a>
-                <span class="pr-state state-merged">merged</span>
-              </li>
-              <li>
-                <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12889" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #12889</span>
-                  <span class="pr-title">Fix MM2 Grafana dashboards for Strimzi Metrics Reporter</span>
-                </a>
-                <span class="pr-state state-merged">merged</span>
-              </li>
-            </ul>
-          </article>
-
-          <article class="group">
-            <header class="group-head">
               <h3><a href="contributions/spring-kafka-4504.html">Spring Kafka — 두 레코드 silent 유실 (GH-4504)</a></h3>
               <span class="badge">silent record loss</span>
             </header>
@@ -418,6 +317,129 @@
                   <span class="pr-title">First-class DLT replay API — feature proposal (type: enhancement)</span>
                 </a>
                 <span class="pr-state state-open">open · awaiting triage</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/strimzi.html">Strimzi</a></h3>
+              <span class="badge">cert + TLS trust cleanups</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Strimzi Kafka Operator의 cert 처리 두 군데 정리. (1) GH-12847 — KafkaCluster만 IOException → RuntimeException으로 던지고, CruiseControl·ClusterCa는 warning 로그 후 빈 secret data / null CertAndKey로 진행하던 비대칭을 통일 (KafkaExporter 등 호출자 NPE 차단). (2) GH-12442 — Cluster Operator의 Cruise Control 클라이언트가 CC 서버 공개키를 핀하던 트러스트를 Cluster CA 기반으로 전환해 CA 롤 + 서버 cert 회전 사이 신뢰 불일치 제거."
+               data-en="Two cleanups in Strimzi's cert handling. (1) GH-12847 — KafkaCluster rethrew IOException as RuntimeException so the reconciliation failed cleanly, but CruiseControl and ClusterCa just logged a warning and continued with empty secret data / null CertAndKey, which then NPE'd in callers like KafkaExporter; PR aligns all three on the KafkaCluster pattern. (2) GH-12442 — the Cluster Operator's Cruise Control client built its trust store from the CC server Secret (effectively pinning the server's public key); PR switches it to the Cluster CA cert Secret so a CA-signed server-cert rotation stays trusted.">
+              Strimzi Kafka Operator의 cert 처리 두 군데 정리. (1) GH-12847 — KafkaCluster만 IOException → RuntimeException으로 던지고, CruiseControl·ClusterCa는 warning 로그 후 빈 secret data / null CertAndKey로 진행하던 비대칭을 통일 (KafkaExporter 등 호출자 NPE 차단). (2) GH-12442 — Cluster Operator의 Cruise Control 클라이언트가 CC 서버 공개키를 핀하던 트러스트를 Cluster CA 기반으로 전환해 CA 롤 + 서버 cert 회전 사이 신뢰 불일치 제거.
+            </p>
+            <p class="group-more"><a href="contributions/strimzi.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12884" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #12884</span>
+                  <span class="pr-title">Unify IOException handling in cert generation paths</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12885" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #12885</span>
+                  <span class="pr-title">Use Cluster CA to establish trust in Cruise Control client in CO</span>
+                </a>
+                <span class="pr-state state-merged">merged</span>
+              </li>
+              <li>
+                <a href="https://github.com/strimzi/strimzi-kafka-operator/pull/12889" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #12889</span>
+                  <span class="pr-title">Fix MM2 Grafana dashboards for Strimzi Metrics Reporter</span>
+                </a>
+                <span class="pr-state state-merged">merged</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/apache-kafka.html">Apache Kafka</a></h3>
+              <span class="badge">4 PRs · ByteBuffer remaining-bytes 시리즈</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다."
+               data-en="Tracked a class of ByteBuffer.array() misuses across Kafka Connect and submitted a consistent fix. Four separate PRs land the same family of patch into four components so direct/sliced buffers behave correctly.">
+              Kafka Connect 전반에 퍼져 있던 ByteBuffer.array() 오용을 추적해 일관된 수정안을 제출했습니다. 직접 버퍼/슬라이스 버퍼 둘 다에서 안전하게 동작하도록 4개 컴포넌트에 같은 계열의 패치를 분리해 올렸습니다.
+            </p>
+            <p class="group-more"><a href="contributions/apache-kafka.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22536" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22536</span>
+                  <span class="pr-title">KAFKA-20656 — Struct honors ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22535" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22535</span>
+                  <span class="pr-title">KAFKA-20666 — Offset backing stores honor ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22534</span>
+                  <span class="pr-title">KAFKA-20658 — Cast SMT honors ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+              <li>
+                <a href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #22533</span>
+                  <span class="pr-title">KAFKA-20657 — JsonConverter BYTES uses ByteBuffer remaining bytes</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/infinispan.html">Infinispan</a></h3>
+              <span class="badge">CI workflow</span>
+            </header>
+            <p class="group-desc"
+               data-ko="PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로를 추가했습니다. 기존 spotbugs.yml과 트리거/구조를 맞추고 CPD 결과를 아티팩트로 업로드합니다."
+               data-en="Added a GitHub Actions workflow that runs PMD's Copy/Paste Detector on PRs. Mirrors the existing spotbugs.yml triggers and uploads CPD reports as artifacts.">
+              PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로를 추가했습니다. 기존 spotbugs.yml과 트리거/구조를 맞추고 CPD 결과를 아티팩트로 업로드합니다.
+            </p>
+            <p class="group-more"><a href="contributions/infinispan.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/infinispan/infinispan/pull/17624" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #17624</span>
+                  <span class="pr-title">[#14185] Add GitHub workflow for PMD Copy/Paste Detector</span>
+                </a>
+                <span class="pr-state state-merged">merged</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/spring-cloud-aws.html">Spring Cloud AWS</a></h3>
+              <span class="badge">SQS QueueNotFoundStrategy</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Spring Cloud AWS 3.x SQS 컨테이너에 IGNORE QueueNotFoundStrategy를 추가해, 큐가 없을 때 listener를 조용히 skip하고 application context 부팅을 차단하지 않도록 복원했습니다. 2.x spring-cloud-starter-aws-messaging의 기본 동작을 typed exception을 도입해 FAIL / CREATE / RetryableTopic 경로를 손대지 않고 분리해 적용했습니다."
+               data-en="Added an IGNORE QueueNotFoundStrategy for SQS in Spring Cloud AWS 3.x so a missing queue logs a warning and skips the listener instead of blocking application startup — restoring the 2.x default behavior via a typed signal that leaves the existing FAIL / CREATE / RetryableTopic paths untouched.">
+              Spring Cloud AWS 3.x SQS 컨테이너에 IGNORE QueueNotFoundStrategy를 추가해, 큐가 없을 때 listener를 조용히 skip하고 application context 부팅을 차단하지 않도록 복원했습니다. 2.x spring-cloud-starter-aws-messaging의 기본 동작을 typed exception을 도입해 FAIL / CREATE / RetryableTopic 경로를 손대지 않고 분리해 적용했습니다.
+            </p>
+            <p class="group-more"><a href="contributions/spring-cloud-aws.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/awspring/spring-cloud-aws/pull/1640" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #1640</span>
+                  <span class="pr-title">GH-1143 Add IGNORE QueueNotFoundStrategy option for SQS</span>
+                </a>
+                <span class="pr-state state-open">open</span>
               </li>
             </ul>
           </article>
@@ -491,28 +513,6 @@
                   <span class="pr-title">GH-5971: Add failing regression test for streaming observation stop order</span>
                 </a>
                 <span class="pr-state state-open">open</span>
-              </li>
-            </ul>
-          </article>
-
-          <article class="group">
-            <header class="group-head">
-              <h3><a href="contributions/infinispan.html">Infinispan</a></h3>
-              <span class="badge">CI workflow</span>
-            </header>
-            <p class="group-desc"
-               data-ko="PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로를 추가했습니다. 기존 spotbugs.yml과 트리거/구조를 맞추고 CPD 결과를 아티팩트로 업로드합니다."
-               data-en="Added a GitHub Actions workflow that runs PMD's Copy/Paste Detector on PRs. Mirrors the existing spotbugs.yml triggers and uploads CPD reports as artifacts.">
-              PR마다 PMD Copy/Paste Detector를 돌리는 GitHub Actions 워크플로를 추가했습니다. 기존 spotbugs.yml과 트리거/구조를 맞추고 CPD 결과를 아티팩트로 업로드합니다.
-            </p>
-            <p class="group-more"><a href="contributions/infinispan.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
-            <ul class="pr-list">
-              <li>
-                <a href="https://github.com/infinispan/infinispan/pull/17624" target="_blank" rel="noopener">
-                  <span class="pr-id">PR #17624</span>
-                  <span class="pr-title">[#14185] Add GitHub workflow for PMD Copy/Paste Detector</span>
-                </a>
-                <span class="pr-state state-merged">merged</span>
               </li>
             </ul>
           </article>
