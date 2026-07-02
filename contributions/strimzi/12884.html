@@ -126,14 +126,14 @@
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Strimzi · open</p>
+        <p class="eyebrow">Strimzi · merged</p>
         <h1 class="title">PR #12884 — GH-12847: Unify IOException handling in cert generation paths</h1>
         <p class="lede">
           <code>KafkaCluster</code>가 cert 생성 중 <code>IOException</code>을 잡으면 <code>RuntimeException</code>으로 던져 reconciliation을 실패시키는 반면, <code>CruiseControl</code>·<code>ClusterCa#maybeCopyOrGenerateClientCert</code>는 warning만 로그하고 비어 있는 secret data / <code>null</code> <code>CertAndKey</code>로 진행 → 호출자(<code>KafkaExporter</code> 등)가 <code>caCertGeneration()</code> 접근에서 NPE. 세 경로의 동작을 <code>KafkaCluster</code> 패턴으로 통일.
         </p>
         <div class="hero-meta">
-          <a class="pill" href="https://github.com/strimzi/strimzi-kafka-operator/pull/12884" target="_blank" rel="noopener">
-            <span>GitHub PR</span><span class="pill-sub">strimzi/strimzi-kafka-operator#12884</span>
+          <a class="pill" href="https://github.com/strimzi/strimzi-kafka-operator/commit/a4b0c5feabacf2e9795a459f9766c4c1ca439457" target="_blank" rel="noopener">
+            <span>commit a4b0c5fe</span><span class="pill-sub">merged 2026-07-02</span>
           </a>
         </div>
       </div>
