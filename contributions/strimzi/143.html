@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Strimzi KAO PR #143 — GH-124 Bundle all cluster CAs in ssl.truststore.crt (open) | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 strimzi/kafka-access-operator에 보낸 PR #143. KafkaListener.getConnectionSecretData가 Cluster CA Secret에서 ca.crt 하나만 ssl.truststore.crt에 담아 CA 키 교체 중 이전/신규 CA 중 한쪽만 신뢰하던 문제를, 모든 .crt 엔트리를 sorted key 순으로 번들해 수정." />
+  <meta name="keywords" content="Strimzi, kafka-access-operator, KAO, PR 143, GH-124, ssl.truststore.crt, Cluster CA, CA rotation, KafkaListener, 김빌, Bill Kim, BK202503" />
+  <meta name="author" content="김빌 (Bill Kim)" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+
+  <link rel="canonical" href="https://bk202503.github.io/contributions/strimzi/143.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/strimzi/143.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/strimzi/143.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/strimzi/143.html" />
+
+  <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
+  <meta property="og:title" content="Strimzi KAO PR #143 — GH-124 Bundle all cluster CAs in ssl.truststore.crt" />
+  <meta property="og:description" content="kafka-access-operator KafkaListener가 ssl.truststore.crt에 ca.crt만 담아 CA 키 교체 중 한쪽 CA만 신뢰되던 문제를 모든 .crt 엔트리 번들로 수정." />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/strimzi/143.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Strimzi KAO PR #143 — GH-124 Bundle all cluster CAs in ssl.truststore.crt" />
+  <meta name="twitter:description" content="kafka-access-operator KafkaListener가 CA 키 교체 중 한쪽 CA만 신뢰되던 문제를 모든 .crt 엔트리 번들로 수정." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
+      { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
+      { "@type": "ListItem", "position": 3, "name": "Strimzi", "item": "https://bk202503.github.io/contributions/strimzi.html" },
+      { "@type": "ListItem", "position": 4, "name": "PR #143 · GH-124" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Strimzi KAO PR #143 — GH-124: Bundle all cluster CAs in ssl.truststore.crt",
+    "url": "https://bk202503.github.io/contributions/strimzi/143.html",
+    "inLanguage": ["ko", "en"],
+    "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
+    "author": { "@id": "https://bk202503.github.io/#person" },
+    "about": ["Strimzi", "Kafka Access Operator", "Cluster CA", "TLS Trust Bundle", "CA Rotation"]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-lang="ko">
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/">
+        <span class="brand-name">Bill Kim</span>
+        <span class="brand-alt">김빌</span>
+      </a>
+      <nav class="nav">
+        <div class="nav-group">
+          <a href="/#contributions">Contributions</a>
+          <div class="dropdown">
+            <a href="/contributions/spring-kafka-4465.html">Spring Kafka — 무한 재전송 (GH-4465)</a>
+            <a href="/contributions/spring-kafka-4504.html">Spring Kafka — silent 유실 (GH-4504)</a>
+            <a href="/contributions/apache-kafka.html">Apache Kafka</a>
+            <a href="/contributions/spring-cloud-aws.html">Spring Cloud AWS</a>
+            <a href="/contributions/strimzi.html">Strimzi</a>
+            <a href="/contributions/postgresql.html">PostgreSQL</a>
+            <a href="/contributions/spring-modulith.html">Spring Modulith</a>
+            <a href="/contributions/spring-ai.html">Spring AI</a>
+            <a href="/contributions/infinispan.html">Infinispan</a>
+            <a href="/contributions/mapstruct.html">MapStruct</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#oss">OSS</a>
+          <div class="dropdown">
+            <a href="/apache-kafka.html">Apache Kafka</a>
+            <a href="/spring-kafka.html">Spring Kafka</a>
+            <a href="/strimzi.html">Strimzi</a>
+            <a href="/postgresql.html">PostgreSQL</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#confluent">Confluent</a>
+          <div class="dropdown">
+            <a href="/confluent.html">Confluent Platform &amp; Cloud</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#libraries">Libraries</a>
+          <div class="dropdown">
+            <a href="/libraries/bk-spring-idempotent.html">bk-spring-idempotent</a>
+            <a href="/libraries/bk-spring-saga.html">bk-spring-saga</a>
+            <a href="/libraries/bk-spring-outbox.html">bk-spring-outbox</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a href="/#projects">Projects</a>
+          <div class="dropdown">
+            <a href="/projects/korea-cafe.html">korea-cafe</a>
+          </div>
+        </div>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="container">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/#contributions">Contributions</a></li>
+          <li><a href="/contributions/strimzi.html">Strimzi</a></li>
+          <li aria-current="page">PR #143 · GH-124</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Strimzi · kafka-access-operator · open</p>
+        <h1 class="title">PR #143 — GH-124: Bundle all cluster CAs in ssl.truststore.crt</h1>
+        <p class="lede">
+          <code>KafkaListener.getConnectionSecretData</code>가 Cluster CA Secret에서 <code>ca.crt</code>만 <code>ssl.truststore.crt</code>에 담아, CA 키 교체 중 Secret에 이전/신규 CA(<code>ca-&lt;notAfter&gt;.crt</code>)가 함께 존재해도 클라이언트가 한쪽만 신뢰해 회전 중 접속이 실패. Cluster CA Secret의 모든 <code>.crt</code> 엔트리를 sorted key 순으로 번들로 묶어 <code>ssl.truststore.crt</code>에 담고, 개별 엔트리가 chain이면 trust anchor만 포함.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container narrow">
+        <h2>관련 자료</h2>
+        <ul class="contact-list">
+          <li><span class="k">PR</span><a href="https://github.com/strimzi/kafka-access-operator/pull/143" target="_blank" rel="noopener">strimzi/kafka-access-operator#143</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/strimzi/kafka-access-operator/issues/124" target="_blank" rel="noopener">strimzi/kafka-access-operator#124</a></li>
+          <li><span class="k">Project</span><a href="/contributions/strimzi.html">Strimzi 기여 개요</a></li>
+          <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> Bill Kim · <a href="/profile/billkim.html">김빌</a></span>
+      <span class="muted">Built as a static page on GitHub Pages.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.nav-group > a').forEach(a => {
+      a.addEventListener('click', function(e) {
+        if (window.innerWidth <= 640) { e.preventDefault(); this.parentElement.classList.toggle('open'); }
+      });
+    });
+  </script>
+
+</body>
+</html>
