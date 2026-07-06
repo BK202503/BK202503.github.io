@@ -163,6 +163,11 @@
           MirrorMaker 2 Grafana 대시보드(<code>packaging/examples/metrics/strimzi-metrics-reporter/grafana-dashboards/strimzi-kafka-mirror-maker-2.json</code>)의 replication-consumer lag 패널 두 개가 Strimzi Metrics Reporter 환경에서 빈 그래프를 그림. PromQL 필터가 JMX Exporter 시절 라벨 표기(<code>clientid=~".*replication-consumer\""</code>, 값 끝에 escaped quote)에 묶여 있어 SMR이 내보내는 라벨(<code>client_id</code>, unquoted)과 매칭이 안 됨. 같은 파일의 producer-side <code>{{clientid}}</code> legend 한 곳까지 같은 SMR 컨벤션으로 정리. <code>examples/</code> 트리는 릴리스 때만 갱신된다는 컨벤션에 맞춰 <code>packaging/examples/</code>만 수정. PR #12889로 제출.
         </p>
 
+        <h2>네 번째 — KAO ssl.truststore.crt CA 번들 (kafka-access-operator GH-124)</h2>
+        <p>
+          <code>kafka-access-operator</code>의 <code>KafkaListener.getConnectionSecretData</code>가 Cluster CA Secret의 <code>ca.crt</code>만 <code>ssl.truststore.crt</code>에 담아, CA 키 교체 중 Secret에 이전/신규 CA(<code>ca-&lt;notAfter&gt;.crt</code>)가 함께 존재해도 클라이언트는 한쪽만 신뢰 → 롤 진행 중 접속 실패. Cluster CA Secret의 모든 <code>.crt</code> 엔트리를 sorted key 순으로 번들로 묶어 <code>ssl.truststore.crt</code>에 담음. 개별 엔트리가 chain이면 trust anchor만 포함(중간 인증서는 핸드셰이크에서 브로커가 내려줌), <code>ca.p12</code>·<code>ca.password</code> 등 비-<code>.crt</code> 엔트리는 무시. PR #143으로 제출.
+        </p>
+
         <h2>PR 목록</h2>
         <ul class="pr-list">
           <li>
@@ -186,12 +191,21 @@
             </a>
             <span class="pr-state state-merged">merged</span>
           </li>
+          <li>
+            <a href="https://github.com/strimzi/kafka-access-operator/pull/143" target="_blank" rel="noopener">
+              <span class="pr-id">KAO PR #143</span>
+              <span class="pr-title">Bundle all cluster CAs in ssl.truststore.crt</span>
+            </a>
+            <span class="pr-state state-open">open · awaiting triage</span>
+          </li>
         </ul>
 
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">Project</span><a href="https://github.com/strimzi/strimzi-kafka-operator" target="_blank" rel="noopener">strimzi/strimzi-kafka-operator</a></li>
+          <li><span class="k">Project</span><a href="https://github.com/strimzi/kafka-access-operator" target="_blank" rel="noopener">strimzi/kafka-access-operator</a></li>
           <li><span class="k">Issue</span><a href="https://github.com/strimzi/strimzi-kafka-operator/issues/12847" target="_blank" rel="noopener">strimzi/strimzi-kafka-operator#12847</a></li>
+          <li><span class="k">Issue</span><a href="https://github.com/strimzi/kafka-access-operator/issues/124" target="_blank" rel="noopener">strimzi/kafka-access-operator#124</a></li>
           <li><span class="k">Author</span><a href="https://github.com/BK202503" target="_blank" rel="noopener">github.com/BK202503</a></li>
           <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
         </ul>

@@ -251,6 +251,15 @@
   </url>
 
   <url>
+    <loc>https://bk202503.github.io/contributions/strimzi/143.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/strimzi/143.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/strimzi/143.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/strimzi/143.html"/>
+  </url>
+
+  <url>
     <loc>https://bk202503.github.io/postgresql.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
