@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
   <title>PostgreSQL btree_gist NaN ordering 패치 — BUG #19501 / #19524 | 김빌 (Bill Kim)</title>
   <meta name="description" content="김빌(Bill Kim)이 PostgreSQL contrib btree_gist의 float4/float8 opclass에서 raw C 연산자가 NaN을 잘못 처리하는 버그를 NaN-aware 헬퍼로 교체한 패치. EXCLUDE 우회 / RLS 누수 / index↔seq 스캔 불일치 세 시나리오를 회귀 테스트로 커버, core + contrib 전체 make check 통과." />
