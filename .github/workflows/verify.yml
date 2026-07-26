@@ -13,9 +13,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Grep for email PII
         run: |
+          # Exclude .github/ (this workflow references the patterns as
+          # literals) and CLAUDE.md (Claude instructions, not user-facing).
           if grep -rniE "billkimjh|@gmail\.com|@naver\.com|@kakao\.com" . \
               --include="*.html" --include="*.md" --include="*.xml" \
-              --include="*.svg" --include="*.txt" --include="*.yml"; then
+              --include="*.svg" --include="*.txt" --include="*.yml" \
+              --exclude-dir=.github --exclude=CLAUDE.md; then
             echo "!! PII match found. Public site rule violated." >&2
             exit 1
           fi
