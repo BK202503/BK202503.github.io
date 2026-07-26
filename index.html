@@ -152,6 +152,7 @@
             <a href="/contributions/spring-ai.html">Spring AI</a>
             <a href="/contributions/infinispan.html">Infinispan</a>
             <a href="/contributions/mapstruct.html">MapStruct</a>
+            <a href="/contributions/oh-my-claudecode.html">oh-my-claudecode</a>
           </div>
         </div>
         <div class="nav-group">
@@ -541,6 +542,28 @@
                 <a href="https://github.com/mapstruct/mapstruct/pull/4074" target="_blank" rel="noopener">
                   <span class="pr-id">PR #4074</span>
                   <span class="pr-title">#4000 Fix property name resolution for fluent setters whose second character is upper case</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
+              <h3><a href="contributions/oh-my-claudecode.html">oh-my-claudecode</a></h3>
+              <span class="badge">Windows execSync windowsHide</span>
+            </header>
+            <p class="group-desc"
+               data-ko="Yeachan-Heo/oh-my-claudecode (OMC, MIT) PR #3484이 auto-slash-command/live-data.ts의 git-specific execFileSync는 fix했지만 같은 파일의 general command runner 두 개 (executeCommand, !begin-script 블록 러너) 는 그대로 남아 Windows에서 !cmd 치환·유저 스크립트 실행마다 cmd.exe console flash가 재발생. 두 execSync spot에 windowsHide 추가하고 기존 회귀 테스트 두 케이스 assertion 강화."
+               data-en="Follow-up to Yeachan-Heo/oh-my-claudecode PR #3484 (MIT). That sweep set windowsHide on the git-specific execFileSync calls in auto-slash-command/live-data.ts but left the two general command runners (executeCommand and the !begin-script block runner) untouched, so on Windows each !cmd substitution and user shell block flashed a cmd.exe console. Adds windowsHide: true to both execSync sites and strengthens two existing live-data tests.">
+              Yeachan-Heo/oh-my-claudecode (OMC, MIT) PR #3484이 auto-slash-command/live-data.ts의 git-specific execFileSync는 fix했지만 같은 파일의 general command runner 두 개 (executeCommand, !begin-script 블록 러너) 는 그대로 남아 Windows에서 !cmd 치환·유저 스크립트 실행마다 cmd.exe console flash가 재발생. 두 execSync spot에 windowsHide 추가하고 기존 회귀 테스트 두 케이스 assertion 강화.
+            </p>
+            <p class="group-more"><a href="contributions/oh-my-claudecode.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/pull/3558" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #3558</span>
+                  <span class="pr-title">fix(windows): hide command windows for auto-slash-command execSync spawns</span>
                 </a>
                 <span class="pr-state state-open">open</span>
               </li>

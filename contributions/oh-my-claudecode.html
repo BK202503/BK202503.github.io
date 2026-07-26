@@ -5,28 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-  <title>MapStruct 기여 — fluent setter 속성명 일치 버그 수정 | 김빌 (Bill Kim)</title>
-  <meta name="description" content="김빌(Bill Kim)이 MapStruct에 보낸 패치. Lombok @Builder 스타일 fluent setter의 속성명이 JavaBean accessor 쪽과 어긋나 매핑이 누락되던 #4000 버그를 DefaultAccessorNamingStrategy에서 수정." />
-  <meta name="keywords" content="MapStruct contribution, MapStruct PR 4074, MapStruct issue 4000, DefaultAccessorNamingStrategy, fluent setter property name, Lombok Builder MapStruct, JavaBean Introspector decapitalize, second character upper case, 김빌, Bill Kim, BK202503, MapStruct contributor" />
+  <title>oh-my-claudecode 기여 — Windows execSync windowsHide | 김빌 (Bill Kim)</title>
+  <meta name="description" content="김빌(Bill Kim)이 oh-my-claudecode(OMC, 38k stars, MIT)에 보낸 패치. #3484 sweep이 놓친 auto-slash-command live-data.ts의 두 execSync spot에 windowsHide 추가해 Windows에서 !cmd / !begin-script 실행 시 cmd.exe console flash 회귀를 재차단." />
+  <meta name="keywords" content="oh-my-claudecode contribution, OMC contribution, Yeachan-Heo, Claude Code plugin, windowsHide, execSync Windows console flash, auto-slash-command, live-data, PR 3558, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
 
-  <link rel="canonical" href="https://bk202503.github.io/contributions/mapstruct.html" />
-  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/mapstruct.html" />
-  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/mapstruct.html?lang=en" />
-  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/mapstruct.html" />
+  <link rel="canonical" href="https://bk202503.github.io/contributions/oh-my-claudecode.html" />
+  <link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/oh-my-claudecode.html" />
+  <link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/oh-my-claudecode.html?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/oh-my-claudecode.html" />
 
   <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
-  <meta property="og:title" content="MapStruct 기여 — fluent setter 속성명 일치 버그 수정" />
-  <meta property="og:description" content="김빌(Bill Kim)이 MapStruct에 보낸 패치. Lombok @Builder 스타일 fluent setter의 속성명이 JavaBean accessor와 어긋나 매핑이 누락되던 #4000 수정." />
+  <meta property="og:title" content="oh-my-claudecode 기여 — Windows execSync windowsHide" />
+  <meta property="og:description" content="김빌(Bill Kim)이 oh-my-claudecode에 보낸 패치. Windows에서 !cmd / !begin-script 실행 시 cmd.exe console flash 회귀 재차단. PR #3558." />
   <meta property="og:type" content="article" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:locale:alternate" content="en_US" />
-  <meta property="og:url" content="https://bk202503.github.io/contributions/mapstruct.html" />
+  <meta property="og:url" content="https://bk202503.github.io/contributions/oh-my-claudecode.html" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="MapStruct 기여 — fluent setter 속성명 일치 버그 수정" />
-  <meta name="twitter:description" content="김빌(Bill Kim)이 MapStruct에 보낸 패치." />
+  <meta name="twitter:title" content="oh-my-claudecode 기여 — Windows execSync windowsHide" />
+  <meta name="twitter:description" content="oh-my-claudecode PR #3558 — auto-slash-command live-data.ts execSync windowsHide." />
 
   <script type="application/ld+json">
   {
@@ -35,7 +35,7 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bk202503.github.io/" },
       { "@type": "ListItem", "position": 2, "name": "Contributions", "item": "https://bk202503.github.io/#contributions" },
-      { "@type": "ListItem", "position": 3, "name": "MapStruct" }
+      { "@type": "ListItem", "position": 3, "name": "oh-my-claudecode" }
     ]
   }
   </script>
@@ -43,12 +43,12 @@
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "MapStruct 기여 — fluent setter 속성명 일치 버그 수정",
-    "url": "https://bk202503.github.io/contributions/mapstruct.html",
+    "headline": "oh-my-claudecode 기여 — Windows execSync windowsHide",
+    "url": "https://bk202503.github.io/contributions/oh-my-claudecode.html",
     "inLanguage": ["ko", "en"],
     "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
     "author": { "@id": "https://bk202503.github.io/#person" },
-    "about": ["MapStruct", "DefaultAccessorNamingStrategy", "Lombok Builder", "JavaBean Introspector"]
+    "about": ["oh-my-claudecode", "Claude Code", "Windows", "Node.js child_process"]
   }
   </script>
 
@@ -120,44 +120,44 @@
         <ol>
           <li><a href="../">Home</a></li>
           <li><a href="../#contributions">Contributions</a></li>
-          <li aria-current="page">MapStruct</li>
+          <li aria-current="page">oh-my-claudecode</li>
         </ol>
       </div>
     </nav>
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Contribution · MapStruct · Annotation Processor</p>
-        <h1 class="title">MapStruct — fluent setter 속성명 일치 버그 수정</h1>
+        <p class="eyebrow">Contribution · oh-my-claudecode · Windows</p>
+        <h1 class="title">oh-my-claudecode — Windows execSync windowsHide</h1>
         <p class="lede">
-          Lombok <code>@Builder</code> 스타일의 fluent setter가 JavaBean accessor와 서로 다른 속성명으로 인식되어 두 번째 글자가 대문자인 필드의 매핑이 누락되던 #4000 버그를 수정했습니다. <code>DefaultAccessorNamingStrategy</code>의 fluent setter 분기를 JavaBean 쪽과 동일한 decapitalize 규칙으로 정렬하고 회귀 테스트를 추가했습니다.
+          Yeachan-Heo/oh-my-claudecode (OMC, MIT). PR #3484 (<em>fix(windows): avoid Git console flashes in hooks and HUD</em>) 이 <code>src/hooks/auto-slash-command/live-data.ts</code> 안의 git-specific <code>execFileSync</code> 콜 두 개는 fix 했지만 같은 파일의 general command runner 두 개는 그대로 남아 있어서 <code>!cmd</code> live-data 치환과 <code>!begin-script</code> 블록 실행 시마다 Windows에서 <code>cmd.exe</code> console flash가 재발생. #3484 스윕에 맞춰 두 spot에 <code>windowsHide: true</code> 추가.
         </p>
       </div>
     </section>
 
     <section class="section">
       <div class="container narrow">
-        <h2>문제 — #4000</h2>
+        <h2>문제</h2>
         <p>
-          소스에 <code>private String xNameField</code>가 있고 타겟에 Lombok <code>@Builder</code>가 생성하는 <code>Builder.xNameField(...)</code> fluent setter가 있는 단순 매핑에서 해당 필드가 조용히 누락되고 있었습니다. 소스 getter <code>getXNameField()</code>는 <code>Introspector.decapitalize</code> 규칙(두 글자 모두 대문자면 유지)에 따라 속성명 <code>XNameField</code>로 인식되는 반면, fluent setter 쪽은 메서드명을 그대로 사용해 <code>xNameField</code>로 인식되어 둘이 매칭되지 않았기 때문.
+          #3484 이후 같은 파일의 두 execSync 콜에는 windowsHide 옵션이 안 붙어 있어 회귀 상태. <code>executeCommand(command)</code>는 매 <code>!cmd</code> 치환마다, <code>!begin-script</code> 블록 러너는 매 유저 스크립트 실행마다 각각 <code>cmd.exe</code> 창이 잠깐 뜸.
         </p>
 
         <h2>수정</h2>
         <p>
-          <code>DefaultAccessorNamingStrategy#getPropertyName(...)</code>의 fluent setter 분기에 JavaBean 쪽과 동일한 decapitalize 규칙을 적용. <code>xNameField</code> → 첫 글자 capitalize → <code>XNameField</code> → <code>decapitalize</code> → <code>XNameField</code>로 정규화돼 소스 쪽 속성명과 일치합니다. 두 번째 글자가 소문자인 일반적인 fluent setter(<code>settlementDate(...)</code>)는 동작이 바뀌지 않습니다(<code>SettlementDate</code> → <code>settlementDate</code>).
+          두 <code>execSync</code> 옵션 객체에 <code>windowsHide: true</code> 만 추가. #3484 및 이전 스윕(#3454, #3455, #3498)들이 다 unconditional로 세팅한 패턴을 그대로 따름 — Node는 non-Windows 에서 이 옵션을 무시하므로 platform check 불필요.
         </p>
 
         <h2>회귀 테스트</h2>
         <p>
-          기존 <code>_1799</code> fluent setter 테스트 패턴을 그대로 따라 <code>processor/src/test/java/org/mapstruct/ap/test/bugs/_4000/</code>에 <code>Source</code>(<code>getXNameField</code>), <code>Target</code>(Lombok 스타일 <code>Builder.xNameField(...)</code> fluent setter), <code>Issue4000Mapper</code>, <code>Issue4000Test</code>를 추가. 로컬에서 <code>builder</code> / <code>superbuilder</code> / <code>_1799</code> 영역 82개 테스트 회귀 모두 통과.
+          <code>src/__tests__/live-data.test.ts</code> 안의 기존 두 케이스를 강화해 <code>expect.objectContaining({ windowsHide: true })</code> 를 assertion 에 추가. 소스에서 옵션을 다시 제거하면 이 두 케이스가 실패하는지 로컬에서 역검증 완료. <code>npx vitest run src/__tests__/live-data.test.ts</code> → 40/40 통과, <code>npx tsc --noEmit</code> clean.
         </p>
 
         <h2>PR</h2>
         <ul class="pr-list">
           <li>
-            <a href="https://github.com/mapstruct/mapstruct/pull/4074" target="_blank" rel="noopener">
-              <span class="pr-id">PR #4074</span>
-              <span class="pr-title">#4000 Fix property name resolution for fluent setters whose second character is upper case</span>
+            <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/pull/3558" target="_blank" rel="noopener">
+              <span class="pr-id">PR #3558</span>
+              <span class="pr-title">fix(windows): hide command windows for auto-slash-command execSync spawns</span>
             </a>
             <span class="pr-state state-open">open</span>
           </li>
@@ -165,8 +165,8 @@
 
         <h2>관련 자료</h2>
         <ul class="contact-list">
-          <li><span class="k">Project</span><a href="https://github.com/mapstruct/mapstruct" target="_blank" rel="noopener">mapstruct/mapstruct</a></li>
-          <li><span class="k">Issue</span><a href="https://github.com/mapstruct/mapstruct/issues/4000" target="_blank" rel="noopener">mapstruct/mapstruct#4000</a></li>
+          <li><span class="k">Project</span><a href="https://github.com/Yeachan-Heo/oh-my-claudecode" target="_blank" rel="noopener">Yeachan-Heo/oh-my-claudecode</a></li>
+          <li><span class="k">Related</span><a href="https://github.com/Yeachan-Heo/oh-my-claudecode/pull/3484" target="_blank" rel="noopener">#3484 (원 스윕)</a></li>
           <li><span class="k">Author</span><a href="https://github.com/BK202503" target="_blank" rel="noopener">github.com/BK202503</a></li>
           <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
         </ul>
