@@ -442,25 +442,10 @@
                 </a>
                 <span class="pr-state state-open">open</span>
               </li>
-            </ul>
-          </article>
-
-          <article class="group">
-            <header class="group-head">
-              <h3><a href="contributions/spring-cloud-aws-1654.html">Spring Cloud AWS — SQS ack batch entry-id 중복 (GH-1634)</a></h3>
-              <span class="badge">SQS ack batch dedup</span>
-            </header>
-            <p class="group-desc"
-               data-ko="Standard SQS 큐가 ack 배치 flush 전에 같은 메시지를 재배달하면 SqsAcknowledgementExecutor가 Spring message id를 DeleteMessageBatchRequestEntry.id로 그대로 써서 같은 배치에 중복 entry id가 실렸고, AWS가 배치 전체를 BatchEntryIdsNotDistinctException으로 거절했습니다. Batch entry id는 요청 로컬 correlation token일 뿐이라 positional-index id로 좁혀 유니크성만 보장하도록 수정."
-               data-en="Standard SQS queues can redeliver the same message before the ack batch flushes. SqsAcknowledgementExecutor was reusing the Spring message id (derived from the SQS messageId) as the DeleteMessageBatchRequestEntry.id, so a duplicate delivery produced two entries with the same id and AWS rejected the whole batch with BatchEntryIdsNotDistinctException. Switched to a positional-index id — the entry id is only a request-local correlation token, so per-request uniqueness is enough.">
-              Standard SQS 큐가 ack 배치 flush 전에 같은 메시지를 재배달하면 SqsAcknowledgementExecutor가 Spring message id를 DeleteMessageBatchRequestEntry.id로 그대로 써서 같은 배치에 중복 entry id가 실렸고, AWS가 배치 전체를 BatchEntryIdsNotDistinctException으로 거절했습니다. Batch entry id는 요청 로컬 correlation token일 뿐이라 positional-index id로 좁혀 유니크성만 보장하도록 수정.
-            </p>
-            <p class="group-more"><a href="contributions/spring-cloud-aws-1654.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
-            <ul class="pr-list">
               <li>
                 <a href="https://github.com/awspring/spring-cloud-aws/pull/1654" target="_blank" rel="noopener">
                   <span class="pr-id">PR #1654</span>
-                  <span class="pr-title">Fix duplicate DeleteMessageBatchRequestEntry ids when SQS redelivers a message within one ack batch</span>
+                  <span class="pr-title">GH-1634 Fix duplicate DeleteMessageBatchRequestEntry ids on SQS redelivery within one ack batch</span>
                 </a>
                 <span class="pr-state state-merged">merged</span>
               </li>
