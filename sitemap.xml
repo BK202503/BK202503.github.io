@@ -75,24 +75,6 @@
   </url>
 
   <url>
-    <loc>https://bk202503.github.io/contributions/apache-kafka/22534.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22534.html"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22534.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22534.html"/>
-  </url>
-
-  <url>
-    <loc>https://bk202503.github.io/contributions/apache-kafka/22533.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/apache-kafka/22533.html"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/apache-kafka/22533.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/apache-kafka/22533.html"/>
-  </url>
-
-  <url>
     <loc>https://bk202503.github.io/contributions/spring-kafka.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
