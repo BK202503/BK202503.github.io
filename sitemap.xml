@@ -349,24 +349,6 @@
   </url>
 
   <url>
-    <loc>https://bk202503.github.io/contributions/oh-my-claudecode.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/oh-my-claudecode.html"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/oh-my-claudecode.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/oh-my-claudecode.html"/>
-  </url>
-
-  <url>
-    <loc>https://bk202503.github.io/contributions/oh-my-claudecode/3558.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://bk202503.github.io/contributions/oh-my-claudecode/3558.html"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://bk202503.github.io/contributions/oh-my-claudecode/3558.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://bk202503.github.io/contributions/oh-my-claudecode/3558.html"/>
-  </url>
-
-  <url>
     <loc>https://bk202503.github.io/projects/korea-cafe.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
