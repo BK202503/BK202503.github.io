@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# open-claude-all installer.
+# Source: https://github.com/BK202503/open-claude-all
+#
+# Usage:
+#   curl -fsSL https://bk202503.github.io/open-claude-all/get | bash
+#   curl -fsSL https://bk202503.github.io/open-claude-all/get | bash -s -- --dry-run
+#   curl -fsSL https://bk202503.github.io/open-claude-all/get | bash -s -- --skip-hook
+#
+set -eu
+
+REPO="BK202503/open-claude-all"
+REF="${OCA_REF:-main}"
+TARBALL_URL="https://github.com/${REPO}/archive/refs/heads/${REF}.tar.gz"
+
+tmp="$(mktemp -d 2>/dev/null || mktemp -d -t oca)"
+trap 'rm -rf "$tmp"' EXIT INT TERM
+
+echo "==> downloading open-claude-all (${REPO}@${REF})"
+if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$TARBALL_URL" -o "$tmp/oca.tar.gz"
+elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$tmp/oca.tar.gz" "$TARBALL_URL"
+else
+    echo "!! need curl or wget on PATH" >&2
+    exit 1
+fi
+
+tar -xzf "$tmp/oca.tar.gz" -C "$tmp"
+
+src="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d | head -1)/"
+if [ "$src" = "/" ] || [ ! -f "${src}install.sh" ]; then
+    echo "!! tarball missing install.sh at ${src}" >&2
+    exit 1
+fi
+
+echo "==> running install.sh"
+exec bash "${src}install.sh" "$@"
