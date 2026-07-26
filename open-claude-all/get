@@ -29,9 +29,9 @@ fi
 
 tar -xzf "$tmp/oca.tar.gz" -C "$tmp"
 
-src="$(ls -d "$tmp"/*/ 2>/dev/null | head -1)"
-if [ -z "$src" ] || [ ! -f "${src}install.sh" ]; then
-    echo "!! tarball missing install.sh at ${src:-<none>}" >&2
+src="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d | head -1)/"
+if [ "$src" = "/" ] || [ ! -f "${src}install.sh" ]; then
+    echo "!! tarball missing install.sh at ${src}" >&2
     exit 1
 fi
 

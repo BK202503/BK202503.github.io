@@ -1,0 +1,39 @@
+name: verify
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  no-pii:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for email PII
+        run: |
+          if grep -rniE "billkimjh|@gmail\.com|@naver\.com|@kakao\.com" . \
+              --include="*.html" --include="*.md" --include="*.xml" \
+              --include="*.svg" --include="*.txt" --include="*.yml"; then
+            echo "!! PII match found. Public site rule violated." >&2
+            exit 1
+          fi
+
+  installer-shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure shellcheck
+        run: which shellcheck || sudo apt-get install -y shellcheck
+      - name: shellcheck on open-claude-all/get
+        run: shellcheck --shell=sh open-claude-all/get
+
+  installer-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure jq
+        run: which jq || sudo apt-get install -y jq
+      - name: Run the installer end to end (dry-run, no hook wiring)
+        run: bash open-claude-all/get --dry-run --skip-hook
