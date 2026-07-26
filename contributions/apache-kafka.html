@@ -6,8 +6,8 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
   <title>Apache Kafka 기여 — ByteBuffer remaining-bytes 시리즈 | 김빌 (Bill Kim)</title>
-  <meta name="description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 업스트림 패치. Kafka Connect의 ByteBuffer.array() 오용을 4개 컴포넌트에 걸쳐 일관되게 수정. KAFKA-20656, 20657, 20658, 20666." />
-  <meta name="keywords" content="Apache Kafka contribution, Kafka Connect ByteBuffer, KAFKA-20656, KAFKA-20657, KAFKA-20658, KAFKA-20666, ByteBuffer.array() bug, Kafka Connect Struct BYTES, JsonConverter BYTES, Cast SMT, Kafka offset backing store, 김빌, Bill Kim, BK202503, 카프카 컨트리뷰터" />
+  <meta name="description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 업스트림 패치. Kafka Connect의 ByteBuffer.array() 오용을 컴포넌트별로 일관되게 수정. KAFKA-20656, 20666." />
+  <meta name="keywords" content="Apache Kafka contribution, Kafka Connect ByteBuffer, KAFKA-20656, KAFKA-20666, ByteBuffer.array() bug, Kafka Connect Struct BYTES, JsonConverter BYTES, Cast SMT, Kafka offset backing store, 김빌, Bill Kim, BK202503, 카프카 컨트리뷰터" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
@@ -19,14 +19,14 @@
 
   <meta property="og:site_name" content="김빌 (Bill Kim) — Open Source Developer" />
   <meta property="og:title" content="Apache Kafka 기여 — ByteBuffer remaining-bytes 시리즈" />
-  <meta property="og:description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 업스트림 패치 4건. Kafka Connect ByteBuffer.array() 오용 일관 수정." />
+  <meta property="og:description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 업스트림 패치. Kafka Connect ByteBuffer.array() 오용 일관 수정." />
   <meta property="og:type" content="article" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:locale:alternate" content="en_US" />
   <meta property="og:url" content="https://bk202503.github.io/contributions/apache-kafka.html" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Apache Kafka 기여 — ByteBuffer remaining-bytes 시리즈" />
-  <meta name="twitter:description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 업스트림 패치 4건." />
+  <meta name="twitter:description" content="김빌(Bill Kim)이 Apache Kafka에 보낸 업스트림 패치." />
 
   <script type="application/ld+json">
   {
@@ -49,7 +49,7 @@
     "isPartOf": { "@type": "WebSite", "url": "https://bk202503.github.io/" },
     "author": { "@id": "https://bk202503.github.io/#person" },
     "about": ["Apache Kafka", "Kafka Connect", "ByteBuffer", "Open Source Contribution"],
-    "keywords": "Apache Kafka, Kafka Connect, ByteBuffer, KAFKA-20656, KAFKA-20657, KAFKA-20658, KAFKA-20666"
+    "keywords": "Apache Kafka, Kafka Connect, ByteBuffer, KAFKA-20656, KAFKA-20666"
   }
   </script>
 
@@ -121,7 +121,7 @@
         <p class="eyebrow">Contribution · Apache Kafka · Kafka Connect</p>
         <h1 class="title">Apache Kafka — ByteBuffer remaining-bytes 시리즈</h1>
         <p class="lede">
-          Kafka Connect 전반에 퍼져 있던 <code>ByteBuffer.array()</code> 오용을 추적해 4개 컴포넌트에 같은 계열의 일관된 수정을 분리해서 올렸습니다. 직접 버퍼와 슬라이스 버퍼 양쪽에서 안전하게 동작하도록 BYTES 처리를 전부 <code>position()</code>/<code>remaining()</code> 기반으로 통일.
+          Kafka Connect 전반에 퍼져 있던 <code>ByteBuffer.array()</code> 오용을 추적해 같은 계열의 일관된 수정을 컴포넌트별로 분리해서 올렸습니다. 직접 버퍼와 슬라이스 버퍼 양쪽에서 안전하게 동작하도록 BYTES 처리를 전부 <code>position()</code>/<code>remaining()</code> 기반으로 통일.
         </p>
       </div>
     </section>
@@ -135,7 +135,7 @@
 
         <h2>수정 방향</h2>
         <p>
-          4개 컴포넌트(Struct, JsonConverter, Cast SMT, Offset Backing Stores)에서 각각 같은 패턴의 패치를 분리해서 제출했습니다. 분리 이유는 컴포넌트마다 메인테이너/리뷰어가 다르고, 영향 범위가 달라 별도 머지/되돌리기가 가능해야 한다는 판단.
+          Struct·Offset Backing Stores 등 컴포넌트별로 같은 패턴의 패치를 분리해서 제출했습니다. 분리 이유는 컴포넌트마다 메인테이너/리뷰어가 다르고, 영향 범위가 달라 별도 머지/되돌리기가 가능해야 한다는 판단.
         </p>
 
         <h2>PR 목록</h2>
@@ -151,20 +151,6 @@
             <a href="https://github.com/apache/kafka/pull/22535" target="_blank" rel="noopener">
               <span class="pr-id">PR #22535</span>
               <span class="pr-title">KAFKA-20666 — Offset backing stores honor ByteBuffer remaining bytes</span>
-            </a>
-            <span class="pr-state state-open">open</span>
-          </li>
-          <li>
-            <a href="https://github.com/apache/kafka/pull/22534" target="_blank" rel="noopener">
-              <span class="pr-id">PR #22534</span>
-              <span class="pr-title">KAFKA-20658 — Cast SMT honors ByteBuffer remaining bytes</span>
-            </a>
-            <span class="pr-state state-open">open</span>
-          </li>
-          <li>
-            <a href="https://github.com/apache/kafka/pull/22533" target="_blank" rel="noopener">
-              <span class="pr-id">PR #22533</span>
-              <span class="pr-title">KAFKA-20657 — JsonConverter BYTES uses ByteBuffer remaining bytes</span>
             </a>
             <span class="pr-state state-open">open</span>
           </li>
