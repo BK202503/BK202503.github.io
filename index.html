@@ -7,7 +7,7 @@
 
   <title>김빌 (Bill Kim) | Open Source Developer</title>
   <meta name="description" content="김빌(Bill Kim)의 오픈소스 활동 페이지. Apache Kafka, Spring AI, Spring Kafka, Kotlin, Distributed Systems." />
-  <meta name="keywords" content="김빌, 빌김, Bill Kim, billkim, BK202503, devbilllab, 김빌 블로그, 김빌 기술 블로그, 김빌 개발자, 김빌 깃허브, 김빌 오픈소스, Bill Kim OSS, Bill Kim tech blog, 오픈소스, OSS, open source, 오픈소스 컨트리뷰터, 오픈소스 개발자, 기술 블로그, tech blog, 티스토리, tistory, devbilllab tistory, Apache Kafka, Kafka Connect, Spring Kafka, Spring Cloud AWS, awspring, Spring Modulith, Spring AI, Infinispan, MapStruct, Kotlin, Spring Boot, Saga, Idempotent, Outbox, bk-spring-idempotent, bk-spring-saga, bk-spring-outbox, spring-idempotent-kt, spring-saga-kt, spring-outbox-kt, suspend KafkaListener, DefaultErrorHandler, QueueNotFoundStrategy, GH-4465, GH-4504, GH-1143, KAFKA-20656, KAFKA-20666, JpaEventPublicationAdapter, DefaultAccessorNamingStrategy, korea-cafe" />
+  <meta name="keywords" content="김빌, 빌김, Bill Kim, billkim, BK202503, devbilllab, 김빌 블로그, 김빌 기술 블로그, 김빌 개발자, 김빌 깃허브, 김빌 오픈소스, Bill Kim OSS, Bill Kim tech blog, 오픈소스, OSS, open source, 오픈소스 컨트리뷰터, 오픈소스 개발자, 기술 블로그, tech blog, 티스토리, tistory, devbilllab tistory, Apache Kafka, Kafka Connect, Spring Kafka, Spring Cloud AWS, awspring, Spring Modulith, Spring AI, Infinispan, MapStruct, Kotlin, Spring Boot, Saga, Idempotent, Outbox, bk-spring-idempotent, bk-spring-saga, bk-spring-outbox, spring-idempotent-kt, spring-saga-kt, spring-outbox-kt, suspend KafkaListener, DefaultErrorHandler, QueueNotFoundStrategy, GH-4465, GH-4504, GH-4272, GH-1143, KAFKA-20656, KAFKA-20666, JpaEventPublicationAdapter, DefaultAccessorNamingStrategy, korea-cafe" />
   <meta name="author" content="김빌 (Bill Kim)" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
@@ -330,6 +330,28 @@
 
           <article class="group">
             <header class="group-head">
+              <h3><a href="contributions/spring-kafka/4674.html">Spring Kafka — recoverer 무한 재처리 (GH-4272)</a></h3>
+              <span class="badge">error handler</span>
+            </header>
+            <p class="group-desc"
+               data-ko="ConsumerRecordRecoverer가 같은 레코드에 대해 계속 실패하면 DefaultErrorHandler가 그 offset으로 seek해 무한 재전달하고 컨슈머가 앞으로 나가지 못하던 문제. resetStateOnRecoveryFailure / seekAfterError로는 끊을 수 없어, maxRecoveryFailures 옵션을 추가해 N회 실패 후 ERROR 로그와 함께 skip하고 offset을 커밋하도록 bound. 기본값 무제한으로 기존 동작 유지."
+               data-en="When a ConsumerRecordRecoverer kept throwing for the same record, DefaultErrorHandler seeked back to it and redelivered it forever; neither resetStateOnRecoveryFailure nor seekAfterError could end the loop. Added a maxRecoveryFailures option that logs the record at ERROR and skips it (committing the offset) after N failed recoveries. Unlimited by default, so existing behavior is unchanged.">
+              ConsumerRecordRecoverer가 같은 레코드에 대해 계속 실패하면 DefaultErrorHandler가 그 offset으로 seek해 무한 재전달하고 컨슈머가 앞으로 나가지 못하던 문제. resetStateOnRecoveryFailure / seekAfterError로는 끊을 수 없어, maxRecoveryFailures 옵션을 추가해 N회 실패 후 ERROR 로그와 함께 skip하고 offset을 커밋하도록 bound. 기본값 무제한으로 기존 동작 유지.
+            </p>
+            <p class="group-more"><a href="contributions/spring-kafka/4674.html" data-ko="자세히 보기 →" data-en="Read more →">자세히 보기 →</a></p>
+            <ul class="pr-list">
+              <li>
+                <a href="https://github.com/spring-projects/spring-kafka/pull/4674" target="_blank" rel="noopener">
+                  <span class="pr-id">PR #4674</span>
+                  <span class="pr-title">GH-4272: Bound recovery failures per record</span>
+                </a>
+                <span class="pr-state state-open">open</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="group">
+            <header class="group-head">
               <h3><a href="contributions/strimzi.html">Strimzi</a></h3>
               <span class="badge">cert + TLS trust cleanups</span>
             </header>
@@ -439,7 +461,7 @@
                   <span class="pr-id">PR #1640</span>
                   <span class="pr-title">GH-1143 Add IGNORE QueueNotFoundStrategy option for SQS</span>
                 </a>
-                <span class="pr-state state-open">open</span>
+                <span class="pr-state state-merged">merged</span>
               </li>
               <li>
                 <a href="https://github.com/awspring/spring-cloud-aws/pull/1639" target="_blank" rel="noopener">
