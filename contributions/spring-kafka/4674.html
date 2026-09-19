@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-  <title>Spring Kafka PR #4674 — GH-4272 Bound recovery failures per record (open) | 김빌 (Bill Kim)</title>
+  <title>Spring Kafka PR #4674 — GH-4272 Bound recovery failures per record (merged) | 김빌 (Bill Kim)</title>
   <meta name="description" content="김빌(Bill Kim)이 Spring Kafka에 보낸 PR #4674 (GH-4272). ConsumerRecordRecoverer가 계속 실패하면 같은 offset을 무한 재처리하던 DefaultErrorHandler에 maxRecoveryFailures 옵션을 추가해, N회 실패 후 ERROR 로그와 함께 skip하고 offset을 커밋하도록 bound." />
   <meta name="keywords" content="Spring Kafka PR 4674, GH-4272, ConsumerRecordRecoverer infinite reprocessing, DefaultErrorHandler maxRecoveryFailures, FailedRecordTracker, resetStateOnRecoveryFailure, DeadLetterPublishingRecoverer failure, DefaultAfterRollbackProcessor, 김빌, Bill Kim, BK202503" />
   <meta name="author" content="김빌 (Bill Kim)" />
@@ -133,14 +133,17 @@
 
     <section class="page-hero">
       <div class="container">
-        <p class="eyebrow">Spring Kafka · open · GH-4272</p>
+        <p class="eyebrow">Spring Kafka · merged · 2026-09-18</p>
         <h1 class="title">PR #4674 — GH-4272: Bound recovery failures per record</h1>
         <p class="lede">
-          <code>ConsumerRecordRecoverer</code>가 같은 레코드에 대해 계속 throw하면 (예: DLT 브로커 장애) <code>DefaultErrorHandler</code>는 그 offset으로 seek해 무한 재전달하고, 컨슈머는 영원히 앞으로 나가지 못합니다. <code>resetStateOnRecoveryFailure</code>와 <code>seekAfterError</code>는 재전달 방식만 바꿀 뿐 끊어 주지 않습니다. 본 PR은 <code>maxRecoveryFailures</code> 옵션을 추가해, recovery가 N번 실패한 레코드를 ERROR 로그와 함께 recovered 취급(seek 생략, ack mode대로 offset 커밋)하도록 bound합니다. 기본값은 무제한으로 기존 동작 그대로.
+          <code>ConsumerRecordRecoverer</code>가 같은 레코드에 대해 계속 throw하면 (예: DLT 브로커 장애) <code>DefaultErrorHandler</code>는 그 offset으로 seek해 무한 재전달하고, 컨슈머는 영원히 앞으로 나가지 못합니다. <code>resetStateOnRecoveryFailure</code>와 <code>seekAfterError</code>는 재전달 방식만 바꿀 뿐 끊어 주지 않습니다. 본 PR은 <code>maxRecoveryFailures</code> 옵션을 추가해, recovery가 N번 실패한 레코드를 ERROR 로그와 함께 recovered 취급(seek 생략, ack mode대로 offset 커밋)하도록 bound합니다. 기본값은 무제한으로 기존 동작 그대로. PR은 close되고 메인테이너가 co-author로 정리한 커밋 <code>edc1fae</code>로 main에 머지됐습니다 (2026-09-18).
         </p>
         <div class="hero-meta">
           <a class="pill" href="https://github.com/spring-projects/spring-kafka/pull/4674" target="_blank" rel="noopener">
-            <span>GitHub PR</span><span class="pill-sub">spring-projects/spring-kafka#4674 · open</span>
+            <span>GitHub PR</span><span class="pill-sub">spring-projects/spring-kafka#4674</span>
+          </a>
+          <a class="pill" href="https://github.com/spring-projects/spring-kafka/commit/edc1fae00e692161d6f51f09c57677eded4f46b1" target="_blank" rel="noopener">
+            <span>Commit</span><span class="pill-sub">edc1fae · main</span>
           </a>
         </div>
       </div>
@@ -185,13 +188,14 @@
               <span class="pr-id">PR #4674</span>
               <span class="pr-title">GH-4272: Bound recovery failures per record</span>
             </a>
-            <span class="pr-state state-open">open</span>
+            <span class="pr-state state-merged">merged</span>
           </li>
         </ul>
 
         <h2>관련 자료</h2>
         <ul class="contact-list">
           <li><span class="k">PR</span><a href="https://github.com/spring-projects/spring-kafka/pull/4674" target="_blank" rel="noopener">spring-projects/spring-kafka#4674</a></li>
+          <li><span class="k">Commit</span><a href="https://github.com/spring-projects/spring-kafka/commit/edc1fae00e692161d6f51f09c57677eded4f46b1" target="_blank" rel="noopener">edc1fae</a></li>
           <li><span class="k">Issue</span><a href="https://github.com/spring-projects/spring-kafka/issues/4272" target="_blank" rel="noopener">spring-projects/spring-kafka#4272</a></li>
           <li><span class="k">Project</span><a href="/contributions/spring-kafka.html">Spring Kafka 기여 개요</a></li>
           <li><span class="k">Blog</span><a href="https://devbilllab.tistory.com/" target="_blank" rel="noopener">devbilllab.tistory.com</a></li>
